@@ -1,47 +1,55 @@
-"use client";                                            // it opens and closes on tap, so it runs in the browser
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { supabase } from "../lib/supabase";
+import { useUser } from "../lib/useUser";
 
-export default function MobileMenu({ links }) {          // links is a prop: the same list the desktop navbar uses
-  const [open, setOpen] = useState(false);               // memory: is the menu open? starts closed
+export default function MobileMenu({ links }) {
+  const router = useRouter();
+  const user = useUser();                                // is someone logged in?
+  const [open, setOpen] = useState(false);
+
+  async function logOut() {
+    setOpen(false);                                      // close the menu first
+    await supabase.auth.signOut();
+    router.push("/");
+  }
+
+  const rowClass = "block w-full rounded-xl px-3 py-3 text-left text-ink hover:bg-mist"; // one style for every row
 
   return (
-    <div className="md:hidden">                          {/* phones only; laptops use the normal links */}
+    <div className="md:hidden">
       <button
-        onClick={() => setOpen(!open)}                   // tap flips it: closed → open, open → closed
-        aria-label={open ? "Close menu" : "Open menu"}   // read aloud by screen readers, since the button has no words
-        aria-expanded={open}                             // tells screen readers whether the menu is showing
+        onClick={() => setOpen(!open)}
+        aria-label={open ? "Close menu" : "Open menu"}
+        aria-expanded={open}
         className="flex h-10 w-10 items-center justify-center rounded-full border border-line"
       >
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="text-ink">
-          {open ? (
-            <path d="M4 4l10 10M14 4L4 14" />            // an X when open
-          ) : (
-            <path d="M2 5h14M2 9h14M2 13h14" />          // three lines when closed
-          )}
+          {open ? <path d="M4 4l10 10M14 4L4 14" /> : <path d="M2 5h14M2 9h14M2 13h14" />}
         </svg>
       </button>
 
-      {open && (                                         // only draw the panel when open
+      {open && (
         <nav className="absolute inset-x-0 top-full z-50 border-b border-line bg-water px-6 py-4 shadow-sm">
-          {/* absolute + top-full = drop down directly under the navbar, full width; z-50 keeps it above the page */}
           <ul className="space-y-1">
             {links.map((l) => (
               <li key={l.href}>
-                <Link
-                  href={l.href}
-                  onClick={() => setOpen(false)}         // close the menu after choosing a page
-                  className="block rounded-xl px-3 py-3 text-ink hover:bg-mist" // block + py-3 = big, easy-to-tap rows
-                >
-                  {l.label}
-                </Link>
+                <Link href={l.href} onClick={() => setOpen(false)} className={rowClass}>{l.label}</Link>
               </li>
             ))}
+
             <li className="border-t border-line pt-2">
-              <Link href="/login" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-3 text-ink hover:bg-mist">
-                Log in
-              </Link>
+              {user ? (                                  // logged in: Dashboard + Log out
+                <>
+                  <Link href="/dashboard" onClick={() => setOpen(false)} className={rowClass}>Dashboard</Link>
+                  <button onClick={logOut} className={`${rowClass} text-stone`}>Log out</button>
+                </>
+              ) : (                                      // logged out: Log in
+                <Link href="/login" onClick={() => setOpen(false)} className={rowClass}>Log in</Link>
+              )}
             </li>
           </ul>
         </nav>

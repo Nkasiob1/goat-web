@@ -1,15 +1,17 @@
-import Logo from "../../components/Logo";       // go up two folders (dashboard → app → src), then into components
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import DashboardView from "../../components/DashboardView";
+
+export const metadata = { title: "Dashboard | GOAT" };
 
 export default function DashboardPage() {
   return (
-    <main className="min-h-screen bg-mist p-10">
-      <Logo />                                  {/* our component, used like an HTML tag */}
-      <h1 className="mt-8 text-3xl font-semibold text-forest"> {/* mt-8 adds space below the logo */}
-        GOAT Dashboard
-      </h1>
-      <p className="mt-2 text-stone">
-        Your bot, at a glance.
-      </p>
+    <main>
+      <Navbar />
+      <section className="mx-auto min-h-[60vh] max-w-6xl px-6 py-16">
+        <DashboardView />
+      </section>
+      <Footer />
     </main>
   );
 }
