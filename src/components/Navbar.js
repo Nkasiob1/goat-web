@@ -3,8 +3,9 @@ import Logo from "./Logo";
 import MobileMenu from "./MobileMenu";
 import UserMenu from "./UserMenu";
 
-const NAV_LINKS = [
+const NAV_LINKS = [                                      // one list for desktop AND the phone menu
   { href: "/markets", label: "Markets" },
+  { href: "/charts", label: "Charts" },                  // NEW
   { href: "/scanner", label: "Scanner" },
   { href: "/#bot", label: "The Bot" },
   { href: "/advertise", label: "Advertise" },
@@ -24,7 +25,7 @@ export default function Navbar() {
 
         <div className="flex items-center gap-3">
           <UserMenu />                                   {/* Log in / Sign up, or avatar / Log out */}
-          <MobileMenu links={NAV_LINKS} />
+          <MobileMenu links={NAV_LINKS} />               {/* phone menu reads the same list */}
         </div>
       </nav>
     </header>
