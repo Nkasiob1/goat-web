@@ -8,9 +8,9 @@ export default function Navbar() {
         <Logo />                                             {/* the coin and GOAT wordmark */}
 
         <div className="hidden items-center gap-8 text-sm text-stone md:flex"> {/* middle links: hidden on phones, a row on laptops */}
-          <Link href="#markets" className="hover:text-ink">Markets</Link>   {/* # links jump to a section on this page */}
-          <Link href="#bot" className="hover:text-ink">The Bot</Link>       {/* hover:text-ink darkens the link on hover */}
-          <Link href="#pricing" className="hover:text-ink">Pricing</Link>
+          <Link href="/markets" className="hover:text-ink">Markets</Link>   {/* the new markets page */}
+          <Link href="/#bot" className="hover:text-ink">The Bot</Link>      {/* "/" + "#bot" = go to the homepage, then jump to the bot section */}
+          <Link href="/#pricing" className="hover:text-ink">Pricing</Link>  {/* same idea, for when we build pricing */}
         </div>
 
         <div className="flex items-center gap-3">            {/* the two buttons on the right */}
