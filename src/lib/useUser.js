@@ -1,19 +1,18 @@
-"use client";                                            // hooks run in the browser
+"use client";
 
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 
-export function useUser() {                              // any component can now ask: "who's logged in?"
-  const [user, setUser] = useState(null);                // null = logged out (or not checked yet)
+export function useUser() {
+  const [user, setUser] = useState(undefined);           // undefined = still checking, null = logged out, object = logged in
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null)); // check once on load
+    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);                    // update instantly on login / logout
+      setUser(session?.user ?? null);
     });
-    return () => listener.subscription.unsubscribe();    // stop listening when the component leaves
+    return () => listener.subscription.unsubscribe();
   }, []);
 
-  return user;                                           // hand back the user (or null)
+  return user;
 }
-

@@ -1,28 +1,45 @@
-import { notFound } from "next/navigation";              // shows the 404 page for unknown coins
+import { notFound } from "next/navigation";
 import Link from "next/link";
-import Navbar from "../../../components/Navbar";         // up three folders: [symbol] → markets → app → src
+import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import CoinPrice from "../../../components/CoinPrice";
+import CoinStar from "../../../components/CoinStar";
+import TradingChart from "../../../components/TradingChart";
 import { COINS } from "../../../data/coins";
 import { VENUES } from "../../../data/venues";
+import { getTopCoins } from "../../../lib/cryptoList";
 
-export function generateStaticParams() {                 // tells Next.js every coin page in advance, so they load fast
-  return COINS.map((c) => ({ symbol: c.short.toLowerCase() }));  // [{ symbol: "btc" }, { symbol: "eth" }, ...]
+export function generateStaticParams() {                 // our 10 are built in advance; the other 90 are built on first visit
+  return COINS.map((c) => ({ symbol: c.short.toLowerCase() }));
 }
 
-export async function generateMetadata({ params }) {     // sets the browser tab title per coin
-  const { symbol } = await params;                       // read the blank from the URL
-  const coin = COINS.find((c) => c.short.toLowerCase() === symbol);
-  return { title: coin ? `${coin.name} price | GOAT` : "Not found | GOAT" };
+export async function generateMetadata({ params }) {
+  const { symbol } = await params;
+  return { title: `${symbol.toUpperCase()} price | GOAT` };
+}
+
+async function findCoin(symbol) {                        // look in our 10 first, then the top 100
+  const known = COINS.find((c) => c.short.toLowerCase() === symbol);
+  if (known) return known;
+
+  const top = await getTopCoins(100).catch(() => []);    // if Binance is unreachable, treat as not found
+  const listed = top.find((c) => c.short.toLowerCase() === symbol);
+  if (!listed) return null;
+
+  return {
+    symbol: listed.symbol,
+    short: listed.short,
+    name: listed.name,
+    about: `${listed.short} is one of the 100 most traded coins on Binance, priced here against USDT (a dollar stablecoin).`,
+  };
 }
 
 export default async function CoinPage({ params }) {
-  const { symbol } = await params;                       // e.g. "btc" from /markets/btc
-  const coin = COINS.find((c) => c.short.toLowerCase() === symbol); // look it up in our list
+  const { symbol } = await params;
+  const coin = await findCoin(symbol);
+  if (!coin) notFound();
 
-  if (!coin) notFound();                                 // not in our list → 404
-
-  const venues = [...VENUES].sort((a, b) => b.sponsored - a.sponsored); // copy the list, sponsored ones first
+  const venues = [...VENUES].sort((a, b) => b.sponsored - a.sponsored);
 
   return (
     <main>
@@ -30,12 +47,19 @@ export default async function CoinPage({ params }) {
       <section className="mx-auto max-w-6xl px-6 py-16">
         <Link href="/markets" className="text-sm text-stone hover:text-ink">← All markets</Link>
 
-        <h1 className="mt-6 text-3xl font-bold tracking-tight text-ink md:text-4xl">
-          {coin.name} <span className="font-mono text-xl text-stone">{coin.short}</span>
-        </h1>
+        <div className="mt-6 flex flex-wrap items-center gap-4">
+          <h1 className="text-3xl font-bold tracking-tight text-ink md:text-4xl">
+            {coin.name} <span className="font-mono text-xl text-stone">{coin.short}</span>
+          </h1>
+          <CoinStar symbol={coin.symbol} />
+        </div>
         <p className="mt-3 max-w-xl text-stone">{coin.about}</p>
 
-        <CoinPrice symbol={coin.symbol} />               {/* the live price and stats */}
+        <CoinPrice symbol={coin.symbol} />
+
+        <div className="mt-10">
+          <TradingChart symbol={`BINANCE:${coin.symbol}`} />
+        </div>
 
         <div className="mt-16">
           <h2 className="text-xl font-semibold text-ink">Where to buy {coin.name}</h2>
@@ -45,14 +69,14 @@ export default async function CoinPage({ params }) {
                 <div className="flex items-center gap-3">
                   <span className="font-semibold text-ink">{v.name}</span>
                   <span className="text-xs text-stone">{v.type}</span>
-                  {v.sponsored && (                      // only show the tag when sponsored is true
+                  {v.sponsored && (
                     <span className="rounded-full bg-sage px-2 py-0.5 text-xs text-moss">Sponsored</span>
                   )}
                 </div>
                 <a
                   href={v.url}
-                  target="_blank"                        // opens in a new tab, so GOAT stays open
-                  rel={v.sponsored ? "noopener noreferrer sponsored" : "noopener noreferrer"} // "sponsored" tells Google it's a paid link
+                  target="_blank"
+                  rel={v.sponsored ? "noopener noreferrer sponsored" : "noopener noreferrer"}
                   className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:border-moss"
                 >
                   Visit
@@ -62,11 +86,12 @@ export default async function CoinPage({ params }) {
           </ul>
 
           <p className="mt-4 text-xs leading-relaxed text-stone">
-            Availability depends on your country. GOAT may earn a fee from sponsored listings.
-            Always check that a platform is licensed where you live, and do your own research.
+            Availability depends on your country. Not every platform lists every coin. GOAT may earn
+            a fee from sponsored listings. Always check that a platform is licensed where you live,
+            and do your own research.
           </p>
 
-          <div className="mt-8 rounded-3xl bg-sage p-6">  {/* the advertiser call-to-action */}
+          <div className="mt-8 rounded-3xl bg-sage p-6">
             <p className="font-semibold text-ink">Run an exchange or broker?</p>
             <p className="mt-1 text-sm text-stone">Get listed where traders decide where to buy.</p>
             <Link href="/advertise" className="mt-4 inline-block text-sm font-medium text-moss hover:text-forest">
