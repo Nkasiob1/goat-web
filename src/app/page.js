@@ -1,15 +1,17 @@
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
-import Features from "../components/Features";     // new
-import Footer from "../components/Footer";         // new
+import NewsPreview from "../components/NewsPreview";
+import Features from "../components/Features";
+import Footer from "../components/Footer";
 
 export default function HomePage() {
   return (
     <main>
       <Navbar />
       <Hero />
-      <Features />                                 {/* section 3 */}
-      <Footer />                                   {/* last section */}
+      <NewsPreview />                                    {/* NEW: between the hero and the features */}
+      <Features />
+      <Footer />
     </main>
   );
 }

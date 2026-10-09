@@ -3,11 +3,11 @@ import Logo from "./Logo";
 import MobileMenu from "./MobileMenu";
 import UserMenu from "./UserMenu";
 
-const NAV_LINKS = [                                      // one list for desktop AND the phone menu
+const NAV_LINKS = [
   { href: "/markets", label: "Markets" },
-  { href: "/charts", label: "Charts" },                  // NEW
+  { href: "/charts", label: "Charts" },
   { href: "/scanner", label: "Scanner" },
-  { href: "/#bot", label: "The Bot" },
+  { href: "/news", label: "News" },                      // NEW
   { href: "/advertise", label: "Advertise" },
 ];
 
