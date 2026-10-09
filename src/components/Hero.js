@@ -1,10 +1,5 @@
+import LivePrices from "./LivePrices";                 // our new live card
 export default function Hero() {
-  const markets = [                                          // the instruments your bot actually trades
-    { symbol: "US30", name: "Dow Jones 30" },
-    { symbol: "USTEC", name: "Nasdaq 100" },
-    { symbol: "US500", name: "S&P 500" },
-    { symbol: "XAUUSD", name: "Gold" },
-  ];
 
   return (
     <section className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 md:grid-cols-2"> {/* 1 column on phones, 2 on laptops */}
@@ -38,16 +33,8 @@ export default function Hero() {
         </form>
       </div>
 
-      <div id="markets" className="rounded-3xl border border-line bg-water p-6 shadow-sm"> {/* right side: the market card */}
-        <p className="text-sm font-medium text-stone">Markets GOAT trades</p>
-        <ul className="mt-4 divide-y divide-line">          {/* a thin line between each row */}
-          {markets.map((m) => (                              // loop over the list and draw one row per market
-            <li key={m.symbol} className="flex items-center justify-between py-4"> {/* key helps React track each row */}
-              <span className="font-mono font-semibold text-ink">{m.symbol}</span> {/* symbol in the number font */}
-              <span className="text-sm text-stone">{m.name}</span>
-            </li>
-          ))}
-        </ul>
+    <div id="markets">                               {/* keeps the navbar's "Markets" link working */}
+        <LivePrices />
       </div>
     </section>
   );

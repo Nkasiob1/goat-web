@@ -1,11 +1,15 @@
-import Navbar from "../components/Navbar";           // up one folder (app → src), into components
+import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
+import Features from "../components/Features";     // new
+import Footer from "../components/Footer";         // new
 
 export default function HomePage() {
   return (
     <main>
-      <Navbar />                                     {/* section 1 */}
-      <Hero />                                       {/* section 2 */}
+      <Navbar />
+      <Hero />
+      <Features />                                 {/* section 3 */}
+      <Footer />                                   {/* last section */}
     </main>
   );
 }
