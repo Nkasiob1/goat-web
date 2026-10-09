@@ -7,9 +7,22 @@ import { formatPrice, volumeFormat } from "../../lib/format";
 export const metadata = { title: "New Coin Scanner | GOAT" };
 
 export default async function ScannerPage() {
-  const pools = await getNewPools();                     // only coins that passed the quality filter
+  const pools = await getNewPools();                     // coins from the last 24h that passed every check
 
-  const checks = [                                       // the rules, written for humans, shown on the page
+  const nameCounts = {};                                 // NEW: how many tokens share each name
+  for (const p of pools) {
+    const key = p.name.toLowerCase();                    // "Quantum Inu" and "quantum inu" count as the same
+    nameCounts[key] = (nameCounts[key] ?? 0) + 1;
+  }
+
+  const percent = new Intl.NumberFormat("en-US", {       // NEW: +54.9% stays; +297250.5% becomes +297K%
+    notation: "compact",
+    maximumFractionDigits: 1,
+    signDisplay: "always",                               // always show + or −
+  });
+
+  const checks = [                                       // the rules, written for humans, shown as pills
+    `Listed in the last ${RULES.maxAgeHours}h`,
     `${volumeFormat.format(RULES.minLiquidity)}+ liquidity`,
     `${volumeFormat.format(RULES.minVolume)}+ daily volume`,
     `${RULES.minTrades}+ trades`,
@@ -23,11 +36,11 @@ export default async function ScannerPage() {
       <section className="mx-auto max-w-6xl px-6 py-16">
         <p className="text-sm font-medium text-moss">Scanner</p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-ink md:text-5xl">
-          New coins, filtered for quality.
+          New coins from the last 24 hours.
         </h1>
         <p className="mt-4 max-w-xl text-stone">
-          GOAT scans the newest trading pools across every major blockchain each minute,
-          and only shows the ones that pass every check.
+          GOAT scans new and trending pools across every major blockchain each minute,
+          and only shows coins listed in the last day that pass every check.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-2">        {/* flex-wrap lets the pills drop to a new line on phones */}
@@ -64,6 +77,7 @@ export default async function ScannerPage() {
               <tbody className="divide-y divide-line">
                 {pools.map((p) => {
                   const up = p.change >= 0;
+                  const copycat = nameCounts[p.name.toLowerCase()] > 1; // NEW: another token uses this name
 
                   return (
                     <tr key={p.id} className="hover:bg-mist">
@@ -77,17 +91,24 @@ export default async function ScannerPage() {
                         >
                           {p.name}
                         </a>
-                        <div className="mt-1 flex items-center gap-2 text-xs text-stone">
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-stone">
                           <span className="font-mono">{p.symbol}</span>
                           <span>·</span>
                           <span>{p.network}</span>
+                          {copycat && (
+                            <span className="rounded-full bg-mist px-2 py-0.5 text-loss">Name used by multiple tokens</span>
+                          )}
+                        </div>
+                        {/* phones only: the stats hidden as columns; md:hidden removes this line on bigger screens */}
+                        <div className="mt-1 font-mono text-xs text-stone md:hidden">
+                          Liq {volumeFormat.format(p.liquidity)} · Vol {volumeFormat.format(p.volume)} · {p.txns} trades
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right font-mono text-sm text-ink">
                         {formatPrice(p.price)}
                       </td>
                       <td className={`px-6 py-4 text-right font-mono text-sm ${up ? "text-gain" : "text-loss"}`}>
-                        {(up ? "+" : "") + p.change.toFixed(1)}%
+                        {percent.format(p.change)}%
                       </td>
                       <td className="hidden px-6 py-4 text-right font-mono text-sm text-stone md:table-cell">
                         {volumeFormat.format(p.liquidity)}
