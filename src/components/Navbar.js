@@ -1,28 +1,37 @@
-import Link from "next/link";                       // page links without full reloads
-import Logo from "./Logo";                          // our logo, from the same folder
+import Link from "next/link";
+import Logo from "./Logo";
+import MobileMenu from "./MobileMenu";
+
+const NAV_LINKS = [                                      // one list for desktop AND mobile
+  { href: "/markets", label: "Markets" },
+  { href: "/scanner", label: "Scanner" },
+  { href: "/#bot", label: "The Bot" },
+  { href: "/advertise", label: "Advertise" },
+];
 
 export default function Navbar() {
   return (
-    <header className="border-b border-line bg-water">       {/* thin border line under the bar, white background */}
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4"> {/* centred, max width, logo left / buttons right */}
-        <Logo />                                             {/* the coin and GOAT wordmark */}
+    <header className="relative border-b border-line bg-water">  {/* relative: the mobile menu drops down from here */}
+      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <Logo />
 
-        <div className="hidden items-center gap-8 text-sm text-stone md:flex"> {/* middle links: hidden on phones, a row on laptops */}
-          <Link href="/markets" className="hover:text-ink">Markets</Link>   {/* the new markets page */}
-          <Link href="/#bot" className="hover:text-ink">The Bot</Link>      {/* "/" + "#bot" = go to the homepage, then jump to the bot section */}
-          <Link href="/#pricing" className="hover:text-ink">Pricing</Link>  {/* same idea, for when we build pricing */}
+        <div className="hidden items-center gap-8 text-sm text-stone md:flex">  {/* desktop links: tablets and up */}
+          {NAV_LINKS.map((l) => (
+            <Link key={l.href} href={l.href} className="hover:text-ink">{l.label}</Link>
+          ))}
         </div>
 
-        <div className="flex items-center gap-3">            {/* the two buttons on the right */}
-          <Link href="/login" className="text-sm font-medium text-ink hover:text-moss"> {/* quiet text button */}
+        <div className="flex items-center gap-3">
+          <Link href="/login" className="hidden text-sm font-medium text-ink hover:text-moss md:inline"> {/* on phones it's in the menu instead */}
             Log in
           </Link>
           <Link
             href="/signup"
-            className="rounded-full bg-forest px-5 py-2 text-sm font-medium text-water hover:bg-moss" /* the one strong button */
+            className="rounded-full bg-forest px-5 py-2 text-sm font-medium text-water hover:bg-moss" /* always visible: the main action */
           >
             Sign up
           </Link>
+          <MobileMenu links={NAV_LINKS} />               {/* only shows on phones */}
         </div>
       </nav>
     </header>
