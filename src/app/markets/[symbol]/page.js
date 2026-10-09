@@ -69,7 +69,7 @@ export default async function CoinPage({ params }) {
           <div className="mt-8 rounded-3xl bg-sage p-6">  {/* the advertiser call-to-action */}
             <p className="font-semibold text-ink">Run an exchange or broker?</p>
             <p className="mt-1 text-sm text-stone">Get listed where traders decide where to buy.</p>
-            <Link href="#" className="mt-4 inline-block text-sm font-medium text-moss hover:text-forest">
+            <Link href="/advertise" className="mt-4 inline-block text-sm font-medium text-moss hover:text-forest">
               Advertise with GOAT →
             </Link>
           </div>
