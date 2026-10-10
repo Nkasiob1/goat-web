@@ -3,7 +3,8 @@ import Logo from "./Logo";
 import MobileMenu from "./MobileMenu";
 import UserMenu from "./UserMenu";
 import NotificationBell from "./NotificationBell";
-import AdminLink from "./AdminLink";                     // NEW: admins only
+import AdminLink from "./AdminLink";
+import MobileTabBar from "./MobileTabBar";               // NEW: app-style bottom bar on phones
 
 const NAV_LINKS = [
   { href: "/markets", label: "Markets" },
@@ -26,12 +27,13 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <AdminLink />                                  {/* NEW: shield + review count, invisible to non-admins */}
+          <AdminLink />
           <NotificationBell />
           <UserMenu />
-          <MobileMenu links={NAV_LINKS} />
+          <MobileMenu links={NAV_LINKS} />               {/* ☰ still holds Charts, Dashboard, Notifications, Log out */}
         </div>
       </nav>
+      <MobileTabBar />                                   {/* NEW: fixed to the bottom of the screen, phones only */}
     </header>
   );
 }
