@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../lib/supabase";
-import { useProfile, announceProfileChange } from "../lib/useProfile"; // CHANGED: the shared hook replaces useUser + our own lookup
+import { useProfile, announceProfileChange } from "../lib/useProfile"; // who I am + my username and photo, always in sync
 import { checkBody } from "../lib/postRules";
 import { extractCoins } from "../lib/cashtags";
 import PostCard from "./PostCard";
 import Avatar from "./Avatar";
 import SentimentBar from "./SentimentBar";
+import LiveCoinPrices from "./LiveCoinPrices";           // NEW: live Binance prices for trending coins
+import WhoToFollow from "./WhoToFollow";                 // NEW: suggested active members
 
 const RULES = [
   "Be respectful. Debate ideas, not people.",
@@ -21,7 +23,7 @@ export default function CommunityFeed() {
   const router = useRouter();
   const params = useSearchParams();
   const paramCoin = params.get("coin")?.toUpperCase() ?? null; // /community?coin=BTC → "BTC"
-  const { user, profile } = useProfile();                // CHANGED: who I am + my username and photo, always in sync
+  const { user, profile } = useProfile();
   const [posts, setPosts] = useState(null);
   const [myLikes, setMyLikes] = useState(new Set());
   const [coinFilter, setCoinFilter] = useState(paramCoin);
@@ -35,7 +37,7 @@ export default function CommunityFeed() {
   async function loadPosts() {
     let query = supabase
       .from("post_feed").select("*")
-      .is("parent_id", null)
+      .is("parent_id", null)                              // top-level posts only; replies live on the post page
       .order("created_at", { ascending: false })
       .limit(50);
     if (coinFilter) query = query.eq("coin", coinFilter);
@@ -126,7 +128,7 @@ export default function CommunityFeed() {
               </p>
             </div>
           )}
-          {user && profile === null && <UsernameForm />}  {/* CHANGED: no onDone needed; the announcement refreshes everyone */}
+          {user && profile === null && <UsernameForm />}
           {canPost && (
             <Composer
               username={profile.username}
@@ -216,6 +218,23 @@ export default function CommunityFeed() {
             </ul>
           )}
         </div>
+
+        {trending.length > 0 && (                        // NEW: only show prices once something is trending
+          <div className="rounded-3xl border border-line bg-water p-5">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-ink">Live prices</p>
+              <span className="flex items-center gap-1.5 text-xs text-stone">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gain"></span> {/* small "live" dot */}
+                Live
+              </span>
+            </div>
+            <div className="mt-2">
+              <LiveCoinPrices coins={trending.map((t) => t.coin)} /> {/* top 5 trending coins, streaming */}
+            </div>
+          </div>
+        )}
+
+        <WhoToFollow />                                   {/* NEW: hides itself when there's no one to suggest */}
 
         <div className="rounded-3xl border border-line bg-water p-5">
           <p className="font-semibold text-ink">Community rules</p>
@@ -314,7 +333,7 @@ function UsernameForm() {                                // shown inside the fee
     e.preventDefault();
     setError("");
     const { error } = await supabase.from("profiles").insert({ username: username.trim() });
-    if (!error) return announceProfileChange();          // CHANGED: every useProfile() refreshes, so the composer appears
+    if (!error) return announceProfileChange();          // every useProfile() refreshes, so the composer appears
     if (error.code === "23505") setError("That username is taken.");
     else if (error.code === "23514") setError("Use 3–20 letters, numbers or underscores.");
     else { console.error(error); setError("Something went wrong. Please try again."); }

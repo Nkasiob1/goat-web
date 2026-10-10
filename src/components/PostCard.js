@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";             // NEW: to open the post page on tap
 import { supabase } from "../lib/supabase";
 import TimeAgo from "./TimeAgo";
 import Avatar from "./Avatar";
@@ -14,14 +15,33 @@ const SENTIMENT = {                                      // how each sentiment l
 };
 
 export default function PostCard({ post, liked, onLike, onDelete, user, canPost }) {
+  const router = useRouter();                            // NEW
   const [open, setOpen] = useState(false);
   const [replies, setReplies] = useState(null);
   const [replyCount, setReplyCount] = useState(post.reply_count);
   const [text, setText] = useState("");
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);           // NEW: "Link copied" feedback
 
   const own = user?.id === post.user_id;
   const showCoinChip = post.coin && !post.body.toUpperCase().includes("$" + post.coin); // old posts tagged without a $ in the text
+
+  function openPost(e) {                                 // NEW: tap anywhere on the card to open it
+    if (e.target.closest("a, button, input, textarea, form, [data-thread]")) return; // links, buttons and the inline thread keep their own job
+    if (window.getSelection()?.toString()) return;       // they were highlighting text, not tapping
+    router.push(`/post/${post.id}`);
+  }
+
+  async function share() {                               // NEW: copy the post's own link
+    const url = `${window.location.origin}/post/${post.id}`;
+    try {
+      await navigator.clipboard.writeText(url);          // modern browsers (needs https or localhost)
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);          // hide "Copied" after 2 seconds
+    } catch {
+      window.prompt("Copy this link:", url);             // fallback, e.g. phone on your local network
+    }
+  }
 
   async function loadReplies() {
     const { data } = await supabase
@@ -56,7 +76,7 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
   }
 
   return (
-    <li className="flex gap-3 px-4 py-4 transition hover:bg-mist/60 sm:px-5">
+    <li onClick={openPost} className="flex cursor-pointer gap-3 px-4 py-4 transition hover:bg-mist/60 sm:px-5">
       <Link href={`/u/${post.username}`} aria-label={`@${post.username}'s profile`}>
         <Avatar name={post.username} src={post.avatar_url} />
       </Link>
@@ -109,10 +129,18 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
             </svg>
             {post.like_count}
           </button>
+
+          {/* NEW: share */}
+          <button onClick={share} aria-label="Copy link to post" className="flex items-center gap-1.5 hover:text-forest">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6" /> {/* arrow up out of a tray */}
+            </svg>
+            {copied && <span className="text-xs text-forest">Copied</span>}
+          </button>
         </div>
 
         {open && (
-          <div className="mt-4 space-y-4 border-l-2 border-line pl-4">
+          <div data-thread className="mt-4 space-y-4 border-l-2 border-line pl-4"> {/* data-thread: taps in here don't open the page */}
             {replies === null && <p className="text-xs text-stone">Loading replies…</p>}
             {replies?.map((r) => (
               <div key={r.id} className="flex gap-2">
@@ -145,6 +173,7 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
               <p className="text-xs text-stone">Log in and choose a username to reply.</p>
             )}
             {error && <p className="text-xs text-loss">{error}</p>}
+            <Link href={`/post/${post.id}`} className="block text-xs font-medium text-moss hover:text-forest">Open full thread →</Link>
           </div>
         )}
       </div>
