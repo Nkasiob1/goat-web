@@ -7,11 +7,14 @@ import { supabase } from "../lib/supabase";
 import { useProfile } from "../lib/useProfile";
 import { checkBody } from "../lib/postRules";
 import { removePostImage } from "../lib/images";
+import { sharePost } from "../lib/share";
 import Avatar from "./Avatar";
 import PostBody from "./PostBody";
 import PostCard from "./PostCard";
 import PostImage from "./PostImage";
-import PostMenu from "./PostMenu";                       // NEW
+import PostMenu from "./PostMenu";
+import OfficialBadge from "./OfficialBadge";
+import LinkCard from "./LinkCard";                       // NEW
 
 const SENTIMENT = {
   bullish: { label: "Bullish", cls: "bg-sage text-gain" },
@@ -40,7 +43,7 @@ export default function PostThread({ id }) {
 
   async function load() {
     const { data: main, error } = await supabase.from("post_feed").select("*").eq("id", id).maybeSingle();
-    if (error || !main) { setPost(null); return; }       // missing, deleted or hidden by moderation
+    if (error || !main) { setPost(null); return; }
 
     const { data: above } = main.parent_id
       ? await supabase.from("post_feed").select("*").eq("id", main.parent_id).maybeSingle()
@@ -116,16 +119,15 @@ export default function PostThread({ id }) {
     setPending(false);
     if (error) {
       console.error(error);
-      return setError(error.code === "23514" ? "Replies can't include links or wallet addresses." : "Couldn't send that reply. Please try again."); // NEW
+      return setError(error.code === "23514" ? "Replies can't include links or wallet addresses." : "Couldn't send that reply. Please try again.");
     }
     setText("");
     loadReplies();
   }
 
   async function share() {
-    const url = window.location.href;
-    try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); }
-    catch { window.prompt("Copy this link:", url); }
+    const result = await sharePost(window.location.href, post.body.slice(0, 100));
+    if (result === "copied") { setCopied(true); setTimeout(() => setCopied(false), 2000); }
   }
 
   if (post === undefined) {
@@ -135,7 +137,7 @@ export default function PostThread({ id }) {
   if (post === null) {
     return (
       <div className="rounded-3xl border border-line bg-water p-10 text-center">
-        <p className="font-semibold text-ink">This post isn't available</p>          {/* CHANGED: covers deleted AND hidden */}
+        <p className="font-semibold text-ink">This post isn't available</p>
         <p className="mt-1 text-sm text-stone">It may have been deleted or removed for breaking the rules.</p>
         <Link href="/community" className="mt-5 inline-block rounded-full bg-forest px-5 py-2 text-sm font-medium text-water hover:bg-moss">Back to community</Link>
       </div>
@@ -167,19 +169,23 @@ export default function PostThread({ id }) {
         <div className="flex items-center gap-3">
           <Link href={`/u/${post.username}`}><Avatar name={post.username} src={post.avatar_url} size="md" /></Link>
           <div className="min-w-0 flex-1">
-            <Link href={`/u/${post.username}`} className="font-semibold text-ink hover:underline">@{post.username}</Link>
+            <span className="flex items-center gap-1">
+              <Link href={`/u/${post.username}`} className="font-semibold text-ink hover:underline">@{post.username}</Link>
+              <OfficialBadge username={post.username} size={18} />
+            </span>
             {parent && <p className="text-xs text-stone">Replying to <Link href={`/u/${parent.username}`} className="text-moss">@{parent.username}</Link></p>}
           </div>
           {post.sentiment && (
             <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${SENTIMENT[post.sentiment].cls}`}>{SENTIMENT[post.sentiment].label}</span>
           )}
-          <div className="flex">                                        {/* NEW: ⋯ menu at the top right */}
+          <div className="flex">
             <PostMenu postId={post.id} own={user?.id === post.user_id} user={user} onDelete={removePost} />
           </div>
         </div>
 
-        <PostBody text={post.body} className="mt-4 text-lg leading-relaxed text-ink" />
+        <PostBody text={post.body} className="mt-4 whitespace-pre-line text-lg leading-relaxed text-ink" />
         {post.image_url && <PostImage src={post.image_url} large />}
+        <LinkCard url={post.link_url} title={post.link_title} /> {/* NEW */}
         <p className="mt-4 text-sm text-stone">{fullDate}</p>
 
         <div className="mt-4 flex gap-5 border-t border-line pt-3 text-sm">
@@ -203,7 +209,6 @@ export default function PostThread({ id }) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6" /></svg>
             {copied ? "Link copied" : "Share"}
           </button>
-          {/* CHANGED: Delete moved into the ⋯ menu */}
         </div>
       </article>
 

@@ -4,11 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { sharePost } from "../lib/share";
 import TimeAgo from "./TimeAgo";
 import Avatar from "./Avatar";
 import PostBody from "./PostBody";
 import PostImage from "./PostImage";
-import PostMenu from "./PostMenu";                       // NEW: ⋯ menu (Delete / Report)
+import PostMenu from "./PostMenu";
+import OfficialBadge from "./OfficialBadge";
+import LinkCard from "./LinkCard";                       // NEW: "Read the full story ↗"
 import { checkBody } from "../lib/postRules";
 
 const SENTIMENT = {
@@ -28,20 +31,17 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
   const own = user?.id === post.user_id;
   const showCoinChip = post.coin && !post.body.toUpperCase().includes("$" + post.coin);
 
-  function openPost(e) {                                 // tap anywhere on the card to open it
-    if (e.target.closest("a, button, input, textarea, form, [data-thread], [data-no-open]")) return; // CHANGED: + menu/report sheet
+  function openPost(e) {
+    if (e.target.closest("a, button, input, textarea, form, [data-thread], [data-no-open]")) return;
     if (window.getSelection()?.toString()) return;
     router.push(`/post/${post.id}`);
   }
 
   async function share() {
-    const url = `${window.location.origin}/post/${post.id}`;
-    try {
-      await navigator.clipboard.writeText(url);
+    const result = await sharePost(`${window.location.origin}/post/${post.id}`, post.body.slice(0, 100));
+    if (result === "copied") {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      window.prompt("Copy this link:", url);
     }
   }
 
@@ -66,7 +66,7 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
     const { error } = await supabase.from("posts").insert({ body: text.trim(), parent_id: post.id });
     if (error) {
       console.error(error);
-      return setError(error.code === "23514" ? "Replies can't include links or wallet addresses." : "Couldn't send that reply. Please try again."); // NEW: clear message
+      return setError(error.code === "23514" ? "Replies can't include links or wallet addresses." : "Couldn't send that reply. Please try again.");
     }
     setText("");
     setReplyCount((n) => n + 1);
@@ -88,19 +88,24 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-          <Link href={`/u/${post.username}`} className="font-semibold text-ink hover:underline">@{post.username}</Link>
+          <span className="flex items-center gap-1">
+            <Link href={`/u/${post.username}`} className="font-semibold text-ink hover:underline">@{post.username}</Link>
+            <OfficialBadge username={post.username} />
+          </span>
           <span className="text-xs text-stone"><TimeAgo date={post.created_at} /></span>
           {post.sentiment && (
             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SENTIMENT[post.sentiment].cls}`}>
               {SENTIMENT[post.sentiment].label}
             </span>
           )}
-          <PostMenu postId={post.id} own={own} user={user} onDelete={onDelete} /> {/* CHANGED: replaces the old Delete text */}
+          <PostMenu postId={post.id} own={own} user={user} onDelete={onDelete} />
         </div>
 
-        <PostBody text={post.body} className="mt-1 leading-relaxed text-ink" />
+        <PostBody text={post.body} className="mt-1 whitespace-pre-line leading-relaxed text-ink" />
 
         {post.image_url && <PostImage src={post.image_url} />}
+
+        <LinkCard url={post.link_url} title={post.link_title} /> {/* NEW: only @GOAT posts have one */}
 
         {showCoinChip && (
           <Link href={`/community?coin=${post.coin}`} className="mt-2 inline-block rounded-full bg-sage px-2 py-0.5 font-mono text-xs text-moss">
@@ -128,7 +133,7 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
             {post.like_count}
           </button>
 
-          <button onClick={share} aria-label="Copy link to post" className="flex items-center gap-1.5 hover:text-forest">
+          <button onClick={share} aria-label="Share post" className="flex items-center gap-1.5 hover:text-forest">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6" />
             </svg>
@@ -143,11 +148,12 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
               <div key={r.id} className="flex gap-2">
                 <Link href={`/u/${r.username}`}><Avatar name={r.username} src={r.avatar_url} size="sm" /></Link>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-stone">
-                    <Link href={`/u/${r.username}`} className="font-semibold text-ink hover:underline">@{r.username}</Link>{" "}
-                    · <TimeAgo date={r.created_at} />
+                  <p className="flex flex-wrap items-center gap-1 text-xs text-stone">
+                    <Link href={`/u/${r.username}`} className="font-semibold text-ink hover:underline">@{r.username}</Link>
+                    <OfficialBadge username={r.username} size={13} />
+                    <span>· <TimeAgo date={r.created_at} /></span>
                     {user?.id === r.user_id && (
-                      <button onClick={() => deleteReply(r.id)} className="ml-3 hover:text-loss">Delete</button>
+                      <button onClick={() => deleteReply(r.id)} className="ml-2 hover:text-loss">Delete</button>
                     )}
                   </p>
                   <PostBody text={r.body} className="mt-0.5 text-sm text-ink" />

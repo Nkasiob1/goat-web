@@ -1,29 +1,24 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";     // Fragment: lets us add the "Who to follow" row between posts
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { useProfile, announceProfileChange } from "../lib/useProfile";
 import { removePostImage } from "../lib/images";
-import { useLivePrices } from "../lib/useLivePrices";      // NEW: one price stream for strip + sidebar
+import { useLivePrices } from "../lib/useLivePrices";
+import { COMMUNITY_RULES } from "../lib/moderation";      // CHANGED: one shared rules list
 import PostCard from "./PostCard";
 import Composer from "./Composer";
 import SentimentBar from "./SentimentBar";
 import LiveCoinPrices from "./LiveCoinPrices";
 import WhoToFollow from "./WhoToFollow";
-import TrendingStrip from "./TrendingStrip";               // NEW: phone-only trending row
-
-const RULES = [
-  "Be respectful. Debate ideas, not people.",
-  "No links, promotions or “DM me” offers.",
-  "No guaranteed-profit claims. Nothing here is financial advice.",
-];
+import TrendingStrip from "./TrendingStrip";
 
 export default function CommunityFeed() {
   const router = useRouter();
   const params = useSearchParams();
-  const paramCoin = params.get("coin")?.toUpperCase() ?? null; // /community?coin=BTC → "BTC"
+  const paramCoin = params.get("coin")?.toUpperCase() ?? null;
   const { user, profile } = useProfile();
   const [posts, setPosts] = useState(null);
   const [myLikes, setMyLikes] = useState(new Set());
@@ -32,7 +27,7 @@ export default function CommunityFeed() {
   const [trending, setTrending] = useState([]);
   const [tab, setTab] = useState("latest");
   const [followingIds, setFollowingIds] = useState([]);
-  const quotes = useLivePrices(trending.map((t) => t.coin)); // NEW: opened once, shared below
+  const quotes = useLivePrices(trending.map((t) => t.coin));
 
   useEffect(() => { setCoinFilter(paramCoin); }, [paramCoin]);
 
@@ -116,12 +111,12 @@ export default function CommunityFeed() {
     removePostImage(target?.image_url);
   }
 
-  function pickCoin(coin) {                              // NEW: shared by the strip and the sidebar
-    router.replace(coinFilter === coin ? "/community" : `/community?coin=${coin}`); // tap the active coin again to clear
+  function pickCoin(coin) {
+    router.replace(coinFilter === coin ? "/community" : `/community?coin=${coin}`);
   }
 
   const canPost = Boolean(user && profile);
-  const suggestAt = posts ? Math.min(4, posts.length - 1) : -1; // NEW: after the 5th post (or the last, if fewer)
+  const suggestAt = posts ? Math.min(4, posts.length - 1) : -1;
 
   return (
     <div className="grid gap-8 lg:grid-cols-3">
@@ -146,10 +141,10 @@ export default function CommunityFeed() {
             />
           )}
 
-          <TrendingStrip                                  // NEW: phone only (hides itself on laptops)
+          <TrendingStrip
             trending={trending}
             quotes={quotes}
-            rules={RULES}
+            rules={COMMUNITY_RULES}
             activeCoin={coinFilter}
             onPick={pickCoin}
           />
@@ -186,7 +181,7 @@ export default function CommunityFeed() {
 
           <ul className="divide-y divide-line">
             {(posts ?? []).map((p, i) => (
-              <Fragment key={p.id}>                      {/* the key moves to the Fragment */}
+              <Fragment key={p.id}>
                 <PostCard
                   post={p}
                   liked={myLikes.has(p.id)}
@@ -195,7 +190,7 @@ export default function CommunityFeed() {
                   user={user}
                   canPost={canPost}
                 />
-                {i === suggestAt && (                      // NEW: "Who to follow" between posts on phones
+                {i === suggestAt && (
                   <li className="bg-mist/50 p-4 lg:hidden">
                     <WhoToFollow />
                   </li>
@@ -217,7 +212,6 @@ export default function CommunityFeed() {
         </div>
       </div>
 
-      {/* CHANGED: hidden on phones (the strip covers it), sidebar on laptops */}
       <aside className="hidden space-y-6 lg:sticky lg:top-6 lg:block lg:self-start">
         <div className="rounded-3xl border border-line bg-water p-5">
           <p className="font-semibold text-ink">Trending today</p>
@@ -253,7 +247,7 @@ export default function CommunityFeed() {
               </span>
             </div>
             <div className="mt-2">
-              <LiveCoinPrices coins={trending.map((t) => t.coin)} quotes={quotes} /> {/* CHANGED: gets prices from the shared stream */}
+              <LiveCoinPrices coins={trending.map((t) => t.coin)} quotes={quotes} />
             </div>
           </div>
         )}
@@ -263,7 +257,7 @@ export default function CommunityFeed() {
         <div className="rounded-3xl border border-line bg-water p-5">
           <p className="font-semibold text-ink">Community rules</p>
           <ul className="mt-3 space-y-2 text-sm text-stone">
-            {RULES.map((r) => <li key={r}>✓ {r}</li>)}
+            {COMMUNITY_RULES.map((r) => <li key={r}>✓ {r}</li>)}
           </ul>
         </div>
       </aside>

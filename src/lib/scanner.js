@@ -5,21 +5,26 @@ export const RULES = {                                   // GOAT's quality filte
   minVolume: 5000,                                       // dollars traded in 24 hours
   minTrades: 50,                                         // buys + sells in 24 hours
   maxDrop: -80,                                          // % change; worse = collapsed
-  maxAgeHours: 24,                                       // NEW: only coins listed in the last 24 hours
+  maxAgeHours: 24,                                       // only coins listed in the last 24 hours
 };
 
 const BASE = "https://api.geckoterminal.com/api/v2/networks";
 const SOURCES = [                                        // 4 requests per refresh, inside the free limit
-  `${BASE}/new_pools?include=base_token,network&page=1`,      // brand-new listings
+  `${BASE}/new_pools?include=base_token,network&page=1`,
   `${BASE}/new_pools?include=base_token,network&page=2`,
-  `${BASE}/trending_pools?include=base_token,network&page=1`, // pools with the most activity right now
+  `${BASE}/trending_pools?include=base_token,network&page=1`,
   `${BASE}/trending_pools?include=base_token,network&page=2`,
 ];
 
 async function fetchSource(url) {
   const res = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!res.ok) return { data: [], included: [] };        // one failed source shouldn't break the rest
+  if (!res.ok) return { data: [], included: [] };
   return res.json();
+}
+
+function logoOf(token) {                                 // NEW: GeckoTerminal uses "missing.png" when there's no logo
+  const url = token.image_url;
+  return url && !url.includes("missing") ? url : null;
 }
 
 export async function getNewPools() {
@@ -27,15 +32,15 @@ export async function getNewPools() {
   cacheLife("minutes");
 
   try {
-    const pages = await Promise.all(SOURCES.map(fetchSource)); // fetch all 4 at the same time
+    const pages = await Promise.all(SOURCES.map(fetchSource));
 
     const lookup = {};
     for (const page of pages) {
       for (const item of page.included ?? []) lookup[item.id] = item.attributes;
     }
 
-    const now = Date.now();                              // the moment this refresh ran
-    const maxAgeMs = RULES.maxAgeHours * 60 * 60 * 1000; // 24 hours in milliseconds
+    const now = Date.now();
+    const maxAgeMs = RULES.maxAgeHours * 60 * 60 * 1000;
 
     const pools = pages.flatMap((page) => page.data ?? []).map((pool) => {
       const a = pool.attributes;
@@ -50,6 +55,7 @@ export async function getNewPools() {
         tokenId,
         name: token.name ?? a.name,
         symbol: token.symbol ?? "",
+        image: logoOf(token),                            // NEW: coin logo (or null)
         network: network.name ?? networkId,
         networkId,
         address: a.address,
@@ -63,20 +69,20 @@ export async function getNewPools() {
     });
 
     const passed = pools.filter((p) =>
-      now - new Date(p.createdAt).getTime() <= maxAgeMs && // NEW: listed within the last 24 hours
+      now - new Date(p.createdAt).getTime() <= maxAgeMs &&
       p.liquidity >= RULES.minLiquidity &&
       p.volume >= RULES.minVolume &&
       p.txns >= RULES.minTrades &&
       p.change > RULES.maxDrop
     );
 
-    const best = {};                                     // one row per token: keep its deepest pool
-    for (const p of passed) {                            // (a coin can appear in both "new" and "trending")
+    const best = {};
+    for (const p of passed) {
       if (!best[p.tokenId] || p.liquidity > best[p.tokenId].liquidity) best[p.tokenId] = p;
     }
 
     return Object.values(best)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // newest first
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   } catch {
     return [];
   }
