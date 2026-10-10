@@ -7,7 +7,7 @@ import { supabase } from "../lib/supabase";
 import { useProfile, announceProfileChange } from "../lib/useProfile";
 import { removePostImage } from "../lib/images";
 import { useLivePrices } from "../lib/useLivePrices";
-import { COMMUNITY_RULES } from "../lib/moderation";      // CHANGED: one shared rules list
+import { COMMUNITY_RULES } from "../lib/moderation";
 import PostCard from "./PostCard";
 import Composer from "./Composer";
 import SentimentBar from "./SentimentBar";
@@ -119,8 +119,8 @@ export default function CommunityFeed() {
   const suggestAt = posts ? Math.min(4, posts.length - 1) : -1;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-3">
-      <div className="lg:col-span-2">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">   {/* CHANGED: grid-cols-1 = exactly one column on phones */}
+      <div className="min-w-0 lg:col-span-2">                {/* CHANGED: min-w-0 = may shrink to the screen; wide strips scroll inside */}
         <div className="overflow-hidden rounded-3xl border border-line bg-water">
           {user === null && (
             <div className="border-b border-line p-5">
