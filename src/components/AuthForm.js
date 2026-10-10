@@ -13,7 +13,7 @@ export default function AuthForm({ mode }) {             // mode: "login" or "si
   const params = useSearchParams();
   const [email, setEmail] = useState(params.get("email") ?? ""); // pre-fill from the homepage email box
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);       // NEW: is the password visible? starts hidden
+  const [showPassword, setShowPassword] = useState(false);       // is the password visible? starts hidden
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [pending, setPending] = useState(false);
@@ -85,18 +85,26 @@ export default function AuthForm({ mode }) {             // mode: "login" or "si
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete={isSignup ? "new-password" : "current-password"}
-            className={`${fieldClass} pr-16`}            // pr-16 leaves room on the right so text doesn't run under the button
+            className={`${fieldClass} pr-16`}            // room on the right so text doesn't run under the button
           />
           <button
             type="button"                                // "button", not "submit", so clicking it doesn't send the form
             onClick={() => setShowPassword(!showPassword)} // flip hidden ↔ visible
             aria-label={showPassword ? "Hide password" : "Show password"}
-            className="absolute right-3 top-1/2 mt-1 -translate-y-1/2 text-xs font-medium text-moss hover:text-forest" /* pinned to the right, centred vertically */
+            className="absolute right-3 top-1/2 mt-1 -translate-y-1/2 text-xs font-medium text-moss hover:text-forest"
           >
             {showPassword ? "Hide" : "Show"}
           </button>
         </div>
       </label>
+
+      {!isSignup && (                                    // NEW: only on the login form
+        <div className="mt-2 flex justify-end">          {/* right-aligned, like most apps */}
+          <Link href="/forgot-password" className="text-xs font-medium text-moss hover:text-forest">
+            Forgot password?
+          </Link>
+        </div>
+      )}
 
       {error && <p className="mt-4 text-sm text-loss">{error}</p>}
 
