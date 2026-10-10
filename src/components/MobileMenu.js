@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { useProfile } from "../lib/useProfile";
+import { useIsAdmin } from "../lib/useIsAdmin";            // NEW
 import Avatar from "./Avatar";
 
 export default function MobileMenu({ links }) {
   const router = useRouter();
   const { user, profile } = useProfile();
+  const { isAdmin, pending } = useIsAdmin();               // NEW: only true for admins
   const [open, setOpen] = useState(false);
 
   async function logOut() {
@@ -35,7 +37,7 @@ export default function MobileMenu({ links }) {
 
       {open && (
         <nav className="absolute inset-x-0 top-full z-50 border-b border-line bg-water px-6 py-4 shadow-sm">
-          {user && profile && (                          // who's logged in, at the top of the menu
+          {user && profile && (
             <Link
               href={`/u/${profile.username}`}
               onClick={() => setOpen(false)}
@@ -59,8 +61,16 @@ export default function MobileMenu({ links }) {
             <li className="border-t border-line pt-2">
               {user ? (
                 <>
-                  <Link href="/notifications" onClick={() => setOpen(false)} className={rowClass}>Notifications</Link> {/* NEW */}
+                  <Link href="/notifications" onClick={() => setOpen(false)} className={rowClass}>Notifications</Link>
                   <Link href="/dashboard" onClick={() => setOpen(false)} className={rowClass}>Dashboard</Link>
+                  {isAdmin && (                              // NEW: admins only
+                    <Link href="/admin" onClick={() => setOpen(false)} className={`${rowClass} flex items-center justify-between`}>
+                      Moderation
+                      {pending > 0 && (
+                        <span className="rounded-full bg-forest px-2 py-0.5 text-xs font-semibold text-water">{pending}</span>
+                      )}
+                    </Link>
+                  )}
                   <button onClick={logOut} className={`${rowClass} text-stone`}>Log out</button>
                 </>
               ) : (
