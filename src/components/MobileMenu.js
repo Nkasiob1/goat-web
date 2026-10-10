@@ -59,6 +59,7 @@ export default function MobileMenu({ links }) {
             <li className="border-t border-line pt-2">
               {user ? (
                 <>
+                  <Link href="/notifications" onClick={() => setOpen(false)} className={rowClass}>Notifications</Link> {/* NEW */}
                   <Link href="/dashboard" onClick={() => setOpen(false)} className={rowClass}>Dashboard</Link>
                   <button onClick={logOut} className={`${rowClass} text-stone`}>Log out</button>
                 </>

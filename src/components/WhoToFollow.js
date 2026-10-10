@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation"; // to send logged-out users to /login
-import { supabase } from "@/lib/supabase";
-import { useUser } from "@/lib/useUser"; // undefined = checking, null = logged out, object = user
+import { supabase } from "../lib/supabase";
+import { useUser } from "../lib/useUser"; // undefined = checking, null = logged out, object = user
 import Avatar from "./Avatar";
 
 export default function WhoToFollow() {
@@ -15,7 +15,7 @@ export default function WhoToFollow() {
 
   useEffect(() => {
     if (user === undefined) return; // wait until we know who's looking
-    let active = true;
+    let active = true; // stops updates if the page closes mid-load
 
     async function load() {
       // 1. the last 200 top-level posts tell us who's active
@@ -85,8 +85,8 @@ export default function WhoToFollow() {
   if (!people.length) return null; // no suggestions, so no empty box
 
   return (
-    <div className="rounded-2xl border border-line bg-water p-4">
-      <h3 className="mb-3 text-sm font-semibold text-ink">Who to follow</h3>
+    <div className="rounded-3xl border border-line bg-water p-5"> {/* same card shape as the other sidebar boxes */}
+      <p className="mb-3 font-semibold text-ink">Who to follow</p>  {/* same title style as "Trending today" */}
       <ul className="space-y-3">
         {people.map((p) => (
           <li key={p.id} className="flex items-center gap-3">
