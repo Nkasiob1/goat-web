@@ -4,14 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../lib/supabase";
-import { useProfile, announceProfileChange } from "../lib/useProfile"; // who I am + my username and photo, always in sync
-import { checkBody } from "../lib/postRules";
-import { extractCoins } from "../lib/cashtags";
+import { useProfile, announceProfileChange } from "../lib/useProfile"; // who I am + my username and photo
+import { removePostImage } from "../lib/images";         // NEW: clean up a deleted post's image
 import PostCard from "./PostCard";
-import Avatar from "./Avatar";
+import Composer from "./Composer";                       // NEW: the composer now lives in its own file
 import SentimentBar from "./SentimentBar";
-import LiveCoinPrices from "./LiveCoinPrices";           // NEW: live Binance prices for trending coins
-import WhoToFollow from "./WhoToFollow";                 // NEW: suggested active members
+import LiveCoinPrices from "./LiveCoinPrices";
+import WhoToFollow from "./WhoToFollow";
 
 const RULES = [
   "Be respectful. Debate ideas, not people.",
@@ -37,7 +36,7 @@ export default function CommunityFeed() {
   async function loadPosts() {
     let query = supabase
       .from("post_feed").select("*")
-      .is("parent_id", null)                              // top-level posts only; replies live on the post page
+      .is("parent_id", null)                              // top-level posts only
       .order("created_at", { ascending: false })
       .limit(50);
     if (coinFilter) query = query.eq("coin", coinFilter);
@@ -69,7 +68,7 @@ export default function CommunityFeed() {
     setNewCount(0);
   }
 
-  async function loadTrending() {                        // from the coin_sentiment view: busiest coins in 24h
+  async function loadTrending() {                        // busiest coins in 24h
     const { data } = await supabase
       .from("coin_sentiment").select("*")
       .order("total", { ascending: false })
@@ -107,9 +106,11 @@ export default function CommunityFeed() {
   }
 
   async function removePost(id) {
+    const target = posts?.find((p) => p.id === id);      // NEW: remember it so we know its image
     setPosts((prev) => prev.filter((p) => p.id !== id));
     const { error } = await supabase.from("posts").delete().eq("id", id);
-    if (error) { console.error(error); loadPosts(); }
+    if (error) { console.error(error); return loadPosts(); }
+    removePostImage(target?.image_url);                  // NEW: post gone, so delete its image file too
   }
 
   const canPost = Boolean(user && profile);
@@ -131,6 +132,7 @@ export default function CommunityFeed() {
           {user && profile === null && <UsernameForm />}
           {canPost && (
             <Composer
+              userId={user.id}                          // NEW: needed for the image folder
               username={profile.username}
               avatarUrl={profile.avatar_url}
               onPosted={() => { loadPosts(); loadTrending(); }}
@@ -219,22 +221,22 @@ export default function CommunityFeed() {
           )}
         </div>
 
-        {trending.length > 0 && (                        // NEW: only show prices once something is trending
+        {trending.length > 0 && (                        // live prices once something is trending
           <div className="rounded-3xl border border-line bg-water p-5">
             <div className="flex items-center justify-between">
               <p className="font-semibold text-ink">Live prices</p>
               <span className="flex items-center gap-1.5 text-xs text-stone">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gain"></span> {/* small "live" dot */}
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gain"></span>
                 Live
               </span>
             </div>
             <div className="mt-2">
-              <LiveCoinPrices coins={trending.map((t) => t.coin)} /> {/* top 5 trending coins, streaming */}
+              <LiveCoinPrices coins={trending.map((t) => t.coin)} />
             </div>
           </div>
         )}
 
-        <WhoToFollow />                                   {/* NEW: hides itself when there's no one to suggest */}
+        <WhoToFollow />
 
         <div className="rounded-3xl border border-line bg-water p-5">
           <p className="font-semibold text-ink">Community rules</p>
@@ -244,84 +246,6 @@ export default function CommunityFeed() {
         </div>
       </aside>
     </div>
-  );
-}
-
-function Composer({ username, avatarUrl, onPosted }) {   // slim bar that expands when tapped
-  const [body, setBody] = useState("");
-  const [open, setOpen] = useState(false);
-  const [sentiment, setSentiment] = useState(null);      // "bullish", "bearish", or null
-  const [error, setError] = useState("");
-  const [pending, setPending] = useState(false);
-  const coins = extractCoins(body);                      // live list of $TAGS as they type
-
-  async function post(e) {
-    e.preventDefault();
-    const problem = checkBody(body);
-    if (problem) return setError(problem);
-    setError("");
-    setPending(true);
-    const { error } = await supabase.from("posts").insert({
-      body: body.trim(),
-      coin: coins[0] ?? null,                            // the first $TAG is the post's main coin
-      sentiment,
-    });
-    setPending(false);
-    if (!error) { setBody(""); setSentiment(null); setOpen(false); return onPosted(); }
-    console.error(error);
-    setError("Something went wrong. Please try again.");
-  }
-
-  const choices = [
-    { id: "bullish", label: "Bullish", on: "bg-gain text-water", off: "border border-line text-gain hover:border-gain" },
-    { id: "bearish", label: "Bearish", on: "bg-loss text-water", off: "border border-line text-loss hover:border-loss" },
-  ];
-
-  return (
-    <form onSubmit={post} className="flex gap-3 border-b border-line p-4 sm:p-5">
-      <Link href={`/u/${username}`} aria-label="Your profile"><Avatar name={username} src={avatarUrl} /></Link>
-      <div className="min-w-0 flex-1">
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          onFocus={() => setOpen(true)}                  // tapping the bar expands it
-          rows={open ? 3 : 1}
-          maxLength={500}
-          placeholder="What are you watching? Tag coins like $BTC"
-          className="w-full resize-none bg-transparent py-2 text-ink outline-none placeholder:text-stone"
-        />
-
-        {open && (
-          <div className="mt-2 border-t border-line pt-3">
-            {coins.length > 0 && (
-              <p className="mb-3 text-xs text-stone">Tagging {coins.map((c) => "$" + c).join(" ")}</p>
-            )}
-            <div className="flex flex-wrap items-center gap-2">
-              {choices.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  aria-pressed={sentiment === c.id}
-                  onClick={() => setSentiment(sentiment === c.id ? null : c.id)} // tap again to clear
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${sentiment === c.id ? c.on : c.off}`}
-                >
-                  {c.label}
-                </button>
-              ))}
-              <span className="ml-auto text-xs text-stone">{body.length}/500</span>
-              <button
-                type="submit"
-                disabled={pending || !body.trim()}
-                className="rounded-full bg-forest px-5 py-2 text-sm font-medium text-water hover:bg-moss disabled:opacity-50"
-              >
-                {pending ? "Posting…" : "Post"}
-              </button>
-            </div>
-          </div>
-        )}
-        {error && <p className="mt-2 text-sm text-loss">{error}</p>}
-      </div>
-    </form>
   );
 }
 

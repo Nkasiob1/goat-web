@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";             // NEW: to open the post page on tap
+import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import TimeAgo from "./TimeAgo";
 import Avatar from "./Avatar";
 import PostBody from "./PostBody";
+import PostImage from "./PostImage";                     // NEW: chart image with tap-to-zoom
 import { checkBody } from "../lib/postRules";
 
 const SENTIMENT = {                                      // how each sentiment looks
@@ -15,31 +16,31 @@ const SENTIMENT = {                                      // how each sentiment l
 };
 
 export default function PostCard({ post, liked, onLike, onDelete, user, canPost }) {
-  const router = useRouter();                            // NEW
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [replies, setReplies] = useState(null);
   const [replyCount, setReplyCount] = useState(post.reply_count);
   const [text, setText] = useState("");
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState(false);           // NEW: "Link copied" feedback
+  const [copied, setCopied] = useState(false);
 
   const own = user?.id === post.user_id;
   const showCoinChip = post.coin && !post.body.toUpperCase().includes("$" + post.coin); // old posts tagged without a $ in the text
 
-  function openPost(e) {                                 // NEW: tap anywhere on the card to open it
-    if (e.target.closest("a, button, input, textarea, form, [data-thread]")) return; // links, buttons and the inline thread keep their own job
-    if (window.getSelection()?.toString()) return;       // they were highlighting text, not tapping
+  function openPost(e) {                                 // tap anywhere on the card to open it
+    if (e.target.closest("a, button, input, textarea, form, [data-thread]")) return; // these keep their own job
+    if (window.getSelection()?.toString()) return;       // they were highlighting text
     router.push(`/post/${post.id}`);
   }
 
-  async function share() {                               // NEW: copy the post's own link
+  async function share() {                               // copy the post's own link
     const url = `${window.location.origin}/post/${post.id}`;
     try {
-      await navigator.clipboard.writeText(url);          // modern browsers (needs https or localhost)
+      await navigator.clipboard.writeText(url);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);          // hide "Copied" after 2 seconds
+      setTimeout(() => setCopied(false), 2000);
     } catch {
-      window.prompt("Copy this link:", url);             // fallback, e.g. phone on your local network
+      window.prompt("Copy this link:", url);             // fallback on http (phone on local Wi-Fi)
     }
   }
 
@@ -69,7 +70,7 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
   }
 
   async function deleteReply(id) {
-    if (!window.confirm("Delete this reply?")) return;   // a quick "are you sure?"
+    if (!window.confirm("Delete this reply?")) return;
     setReplies((prev) => prev.filter((r) => r.id !== id));
     setReplyCount((n) => n - 1);
     await supabase.from("posts").delete().eq("id", id);
@@ -81,7 +82,7 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
         <Avatar name={post.username} src={post.avatar_url} />
       </Link>
 
-      <div className="min-w-0 flex-1">                   {/* min-w-0 lets long text wrap instead of stretching the row */}
+      <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
           <Link href={`/u/${post.username}`} className="font-semibold text-ink hover:underline">@{post.username}</Link>
           <span className="text-xs text-stone"><TimeAgo date={post.created_at} /></span>
@@ -101,6 +102,8 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
         </div>
 
         <PostBody text={post.body} className="mt-1 leading-relaxed text-ink" />
+
+        {post.image_url && <PostImage src={post.image_url} />} {/* NEW: the chart, if there is one */}
 
         {showCoinChip && (
           <Link href={`/community?coin=${post.coin}`} className="mt-2 inline-block rounded-full bg-sage px-2 py-0.5 font-mono text-xs text-moss">
@@ -130,17 +133,17 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
             {post.like_count}
           </button>
 
-          {/* NEW: share */}
+          {/* share */}
           <button onClick={share} aria-label="Copy link to post" className="flex items-center gap-1.5 hover:text-forest">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6" /> {/* arrow up out of a tray */}
+              <path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6" />
             </svg>
             {copied && <span className="text-xs text-forest">Copied</span>}
           </button>
         </div>
 
         {open && (
-          <div data-thread className="mt-4 space-y-4 border-l-2 border-line pl-4"> {/* data-thread: taps in here don't open the page */}
+          <div data-thread className="mt-4 space-y-4 border-l-2 border-line pl-4">
             {replies === null && <p className="text-xs text-stone">Loading replies…</p>}
             {replies?.map((r) => (
               <div key={r.id} className="flex gap-2">

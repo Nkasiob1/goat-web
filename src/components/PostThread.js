@@ -1,4 +1,4 @@
-"use client"; // likes, replies and realtime all happen in the browser
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { useProfile } from "../lib/useProfile";
 import { checkBody } from "../lib/postRules";
+import { removePostImage } from "../lib/images";         // NEW
 import Avatar from "./Avatar";
 import PostBody from "./PostBody";
-import PostCard from "./PostCard"; // replies reuse the same card as the feed
+import PostCard from "./PostCard";
+import PostImage from "./PostImage";                     // NEW
 
 const SENTIMENT = {
   bullish: { label: "Bullish", cls: "bg-sage text-gain" },
@@ -19,7 +21,7 @@ export default function PostThread({ id }) {
   const router = useRouter();
   const { user, profile } = useProfile();
   const [post, setPost] = useState(undefined);           // undefined = loading, null = not found
-  const [parent, setParent] = useState(null);            // the post this one replies to, if any
+  const [parent, setParent] = useState(null);            // the post this one replies to
   const [replies, setReplies] = useState([]);
   const [myLikes, setMyLikes] = useState(new Set());
   const [text, setText] = useState("");
@@ -27,19 +29,19 @@ export default function PostThread({ id }) {
   const [pending, setPending] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  async function loadReplies() {                         // just the replies (used by realtime and after sending)
+  async function loadReplies() {
     const { data } = await supabase
       .from("post_feed").select("*")
       .eq("parent_id", id)
-      .order("created_at", { ascending: true });         // oldest first, so it reads like a conversation
+      .order("created_at", { ascending: true });
     setReplies(data ?? []);
   }
 
-  async function load() {                                // everything for the page
+  async function load() {
     const { data: main, error } = await supabase.from("post_feed").select("*").eq("id", id).maybeSingle();
-    if (error || !main) { setPost(null); return; }       // bad link or deleted post
+    if (error || !main) { setPost(null); return; }
 
-    const { data: above } = main.parent_id               // only fetch a parent if this is a reply
+    const { data: above } = main.parent_id
       ? await supabase.from("post_feed").select("*").eq("id", main.parent_id).maybeSingle()
       : { data: null };
 
@@ -49,7 +51,7 @@ export default function PostThread({ id }) {
       .order("created_at", { ascending: true });
 
     let liked = new Set();
-    if (user) {                                          // which of these have I liked?
+    if (user) {
       const ids = [main, above, ...(below ?? [])].filter(Boolean).map((p) => p.id);
       const { data: likes } = await supabase.from("likes").select("post_id").eq("user_id", user.id).in("post_id", ids);
       liked = new Set((likes ?? []).map((l) => l.post_id));
@@ -62,46 +64,50 @@ export default function PostThread({ id }) {
   }
 
   useEffect(() => {
-    if (user === undefined) return;                      // wait until we know who's looking (avoids loading twice)
+    if (user === undefined) return;                      // wait until we know who's looking
     load();
   }, [id, user]);
 
-  useEffect(() => {                                      // realtime: new replies appear without refreshing
+  useEffect(() => {                                      // realtime: new replies appear live
     const channel = supabase
-      .channel(`thread-${id}`)                           // one channel per post page
+      .channel(`thread-${id}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts", filter: `parent_id=eq.${id}` }, () => loadReplies())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [id]);
 
-  async function toggleLike(postId) {                    // works for the main post, its parent and every reply
+  async function toggleLike(postId) {
     if (user === null) return router.push("/login");
     if (!user || !profile) return;
     const has = myLikes.has(postId);
-    const bump = (p) => (p && p.id === postId ? { ...p, like_count: p.like_count + (has ? -1 : 1) } : p); // +1 or -1 on the right post
+    const bump = (p) => (p && p.id === postId ? { ...p, like_count: p.like_count + (has ? -1 : 1) } : p);
     setMyLikes((prev) => { const next = new Set(prev); has ? next.delete(postId) : next.add(postId); return next; });
-    setPost(bump);                                       // React passes the current value into bump
+    setPost(bump);
     setParent(bump);
     setReplies((prev) => prev.map(bump));
     const { error } = has
       ? await supabase.from("likes").delete().eq("post_id", postId).eq("user_id", user.id)
       : await supabase.from("likes").insert({ post_id: postId });
-    if (error) { console.error(error); load(); }         // undo by reloading the truth
+    if (error) { console.error(error); load(); }
   }
 
   async function removePost(postId) {
-    if (postId === post.id) {                            // deleting the main post: leave the page
+    if (postId === post.id || postId === parent?.id) {   // deleting the main post (or its parent): leave the page
+      const target = postId === post.id ? post : parent;
       await supabase.from("posts").delete().eq("id", postId);
+      removePostImage(target.image_url);                 // NEW: delete its image file too
       return router.push("/community");
     }
-    setReplies((prev) => prev.filter((r) => r.id !== postId)); // deleting a reply: just drop it
+    const target = replies.find((r) => r.id === postId);
+    setReplies((prev) => prev.filter((r) => r.id !== postId));
     const { error } = await supabase.from("posts").delete().eq("id", postId);
-    if (error) { console.error(error); loadReplies(); }
+    if (error) { console.error(error); return loadReplies(); }
+    removePostImage(target?.image_url);
   }
 
   async function sendReply(e) {
     e.preventDefault();
-    const problem = checkBody(text);                     // same rules as everywhere (no links, length)
+    const problem = checkBody(text);
     if (problem) return setError(problem);
     setError("");
     setPending(true);
@@ -113,16 +119,16 @@ export default function PostThread({ id }) {
   }
 
   async function share() {
-    const url = window.location.href;                    // we're already on the post's page
+    const url = window.location.href;
     try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); }
     catch { window.prompt("Copy this link:", url); }
   }
 
-  if (post === undefined) {                              // loading skeleton
+  if (post === undefined) {
     return <div className="h-64 animate-pulse rounded-3xl border border-line bg-mist"></div>;
   }
 
-  if (post === null) {                                   // not found
+  if (post === null) {
     return (
       <div className="rounded-3xl border border-line bg-water p-10 text-center">
         <p className="font-semibold text-ink">This post doesn't exist</p>
@@ -136,11 +142,10 @@ export default function PostThread({ id }) {
   const liked = myLikes.has(post.id);
   const fullDate = new Date(post.created_at).toLocaleString(undefined, {
     hour: "numeric", minute: "2-digit", day: "numeric", month: "short", year: "numeric",
-  });                                                     // e.g. "2:41 AM · 10 Oct 2026"
+  });
 
   return (
     <div className="overflow-hidden rounded-3xl border border-line bg-water">
-      {/* header with a back button, like X */}
       <div className="flex items-center gap-4 border-b border-line px-4 py-3 sm:px-5">
         <button onClick={() => router.back()} aria-label="Back" className="rounded-full p-1.5 text-ink hover:bg-mist">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
@@ -148,13 +153,12 @@ export default function PostThread({ id }) {
         <p className="font-semibold text-ink">Post</p>
       </div>
 
-      {parent && (                                       // the post this one replied to, shown above
+      {parent && (
         <ul className="border-b border-line">
           <PostCard post={parent} liked={myLikes.has(parent.id)} onLike={toggleLike} onDelete={removePost} user={user} canPost={canPost} />
         </ul>
       )}
 
-      {/* the main post, shown large */}
       <article className="border-b border-line px-4 py-5 sm:px-5">
         <div className="flex items-center gap-3">
           <Link href={`/u/${post.username}`}><Avatar name={post.username} src={post.avatar_url} size="md" /></Link>
@@ -168,15 +172,14 @@ export default function PostThread({ id }) {
         </div>
 
         <PostBody text={post.body} className="mt-4 text-lg leading-relaxed text-ink" />
+        {post.image_url && <PostImage src={post.image_url} large />} {/* NEW: bigger on the post page */}
         <p className="mt-4 text-sm text-stone">{fullDate}</p>
 
-        {/* counts row */}
         <div className="mt-4 flex gap-5 border-t border-line pt-3 text-sm">
           <span><b className="text-ink">{replies.length}</b> <span className="text-stone">{replies.length === 1 ? "Reply" : "Replies"}</span></span>
           <span><b className="text-ink">{post.like_count}</b> <span className="text-stone">{post.like_count === 1 ? "Like" : "Likes"}</span></span>
         </div>
 
-        {/* action bar */}
         <div className="mt-3 flex items-center gap-8 border-t border-line pt-3 text-sm text-stone">
           <button
             onClick={() => toggleLike(post.id)}
@@ -199,7 +202,6 @@ export default function PostThread({ id }) {
         </div>
       </article>
 
-      {/* reply composer */}
       {canPost ? (
         <form onSubmit={sendReply} className="flex gap-3 border-b border-line p-4 sm:p-5">
           <Avatar name={profile.username} src={profile.avatar_url} />
@@ -227,7 +229,6 @@ export default function PostThread({ id }) {
         </p>
       )}
 
-      {/* replies, each one tappable into its own thread */}
       <ul className="divide-y divide-line">
         {replies.map((r) => (
           <PostCard key={r.id} post={r} liked={myLikes.has(r.id)} onLike={toggleLike} onDelete={removePost} user={user} canPost={canPost} />
