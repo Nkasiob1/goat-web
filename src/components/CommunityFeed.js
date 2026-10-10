@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";     // Fragment: lets us add the "Who to follow" row between posts
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../lib/supabase";
-import { useProfile, announceProfileChange } from "../lib/useProfile"; // who I am + my username and photo
-import { removePostImage } from "../lib/images";         // NEW: clean up a deleted post's image
+import { useProfile, announceProfileChange } from "../lib/useProfile";
+import { removePostImage } from "../lib/images";
+import { useLivePrices } from "../lib/useLivePrices";      // NEW: one price stream for strip + sidebar
 import PostCard from "./PostCard";
-import Composer from "./Composer";                       // NEW: the composer now lives in its own file
+import Composer from "./Composer";
 import SentimentBar from "./SentimentBar";
 import LiveCoinPrices from "./LiveCoinPrices";
 import WhoToFollow from "./WhoToFollow";
+import TrendingStrip from "./TrendingStrip";               // NEW: phone-only trending row
 
 const RULES = [
   "Be respectful. Debate ideas, not people.",
@@ -30,13 +32,14 @@ export default function CommunityFeed() {
   const [trending, setTrending] = useState([]);
   const [tab, setTab] = useState("latest");
   const [followingIds, setFollowingIds] = useState([]);
+  const quotes = useLivePrices(trending.map((t) => t.coin)); // NEW: opened once, shared below
 
-  useEffect(() => { setCoinFilter(paramCoin); }, [paramCoin]); // tapping a $TAG anywhere updates the filter
+  useEffect(() => { setCoinFilter(paramCoin); }, [paramCoin]);
 
   async function loadPosts() {
     let query = supabase
       .from("post_feed").select("*")
-      .is("parent_id", null)                              // top-level posts only
+      .is("parent_id", null)
       .order("created_at", { ascending: false })
       .limit(50);
     if (coinFilter) query = query.eq("coin", coinFilter);
@@ -68,7 +71,7 @@ export default function CommunityFeed() {
     setNewCount(0);
   }
 
-  async function loadTrending() {                        // busiest coins in 24h
+  async function loadTrending() {
     const { data } = await supabase
       .from("coin_sentiment").select("*")
       .order("total", { ascending: false })
@@ -79,7 +82,7 @@ export default function CommunityFeed() {
   useEffect(() => { loadPosts(); }, [coinFilter, user, tab]);
   useEffect(() => { loadTrending(); }, []);
 
-  useEffect(() => {                                      // realtime "new posts" counter
+  useEffect(() => {
     const channel = supabase
       .channel("community-posts")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, (payload) => {
@@ -106,19 +109,23 @@ export default function CommunityFeed() {
   }
 
   async function removePost(id) {
-    const target = posts?.find((p) => p.id === id);      // NEW: remember it so we know its image
+    const target = posts?.find((p) => p.id === id);
     setPosts((prev) => prev.filter((p) => p.id !== id));
     const { error } = await supabase.from("posts").delete().eq("id", id);
     if (error) { console.error(error); return loadPosts(); }
-    removePostImage(target?.image_url);                  // NEW: post gone, so delete its image file too
+    removePostImage(target?.image_url);
+  }
+
+  function pickCoin(coin) {                              // NEW: shared by the strip and the sidebar
+    router.replace(coinFilter === coin ? "/community" : `/community?coin=${coin}`); // tap the active coin again to clear
   }
 
   const canPost = Boolean(user && profile);
+  const suggestAt = posts ? Math.min(4, posts.length - 1) : -1; // NEW: after the 5th post (or the last, if fewer)
 
   return (
     <div className="grid gap-8 lg:grid-cols-3">
       <div className="lg:col-span-2">
-        {/* the whole feed lives in one bordered column, like X */}
         <div className="overflow-hidden rounded-3xl border border-line bg-water">
           {user === null && (
             <div className="border-b border-line p-5">
@@ -132,14 +139,22 @@ export default function CommunityFeed() {
           {user && profile === null && <UsernameForm />}
           {canPost && (
             <Composer
-              userId={user.id}                          // NEW: needed for the image folder
+              userId={user.id}
               username={profile.username}
               avatarUrl={profile.avatar_url}
               onPosted={() => { loadPosts(); loadTrending(); }}
             />
           )}
 
-          {user && (                                     // X-style tabs with an underline
+          <TrendingStrip                                  // NEW: phone only (hides itself on laptops)
+            trending={trending}
+            quotes={quotes}
+            rules={RULES}
+            activeCoin={coinFilter}
+            onPick={pickCoin}
+          />
+
+          {user && (
             <div className="flex border-b border-line">
               {[{ id: "latest", label: "Latest" }, { id: "following", label: "Following" }].map((t) => (
                 <button
@@ -170,16 +185,22 @@ export default function CommunityFeed() {
           )}
 
           <ul className="divide-y divide-line">
-            {(posts ?? []).map((p) => (
-              <PostCard
-                key={p.id}
-                post={p}
-                liked={myLikes.has(p.id)}
-                onLike={toggleLike}
-                onDelete={removePost}
-                user={user}
-                canPost={canPost}
-              />
+            {(posts ?? []).map((p, i) => (
+              <Fragment key={p.id}>                      {/* the key moves to the Fragment */}
+                <PostCard
+                  post={p}
+                  liked={myLikes.has(p.id)}
+                  onLike={toggleLike}
+                  onDelete={removePost}
+                  user={user}
+                  canPost={canPost}
+                />
+                {i === suggestAt && (                      // NEW: "Who to follow" between posts on phones
+                  <li className="bg-mist/50 p-4 lg:hidden">
+                    <WhoToFollow />
+                  </li>
+                )}
+              </Fragment>
             ))}
           </ul>
 
@@ -196,7 +217,8 @@ export default function CommunityFeed() {
         </div>
       </div>
 
-      <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+      {/* CHANGED: hidden on phones (the strip covers it), sidebar on laptops */}
+      <aside className="hidden space-y-6 lg:sticky lg:top-6 lg:block lg:self-start">
         <div className="rounded-3xl border border-line bg-water p-5">
           <p className="font-semibold text-ink">Trending today</p>
           {trending.length === 0 ? (
@@ -206,8 +228,8 @@ export default function CommunityFeed() {
               {trending.map((t) => (
                 <li key={t.coin}>
                   <button
-                    onClick={() => router.replace(`/community?coin=${t.coin}`)}
-                    className="w-full rounded-xl px-3 py-2 text-left hover:bg-mist"
+                    onClick={() => pickCoin(t.coin)}
+                    className={`w-full rounded-xl px-3 py-2 text-left hover:bg-mist ${coinFilter === t.coin ? "bg-sage" : ""}`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-mono font-semibold text-ink">{"$" + t.coin}</span>
@@ -221,7 +243,7 @@ export default function CommunityFeed() {
           )}
         </div>
 
-        {trending.length > 0 && (                        // live prices once something is trending
+        {trending.length > 0 && (
           <div className="rounded-3xl border border-line bg-water p-5">
             <div className="flex items-center justify-between">
               <p className="font-semibold text-ink">Live prices</p>
@@ -231,7 +253,7 @@ export default function CommunityFeed() {
               </span>
             </div>
             <div className="mt-2">
-              <LiveCoinPrices coins={trending.map((t) => t.coin)} />
+              <LiveCoinPrices coins={trending.map((t) => t.coin)} quotes={quotes} /> {/* CHANGED: gets prices from the shared stream */}
             </div>
           </div>
         )}
@@ -249,7 +271,7 @@ export default function CommunityFeed() {
   );
 }
 
-function UsernameForm() {                                // shown inside the feed for members without a username yet
+function UsernameForm() {
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
 
@@ -257,7 +279,7 @@ function UsernameForm() {                                // shown inside the fee
     e.preventDefault();
     setError("");
     const { error } = await supabase.from("profiles").insert({ username: username.trim() });
-    if (!error) return announceProfileChange();          // every useProfile() refreshes, so the composer appears
+    if (!error) return announceProfileChange();
     if (error.code === "23505") setError("That username is taken.");
     else if (error.code === "23514") setError("Use 3–20 letters, numbers or underscores.");
     else { console.error(error); setError("Something went wrong. Please try again."); }
