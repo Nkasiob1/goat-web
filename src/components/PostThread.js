@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { useProfile } from "../lib/useProfile";
 import { checkBody } from "../lib/postRules";
-import { removePostImage } from "../lib/images";         // NEW
+import { removePostImage } from "../lib/images";
 import Avatar from "./Avatar";
 import PostBody from "./PostBody";
 import PostCard from "./PostCard";
-import PostImage from "./PostImage";                     // NEW
+import PostImage from "./PostImage";
+import PostMenu from "./PostMenu";                       // NEW
 
 const SENTIMENT = {
   bullish: { label: "Bullish", cls: "bg-sage text-gain" },
@@ -20,8 +21,8 @@ const SENTIMENT = {
 export default function PostThread({ id }) {
   const router = useRouter();
   const { user, profile } = useProfile();
-  const [post, setPost] = useState(undefined);           // undefined = loading, null = not found
-  const [parent, setParent] = useState(null);            // the post this one replies to
+  const [post, setPost] = useState(undefined);
+  const [parent, setParent] = useState(null);
   const [replies, setReplies] = useState([]);
   const [myLikes, setMyLikes] = useState(new Set());
   const [text, setText] = useState("");
@@ -39,7 +40,7 @@ export default function PostThread({ id }) {
 
   async function load() {
     const { data: main, error } = await supabase.from("post_feed").select("*").eq("id", id).maybeSingle();
-    if (error || !main) { setPost(null); return; }
+    if (error || !main) { setPost(null); return; }       // missing, deleted or hidden by moderation
 
     const { data: above } = main.parent_id
       ? await supabase.from("post_feed").select("*").eq("id", main.parent_id).maybeSingle()
@@ -64,11 +65,11 @@ export default function PostThread({ id }) {
   }
 
   useEffect(() => {
-    if (user === undefined) return;                      // wait until we know who's looking
+    if (user === undefined) return;
     load();
   }, [id, user]);
 
-  useEffect(() => {                                      // realtime: new replies appear live
+  useEffect(() => {
     const channel = supabase
       .channel(`thread-${id}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts", filter: `parent_id=eq.${id}` }, () => loadReplies())
@@ -92,10 +93,10 @@ export default function PostThread({ id }) {
   }
 
   async function removePost(postId) {
-    if (postId === post.id || postId === parent?.id) {   // deleting the main post (or its parent): leave the page
+    if (postId === post.id || postId === parent?.id) {
       const target = postId === post.id ? post : parent;
       await supabase.from("posts").delete().eq("id", postId);
-      removePostImage(target.image_url);                 // NEW: delete its image file too
+      removePostImage(target.image_url);
       return router.push("/community");
     }
     const target = replies.find((r) => r.id === postId);
@@ -113,7 +114,10 @@ export default function PostThread({ id }) {
     setPending(true);
     const { error } = await supabase.from("posts").insert({ body: text.trim(), parent_id: post.id });
     setPending(false);
-    if (error) { console.error(error); return setError("Couldn't send that reply. Please try again."); }
+    if (error) {
+      console.error(error);
+      return setError(error.code === "23514" ? "Replies can't include links or wallet addresses." : "Couldn't send that reply. Please try again."); // NEW
+    }
     setText("");
     loadReplies();
   }
@@ -131,8 +135,8 @@ export default function PostThread({ id }) {
   if (post === null) {
     return (
       <div className="rounded-3xl border border-line bg-water p-10 text-center">
-        <p className="font-semibold text-ink">This post doesn't exist</p>
-        <p className="mt-1 text-sm text-stone">It may have been deleted.</p>
+        <p className="font-semibold text-ink">This post isn't available</p>          {/* CHANGED: covers deleted AND hidden */}
+        <p className="mt-1 text-sm text-stone">It may have been deleted or removed for breaking the rules.</p>
         <Link href="/community" className="mt-5 inline-block rounded-full bg-forest px-5 py-2 text-sm font-medium text-water hover:bg-moss">Back to community</Link>
       </div>
     );
@@ -169,10 +173,13 @@ export default function PostThread({ id }) {
           {post.sentiment && (
             <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${SENTIMENT[post.sentiment].cls}`}>{SENTIMENT[post.sentiment].label}</span>
           )}
+          <div className="flex">                                        {/* NEW: ⋯ menu at the top right */}
+            <PostMenu postId={post.id} own={user?.id === post.user_id} user={user} onDelete={removePost} />
+          </div>
         </div>
 
         <PostBody text={post.body} className="mt-4 text-lg leading-relaxed text-ink" />
-        {post.image_url && <PostImage src={post.image_url} large />} {/* NEW: bigger on the post page */}
+        {post.image_url && <PostImage src={post.image_url} large />}
         <p className="mt-4 text-sm text-stone">{fullDate}</p>
 
         <div className="mt-4 flex gap-5 border-t border-line pt-3 text-sm">
@@ -196,9 +203,7 @@ export default function PostThread({ id }) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6" /></svg>
             {copied ? "Link copied" : "Share"}
           </button>
-          {user?.id === post.user_id && (
-            <button onClick={() => window.confirm("Delete this post?") && removePost(post.id)} className="ml-auto hover:text-loss">Delete</button>
-          )}
+          {/* CHANGED: Delete moved into the ⋯ menu */}
         </div>
       </article>
 

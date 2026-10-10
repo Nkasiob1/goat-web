@@ -7,10 +7,11 @@ import { supabase } from "../lib/supabase";
 import TimeAgo from "./TimeAgo";
 import Avatar from "./Avatar";
 import PostBody from "./PostBody";
-import PostImage from "./PostImage";                     // NEW: chart image with tap-to-zoom
+import PostImage from "./PostImage";
+import PostMenu from "./PostMenu";                       // NEW: ⋯ menu (Delete / Report)
 import { checkBody } from "../lib/postRules";
 
-const SENTIMENT = {                                      // how each sentiment looks
+const SENTIMENT = {
   bullish: { label: "Bullish", cls: "bg-sage text-gain" },
   bearish: { label: "Bearish", cls: "bg-[#F6E9E7] text-loss" },
 };
@@ -25,22 +26,22 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
   const [copied, setCopied] = useState(false);
 
   const own = user?.id === post.user_id;
-  const showCoinChip = post.coin && !post.body.toUpperCase().includes("$" + post.coin); // old posts tagged without a $ in the text
+  const showCoinChip = post.coin && !post.body.toUpperCase().includes("$" + post.coin);
 
   function openPost(e) {                                 // tap anywhere on the card to open it
-    if (e.target.closest("a, button, input, textarea, form, [data-thread]")) return; // these keep their own job
-    if (window.getSelection()?.toString()) return;       // they were highlighting text
+    if (e.target.closest("a, button, input, textarea, form, [data-thread], [data-no-open]")) return; // CHANGED: + menu/report sheet
+    if (window.getSelection()?.toString()) return;
     router.push(`/post/${post.id}`);
   }
 
-  async function share() {                               // copy the post's own link
+  async function share() {
     const url = `${window.location.origin}/post/${post.id}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      window.prompt("Copy this link:", url);             // fallback on http (phone on local Wi-Fi)
+      window.prompt("Copy this link:", url);
     }
   }
 
@@ -63,7 +64,10 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
     if (problem) return setError(problem);
     setError("");
     const { error } = await supabase.from("posts").insert({ body: text.trim(), parent_id: post.id });
-    if (error) { console.error(error); return setError("Couldn't send that reply. Please try again."); }
+    if (error) {
+      console.error(error);
+      return setError(error.code === "23514" ? "Replies can't include links or wallet addresses." : "Couldn't send that reply. Please try again."); // NEW: clear message
+    }
     setText("");
     setReplyCount((n) => n + 1);
     loadReplies();
@@ -91,19 +95,12 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
               {SENTIMENT[post.sentiment].label}
             </span>
           )}
-          {own && (
-            <button
-              onClick={() => window.confirm("Delete this post?") && onDelete(post.id)}
-              className="ml-auto text-xs text-stone hover:text-loss"
-            >
-              Delete
-            </button>
-          )}
+          <PostMenu postId={post.id} own={own} user={user} onDelete={onDelete} /> {/* CHANGED: replaces the old Delete text */}
         </div>
 
         <PostBody text={post.body} className="mt-1 leading-relaxed text-ink" />
 
-        {post.image_url && <PostImage src={post.image_url} />} {/* NEW: the chart, if there is one */}
+        {post.image_url && <PostImage src={post.image_url} />}
 
         {showCoinChip && (
           <Link href={`/community?coin=${post.coin}`} className="mt-2 inline-block rounded-full bg-sage px-2 py-0.5 font-mono text-xs text-moss">
@@ -112,7 +109,6 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
         )}
 
         <div className="mt-3 flex items-center gap-8 text-sm text-stone">
-          {/* replies */}
           <button onClick={toggleThread} aria-label="Replies" className="flex items-center gap-1.5 hover:text-ink">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path d="M4 5h16v11H8l-4 4V5z" />
@@ -120,7 +116,6 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
             {replyCount}
           </button>
 
-          {/* likes */}
           <button
             onClick={() => onLike(post.id)}
             aria-pressed={liked}
@@ -133,7 +128,6 @@ export default function PostCard({ post, liked, onLike, onDelete, user, canPost 
             {post.like_count}
           </button>
 
-          {/* share */}
           <button onClick={share} aria-label="Copy link to post" className="flex items-center gap-1.5 hover:text-forest">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6" />

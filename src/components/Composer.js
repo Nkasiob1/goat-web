@@ -13,32 +13,32 @@ const ALLOWED = ["image/png", "image/jpeg", "image/webp"];
 export default function Composer({ userId, username, avatarUrl, onPosted }) {
   const [body, setBody] = useState("");
   const [open, setOpen] = useState(false);
-  const [sentiment, setSentiment] = useState(null);      // "bullish", "bearish", or null
+  const [sentiment, setSentiment] = useState(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-  const [file, setFile] = useState(null);                // the chosen image (not uploaded yet)
-  const [preview, setPreview] = useState(null);          // temporary local link to show it
-  const fileInput = useRef(null);                        // the hidden <input type="file">
-  const coins = extractCoins(body);                      // live list of $TAGS as they type
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const fileInput = useRef(null);
+  const coins = extractCoins(body);
 
-  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]); // free memory when the preview changes
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
-  function takeFile(f) {                                 // shared by "pick" and "paste"
+  function takeFile(f) {
     if (!f) return;
     if (!ALLOWED.includes(f.type)) return setError("Use a PNG, JPG or WebP image.");
     if (f.size > MAX_RAW_BYTES) return setError("That image is too large (max 15MB).");
     setError("");
     setFile(f);
-    setPreview(URL.createObjectURL(f));                  // instant preview, no upload yet
+    setPreview(URL.createObjectURL(f));
     setOpen(true);
   }
 
   function onPick(e) {
     takeFile(e.target.files?.[0]);
-    e.target.value = "";                                 // lets you pick the same file again later
+    e.target.value = "";
   }
 
-  function onPaste(e) {                                  // Ctrl+V a screenshot straight into the box
+  function onPaste(e) {
     const f = [...(e.clipboardData?.files ?? [])].find((x) => x.type.startsWith("image/"));
     if (f) { e.preventDefault(); takeFile(f); }
   }
@@ -50,7 +50,7 @@ export default function Composer({ userId, username, avatarUrl, onPosted }) {
 
   async function post(e) {
     e.preventDefault();
-    const problem = checkBody(body);                     // text rules still apply (a caption is required)
+    const problem = checkBody(body);
     if (problem) return setError(problem);
     setError("");
     setPending(true);
@@ -58,8 +58,8 @@ export default function Composer({ userId, username, avatarUrl, onPosted }) {
     let imageUrl = null;
     try {
       if (file) {
-        const small = await compressImage(file);         // 6MB → ~200KB
-        imageUrl = await uploadPostImage(userId, small); // into post-images/{userId}/...
+        const small = await compressImage(file);
+        imageUrl = await uploadPostImage(userId, small);
       }
     } catch (err) {
       console.error(err);
@@ -69,16 +69,20 @@ export default function Composer({ userId, username, avatarUrl, onPosted }) {
 
     const { error } = await supabase.from("posts").insert({
       body: body.trim(),
-      coin: coins[0] ?? null,                            // the first $TAG is the post's main coin
+      coin: coins[0] ?? null,
       sentiment,
-      image_url: imageUrl,                               // null when there's no image
+      image_url: imageUrl,
     });
     setPending(false);
 
     if (error) {
       console.error(error);
-      removePostImage(imageUrl);                         // the post failed, so don't leave an orphan file
-      return setError("Something went wrong. Please try again.");
+      removePostImage(imageUrl);
+      return setError(
+        error.code === "23514"                           // NEW: a database rule said no (links or wallet address)
+          ? "Posts can't include links or wallet addresses. Keep it about the market."
+          : "Something went wrong. Please try again."
+      );
     }
     setBody(""); setSentiment(null); setOpen(false); clearImage();
     onPosted();
@@ -96,7 +100,7 @@ export default function Composer({ userId, username, avatarUrl, onPosted }) {
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          onFocus={() => setOpen(true)}                  // tapping the bar expands it
+          onFocus={() => setOpen(true)}
           onPaste={onPaste}
           rows={open ? 3 : 1}
           maxLength={500}
@@ -104,7 +108,7 @@ export default function Composer({ userId, username, avatarUrl, onPosted }) {
           className="w-full resize-none bg-transparent py-2 text-ink outline-none placeholder:text-stone"
         />
 
-        {preview && (                                    // the chosen image, before posting
+        {preview && (
           <div className="relative mt-2 inline-block">
             <img src={preview} alt="Selected image" className="max-h-72 rounded-2xl border border-line" />
             <button
@@ -127,14 +131,14 @@ export default function Composer({ userId, username, avatarUrl, onPosted }) {
               <input ref={fileInput} type="file" accept={ALLOWED.join(",")} onChange={onPick} className="hidden" />
               <button
                 type="button"
-                onClick={() => fileInput.current?.click()}   // opens the gallery / file picker
+                onClick={() => fileInput.current?.click()}
                 aria-label="Add image"
                 className="rounded-full p-2 text-moss hover:bg-sage"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="16" rx="2" />  {/* frame */}
-                  <path d="M3 16l5-5 4 4 3-3 6 6" />                 {/* mountains */}
-                  <circle cx="16" cy="9" r="1.5" />                  {/* sun */}
+                  <rect x="3" y="4" width="18" height="16" rx="2" />
+                  <path d="M3 16l5-5 4 4 3-3 6 6" />
+                  <circle cx="16" cy="9" r="1.5" />
                 </svg>
               </button>
 
@@ -143,7 +147,7 @@ export default function Composer({ userId, username, avatarUrl, onPosted }) {
                   key={c.id}
                   type="button"
                   aria-pressed={sentiment === c.id}
-                  onClick={() => setSentiment(sentiment === c.id ? null : c.id)} // tap again to clear
+                  onClick={() => setSentiment(sentiment === c.id ? null : c.id)}
                   className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${sentiment === c.id ? c.on : c.off}`}
                 >
                   {c.label}
