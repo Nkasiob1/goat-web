@@ -7,8 +7,8 @@ const NAV_LINKS = [
   { href: "/markets", label: "Markets" },
   { href: "/charts", label: "Charts" },
   { href: "/scanner", label: "Scanner" },
-  { href: "/news", label: "News" },                      // NEW
-  { href: "/advertise", label: "Advertise" },
+  { href: "/news", label: "News" },
+  { href: "/community", label: "Community" },            // NEW
 ];
 
 export default function Navbar() {

@@ -81,7 +81,7 @@ export default async function ScannerPage() {
 
                   return (
                     <tr key={p.id} className="hover:bg-mist">
-                      <td className="px-6 py-4">
+                       <td className="min-w-[12rem] px-6 py-4">
                         {/* name links to the full pool data on GeckoTerminal, in a new tab */}
                         <a
                           href={`https://www.geckoterminal.com/${p.networkId}/pools/${p.address}`}

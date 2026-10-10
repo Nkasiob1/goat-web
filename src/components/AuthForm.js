@@ -45,6 +45,9 @@ export default function AuthForm({ mode }) {             // mode: "login" or "si
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       setPending(false);
+      if (error?.code === "email_not_confirmed") {       // account exists but the email link hasn't been clicked
+        return setError("Please confirm your email first. Check your inbox and spam folder.");
+      }
       if (error) return setError("Email or password is incorrect.");
       router.push("/dashboard");
     }
