@@ -1,38 +1,52 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "../lib/supabase";
+import { useProfile } from "../lib/useProfile";
 import WatchlistPanel from "./WatchlistPanel";
-import CommunityPanel from "./CommunityPanel";             // NEW: your followers and following
+import CommunityPanel from "./CommunityPanel";
+import AvatarUploader from "./AvatarUploader";
+import UsernameSetup from "./UsernameSetup";
 
 export default function DashboardView() {
   const router = useRouter();
-  const [user, setUser] = useState(undefined);
+  const { user, profile } = useProfile();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) router.replace("/login");       // no session: send to login
-      else setUser(data.session.user);
-    });
-  }, [router]);
+    if (user === null) router.replace("/login");         // definitely logged out: go to login
+  }, [user, router]);
 
-  if (!user) return <p className="text-stone">Loading…</p>;
+  if (!user || profile === undefined) return <p className="text-stone">Loading…</p>;
 
   return (
     <div>
       <p className="text-sm font-medium text-moss">Dashboard</p>
-      <h1 className="mt-3 text-3xl font-bold tracking-tight text-ink md:text-4xl">Welcome to GOAT</h1>
-      <p className="mt-2 text-stone">Signed in as {user.email}</p>
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">                  {/* watchlist: two-thirds of the width on laptops */}
+      {profile ? (                                       // has a profile: show it with the photo uploader
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-6 rounded-3xl border border-line bg-water p-6">
+          <AvatarUploader profile={profile} />
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold tracking-tight text-ink md:text-3xl">@{profile.username}</h1>
+            <p className="mt-1 text-sm text-stone">{user.email}</p>    {/* only you see your email, here */}
+          </div>
+          <Link href={`/u/${profile.username}`} className="text-sm font-medium text-moss hover:text-forest">
+            View public profile →
+          </Link>
+        </div>
+      ) : (                                              // no profile yet: set one up right here
+        <div className="mt-4">
+          <h1 className="mb-4 text-3xl font-bold tracking-tight text-ink">Welcome to GOAT</h1>
+          <UsernameSetup />
+        </div>
+      )}
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
           <WatchlistPanel />
         </div>
-
-        <div className="space-y-6">                      {/* right column */}
-          <CommunityPanel user={user} />                 {/* replaces the old "Community: coming soon" card */}
-
+        <div className="space-y-6">
+          <CommunityPanel user={user} />
           <div className="rounded-3xl border border-line bg-water p-6">
             <span className="rounded-full bg-sage px-3 py-1 text-xs text-moss">Waitlist</span>
             <p className="mt-4 font-semibold text-ink">GOAT bot access</p>

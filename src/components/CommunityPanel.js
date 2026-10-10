@@ -3,21 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../lib/supabase";
+import { useProfile } from "../lib/useProfile";            // the shared "who am I" hook
 import TimeAgo from "./TimeAgo";
+import Avatar from "./Avatar";
 
-export default function CommunityPanel({ user }) {       // user is passed in from the dashboard (already logged in)
-  const [me, setMe] = useState(undefined);               // my profile; undefined = loading, null = no username yet
+export default function CommunityPanel() {               // no props needed now: useProfile knows who's logged in
+  const { profile: me } = useProfile();                  // my profile; undefined = loading, null = no username yet
   const [counts, setCounts] = useState({ followers: 0, following: 0 });
   const [followers, setFollowers] = useState([]);        // people who follow me, newest first
   const [following, setFollowing] = useState([]);        // people I follow
   const [view, setView] = useState("followers");         // which list is showing
 
-  useEffect(() => {                                      // step 1: find my username
-    supabase.from("profiles").select("id, username").eq("id", user.id).maybeSingle()
-      .then(({ data }) => setMe(data));
-  }, [user]);
-
-  useEffect(() => {                                      // step 2: once I have a profile, load counts and lists
+  useEffect(() => {                                      // once I have a profile, load counts and lists
     if (!me) return;
 
     Promise.all([
@@ -25,13 +22,13 @@ export default function CommunityPanel({ user }) {       // user is passed in fr
       supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", me.id),  // following count
       supabase
         .from("follows")
-        .select("created_at, profiles!follows_follower_id_fkey(username)")   // WHO followed me (via the follower link)
+        .select("created_at, profiles!follows_follower_id_fkey(username, avatar_url)")   // WHO followed me
         .eq("following_id", me.id)
         .order("created_at", { ascending: false })
         .limit(10),
       supabase
         .from("follows")
-        .select("created_at, profiles!follows_following_id_fkey(username)")  // WHO I follow (via the following link)
+        .select("created_at, profiles!follows_following_id_fkey(username, avatar_url)")  // WHO I follow
         .eq("follower_id", me.id)
         .order("created_at", { ascending: false })
         .limit(10),
@@ -40,20 +37,17 @@ export default function CommunityPanel({ user }) {       // user is passed in fr
       setFollowers(fl.data ?? []);
       setFollowing(gl.data ?? []);
     });
-  }, [me]);
+  }, [me?.id]);                                          // reload only if it's a different person, not on every photo change
 
   if (me === undefined) {
     return <div className="h-48 animate-pulse rounded-3xl bg-mist"></div>; // skeleton while loading
   }
 
-  if (me === null) {                                     // signed up but never picked a username
+  if (me === null) {                                     // no username yet: the dashboard's setup card handles it
     return (
       <div className="rounded-3xl border border-line bg-water p-6">
         <p className="font-semibold text-ink">Your community</p>
-        <p className="mt-2 text-sm text-stone">Choose a username to post, follow traders and get followers.</p>
-        <Link href="/community" className="mt-4 inline-block text-sm font-medium text-moss hover:text-forest">
-          Join the community →
-        </Link>
+        <p className="mt-2 text-sm text-stone">Set up your username above to post, follow traders and get followers.</p>
       </div>
     );
   }
@@ -64,9 +58,8 @@ export default function CommunityPanel({ user }) {       // user is passed in fr
     <div className="rounded-3xl border border-line bg-water p-6">
       <div className="flex items-center justify-between">
         <p className="font-semibold text-ink">Your community</p>
-        <Link href={`/u/${me.username}`} className="text-sm text-moss hover:text-forest">View profile →</Link>
+        <Link href="/community" className="text-sm text-moss hover:text-forest">Open feed →</Link>
       </div>
-      <p className="mt-1 text-sm text-stone">@{me.username}</p>
 
       <div className="mt-5 grid grid-cols-2 gap-3">          {/* the two counts double as tab buttons */}
         {[
@@ -95,14 +88,12 @@ export default function CommunityPanel({ user }) {       // user is passed in fr
           {list.map((row) => {
             const name = row.profiles?.username;         // the joined username
             return (
-              <li key={name} className="flex items-center justify-between py-3 text-sm">
-                <Link href={`/u/${name}`} className="flex items-center gap-3 font-medium text-ink hover:text-moss">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-forest text-xs font-semibold text-water">
-                    {name?.[0]?.toUpperCase()}           {/* tiny avatar: first letter */}
-                  </span>
-                  @{name}
+              <li key={name} className="flex items-center justify-between gap-3 py-3 text-sm">
+                <Link href={`/u/${name}`} className="flex min-w-0 items-center gap-3 font-medium text-ink hover:text-moss">
+                  <Avatar name={name ?? "?"} src={row.profiles?.avatar_url} size="sm" /> {/* their photo, or their initial */}
+                  <span className="truncate">@{name}</span> {/* truncate: long names end in "…" instead of breaking the row */}
                 </Link>
-                <span className="text-xs text-stone">
+                <span className="shrink-0 text-xs text-stone">
                   {view === "followers" ? "followed you " : "followed "}
                   <TimeAgo date={row.created_at} />
                 </span>

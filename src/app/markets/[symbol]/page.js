@@ -8,7 +8,7 @@ import TradingChart from "../../../components/TradingChart";
 import { COINS } from "../../../data/coins";
 import { VENUES } from "../../../data/venues";
 import { getTopCoins } from "../../../lib/cryptoList";
-
+import CoinSentiment from "../../../components/CoinSentiment";
 export function generateStaticParams() {                 // our 10 are built in advance; the other 90 are built on first visit
   return COINS.map((c) => ({ symbol: c.short.toLowerCase() }));
 }
@@ -56,6 +56,9 @@ export default async function CoinPage({ params }) {
         <p className="mt-3 max-w-xl text-stone">{coin.about}</p>
 
         <CoinPrice symbol={coin.symbol} />
+        <div className="mt-8">
+          <CoinSentiment coin={coin.short} />            {/* what GOAT members think, plus a link to the discussion */}
+        </div>
 
         <div className="mt-10">
           <TradingChart symbol={`BINANCE:${coin.symbol}`} />

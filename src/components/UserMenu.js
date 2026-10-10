@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
-import { useUser } from "../lib/useUser";                // our new hook
+import { useProfile } from "../lib/useProfile";
+import Avatar from "./Avatar";
 
 export default function UserMenu() {
   const router = useRouter();
-  const user = useUser();                                // one line replaces all the session code
+  const { user, profile } = useProfile();
 
   async function logOut() {
     await supabase.auth.signOut();
@@ -20,11 +21,11 @@ export default function UserMenu() {
         <Link href="/dashboard" className="hidden text-sm font-medium text-ink hover:text-moss md:inline">Dashboard</Link>
         <button onClick={logOut} className="hidden text-sm text-stone hover:text-ink md:inline">Log out</button>
         <Link
-          href="/dashboard"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-forest text-sm font-semibold text-water"
-          aria-label="Your dashboard"
+          href={profile ? `/u/${profile.username}` : "/dashboard"} // with a profile: your page; without: set it up on the dashboard
+          aria-label="Your profile"
+          className="rounded-full ring-2 ring-transparent transition hover:ring-sage"
         >
-          {user.email[0].toUpperCase()}
+          <Avatar name={profile?.username ?? user.email} src={profile?.avatar_url} size="sm" />
         </Link>
       </div>
     );
