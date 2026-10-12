@@ -79,7 +79,7 @@ export default function Composer({ userId, username, avatarUrl, onPosted }) {
       console.error(error);
       removePostImage(imageUrl);
       return setError(
-        error.code === "23514"                           // NEW: a database rule said no (links or wallet address)
+        error.code === "23514"
           ? "Posts can't include links or wallet addresses. Keep it about the market."
           : "Something went wrong. Please try again."
       );
@@ -104,8 +104,8 @@ export default function Composer({ userId, username, avatarUrl, onPosted }) {
           onPaste={onPaste}
           rows={open ? 3 : 1}
           maxLength={500}
-          placeholder="What are you watching? Tag coins like $BTC"
-          className="w-full resize-none bg-transparent py-2 text-ink outline-none placeholder:text-stone"
+          placeholder="What are you watching?"            // CHANGED: short enough to fit on one line on any phone
+          className={`w-full resize-none bg-transparent py-2 text-ink outline-none placeholder:text-stone ${open ? "" : "overflow-hidden"}`} // CHANGED: no jumpy scroll while collapsed
         />
 
         {preview && (
@@ -124,9 +124,11 @@ export default function Composer({ userId, username, avatarUrl, onPosted }) {
 
         {open && (
           <div className="mt-2 border-t border-line pt-3">
-            {coins.length > 0 && (
-              <p className="mb-3 text-xs text-stone">Tagging {coins.map((c) => "$" + c).join(" ")}</p>
-            )}
+            <p className="mb-3 text-xs text-stone">
+              {coins.length > 0
+                ? `Tagging ${coins.map((c) => "$" + c).join(" ")}`
+                : "Tip: tag coins like $BTC to join the trend."} {/* NEW: the tip lives here now */}
+            </p>
             <div className="flex flex-wrap items-center gap-2">
               <input ref={fileInput} type="file" accept={ALLOWED.join(",")} onChange={onPick} className="hidden" />
               <button
