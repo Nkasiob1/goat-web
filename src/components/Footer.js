@@ -2,12 +2,13 @@ import Link from "next/link";
 import Logo from "./Logo";
 
 export default function Footer() {
-  const columns = [                                      // each link now has a real address
+  const columns = [                                      // each link has a real address
     {
       heading: "Product",
       links: [
         { label: "Markets", href: "/markets" },
         { label: "Charts", href: "/charts" },
+        { label: "Radar", href: "/radar" },              // NEW: Launch Radar
         { label: "Scanner", href: "/scanner" },
         { label: "News", href: "/news" },
       ],
@@ -22,10 +23,10 @@ export default function Footer() {
     },
     {
       heading: "Legal",
-      links: [                                           // pages still to write; needed before launch
-        { label: "Terms", href: "#" },
-        { label: "Privacy", href: "#" },
-        { label: "Risk Disclosure", href: "#" },
+      links: [                                           // CHANGED: the pages now exist
+        { label: "Terms", href: "/terms" },
+        { label: "Privacy", href: "/privacy" },
+        { label: "Risk Disclosure", href: "/risk" },
       ],
     },
   ];
@@ -58,7 +59,8 @@ export default function Footer() {
             Risk warning: Trading crypto, forex, stocks and indices involves significant risk of loss
             and is not suitable for everyone. Past performance does not guarantee future results.
             GOAT provides information and tools, not financial advice. Only trade with money you can
-            afford to lose.
+            afford to lose.{" "}
+            <Link href="/risk" className="underline hover:text-ink">Read the full Risk Disclosure</Link>. {/* NEW */}
           </p>
           <p className="mt-4 text-xs text-stone">© 2026 GOAT. All rights reserved.</p>
         </div>

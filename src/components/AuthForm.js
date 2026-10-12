@@ -14,6 +14,7 @@ export default function AuthForm({ mode }) {             // mode: "login" or "si
   const [email, setEmail] = useState(params.get("email") ?? ""); // pre-fill from the homepage email box
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);       // is the password visible? starts hidden
+  const [agreed, setAgreed] = useState(false);                   // NEW: ticked the Terms box? (sign-up only)
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [pending, setPending] = useState(false);
@@ -27,6 +28,11 @@ export default function AuthForm({ mode }) {             // mode: "login" or "si
 
     if (password.length < 8) {
       setError("Use at least 8 characters for your password.");
+      return;
+    }
+
+    if (isSignup && !agreed) {                           // NEW: backup check in case the browser skips "required"
+      setError("Please confirm you're 18+ and agree to the Terms to continue.");
       return;
     }
 
@@ -98,12 +104,31 @@ export default function AuthForm({ mode }) {             // mode: "login" or "si
         </div>
       </label>
 
-      {!isSignup && (                                    // NEW: only on the login form
+      {!isSignup && (                                    // only on the login form
         <div className="mt-2 flex justify-end">          {/* right-aligned, like most apps */}
           <Link href="/forgot-password" className="text-xs font-medium text-moss hover:text-forest">
             Forgot password?
           </Link>
         </div>
+      )}
+
+      {isSignup && (                                     // NEW: agreement box, sign-up only
+        <label className="mt-5 flex items-start gap-3 text-sm text-stone">
+          <input
+            type="checkbox"
+            required                                     // the browser won't submit until it's ticked
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-forest" // accent-forest: GOAT green tick
+          />
+          <span className="leading-relaxed">
+            I&apos;m 18 or older and agree to the{" "}
+            <Link href="/terms" target="_blank" className="font-medium text-moss hover:text-forest">Terms</Link>,{" "}
+            <Link href="/privacy" target="_blank" className="font-medium text-moss hover:text-forest">Privacy Policy</Link> and{" "}
+            <Link href="/risk" target="_blank" className="font-medium text-moss hover:text-forest">Risk Disclosure</Link>.
+            {/* target="_blank": opens in a new tab so the half-filled form isn't lost */}
+          </span>
+        </label>
       )}
 
       {error && <p className="mt-4 text-sm text-loss">{error}</p>}
