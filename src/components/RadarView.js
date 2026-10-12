@@ -9,15 +9,15 @@ const FILTERS = [
   { id: "green", label: "🟢 Passed checks" },
   { id: "yellow", label: "🟡 Caution" },
   { id: "red", label: "🔴 Risky" },
-  { id: "listed", label: "🏛 Exchange listings" },
+  { id: "listed", label: "🏛 Listings" },
 ];
 
-// Badge text + colours per verdict
+// Badge text + colours per verdict (traffic-light colours carry meaning, so they stay)
 const BADGE = {
-  green: { text: "Passed checks", cls: "bg-emerald-50 text-emerald-800 ring-emerald-200" },
+  green: { text: "Passed", cls: "bg-emerald-50 text-emerald-800 ring-emerald-200" },
   yellow: { text: "Caution", cls: "bg-amber-50 text-amber-800 ring-amber-200" },
   red: { text: "Risky", cls: "bg-rose-50 text-rose-700 ring-rose-200" },
-  listed: { text: "New listing", cls: "bg-sky-50 text-sky-800 ring-sky-200" },
+  listed: { text: "Listing", cls: "bg-sky-50 text-sky-800 ring-sky-200" },
 };
 
 // $1.2M style money
@@ -39,19 +39,19 @@ function timeAgo(date) {
 function TokenCard({ t }) {
   const badge = BADGE[t.safety] || BADGE.yellow;
   return (
-    <article className="flex flex-col rounded-3xl border border-neutral-200 bg-white p-5">
-      <div className="flex items-center gap-3">
+    <article className="flex min-w-0 flex-col rounded-3xl border border-line bg-water p-5"> {/* min-w-0: never wider than its grid cell */}
+      <div className="flex min-w-0 items-center gap-3">
         {t.image_url ? (
-          <img src={t.image_url} alt="" className="h-10 w-10 rounded-full object-cover" /> // coin logo
+          <img src={t.image_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" /> // coin logo
         ) : (
-          <div className="grid h-10 w-10 place-items-center rounded-full bg-emerald-50 text-sm font-semibold text-emerald-800">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-forest/10 text-sm font-semibold text-forest">
             {t.symbol.slice(0, 2)} {/* initials when there's no logo */}
           </div>
         )}
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-neutral-900">{t.symbol}</p>
-          <p className="truncate text-sm text-neutral-500">
-            {t.kind === "cex" ? `${t.source} spot listing` : `${CHAIN_LABEL[t.chain]} · via ${t.source}`}
+        <div className="min-w-0 flex-1"> {/* min-w-0 lets long names truncate instead of pushing the badge out */}
+          <p className="truncate font-semibold text-ink">{t.symbol}</p>
+          <p className="truncate text-sm text-stone">
+            {t.kind === "cex" ? `${t.source} spot listing` : `${CHAIN_LABEL[t.chain]} · ${t.source}`}
           </p>
         </div>
         <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${badge.cls}`}>
@@ -61,34 +61,34 @@ function TokenCard({ t }) {
 
       {t.kind === "dex" && (
         <dl className="mt-4 grid grid-cols-3 gap-2 text-sm">
-          <div>
-            <dt className="text-neutral-400">Liquidity</dt>
-            <dd className="font-medium text-neutral-800">{money(t.liquidity_usd)}</dd>
+          <div className="min-w-0">
+            <dt className="text-stone">Liquidity</dt>
+            <dd className="truncate font-medium text-ink">{money(t.liquidity_usd)}</dd>
           </div>
-          <div>
-            <dt className="text-neutral-400">Vol 24h</dt>
-            <dd className="font-medium text-neutral-800">{money(t.volume_24h)}</dd>
+          <div className="min-w-0">
+            <dt className="text-stone">Vol 24h</dt>
+            <dd className="truncate font-medium text-ink">{money(t.volume_24h)}</dd>
           </div>
-          <div>
-            <dt className="text-neutral-400">Launched</dt>
-            <dd className="font-medium text-neutral-800">{timeAgo(t.pair_created_at)}</dd>
+          <div className="min-w-0">
+            <dt className="text-stone">Launched</dt>
+            <dd className="truncate font-medium text-ink">{timeAgo(t.pair_created_at)}</dd>
           </div>
         </dl>
       )}
 
-      <ul className="mt-4 space-y-1 text-sm text-neutral-600">
+      <ul className="mt-4 space-y-1 text-sm text-stone">
         {(t.safety_notes || []).slice(0, 3).map((note) => (
-          <li key={note}>• {note}</li> // the reasons behind the badge
+          <li key={note} className="break-words">• {note}</li> // the reasons behind the badge
         ))}
       </ul>
 
-      <div className="mt-auto flex items-center justify-between pt-5 text-sm">
-        <span className="text-neutral-400">Spotted {timeAgo(t.first_seen)}</span>
+      <div className="mt-auto flex items-center justify-between gap-3 pt-5 text-sm">
+        <span className="text-stone">Spotted {timeAgo(t.first_seen)}</span>
         <a
           href={t.pair_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="font-medium text-emerald-800 hover:underline"
+          className="shrink-0 font-medium text-forest hover:underline"
         >
           {t.kind === "cex" ? `Trade on ${t.source}` : "View chart"} ↗
         </a>
@@ -133,12 +133,13 @@ export default function RadarView() {
   );
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <p className="text-sm font-medium uppercase tracking-wider text-emerald-700">Launch Radar</p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+    // w-full min-w-0: THE FIX. The page stays phone-width; wide children scroll inside instead of stretching it
+    <main className="mx-auto w-full min-w-0 max-w-6xl px-4 py-10 sm:px-6">
+      <p className="text-sm font-medium uppercase tracking-wider text-forest">Launch Radar</p>
+      <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
         New coins, checked before you see them.
       </h1>
-      <p className="mt-3 max-w-2xl text-neutral-600">
+      <p className="mt-3 max-w-2xl text-stone">
         Fresh pools from GeckoTerminal, DexScreener and Birdeye, plus new Binance, Bybit and OKX listings.
         Every coin is scanned for traps like honeypots and hidden owners. Updated every 15 minutes.
       </p>
@@ -147,24 +148,25 @@ export default function RadarView() {
         href="https://t.me/Goatsradar"
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-6 flex items-center justify-between gap-4 rounded-3xl bg-emerald-900 p-5 text-white"
+        className="mt-6 flex items-center justify-between gap-4 rounded-3xl bg-forest p-5 text-water"
       >
-        <span>
+        <span className="min-w-0"> {/* min-w-0: text wraps so the Join button always fits */}
           <span className="block font-semibold">Get 🟢 alerts on Telegram</span>
-          <span className="block text-sm text-emerald-100">Only coins that pass the checks, and new listings.</span>
+          <span className="block text-sm opacity-80">Only coins that pass the checks, and new listings.</span>
         </span>
-        <span className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-medium text-emerald-900">Join</span>
+        <span className="shrink-0 rounded-full bg-water px-4 py-2 text-sm font-medium text-forest">Join</span>
       </a>
 
-      <div className="mt-8 flex gap-2 overflow-x-auto pb-1">
+      {/* -mx-4 px-4: chips scroll edge-to-edge on phones, but start aligned with the text */}
+      <div className="-mx-4 mt-8 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
         {FILTERS.map((f) => (
           <button
             key={f.id}
             onClick={() => setFilter(f.id)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium ring-1 ${
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium ring-1 transition ${
               filter === f.id
-                ? "bg-emerald-900 text-white ring-emerald-900"
-                : "bg-white text-neutral-700 ring-neutral-200 hover:bg-neutral-50"
+                ? "bg-forest text-water ring-forest"
+                : "bg-water text-ink ring-line hover:text-forest"
             }`}
           >
             {f.label}
@@ -174,19 +176,20 @@ export default function RadarView() {
 
       {error && <p className="mt-6 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}
 
-      {tokens === null && !error && <p className="mt-10 text-neutral-500">Scanning…</p>}
+      {tokens === null && !error && <p className="mt-10 text-stone">Scanning…</p>}
 
       {tokens !== null && shown.length === 0 && (
-        <p className="mt-10 text-neutral-500">Nothing here yet. The radar checks again every 15 minutes.</p>
+        <p className="mt-10 text-stone">Nothing here yet. The radar checks again every 15 minutes.</p>
       )}
 
+      {/* grid-cols-1 on phones: one card per row, each exactly screen-width */}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((t) => (
           <TokenCard key={t.id} t={t} />
         ))}
       </div>
 
-      <p className="mt-10 text-xs text-neutral-400">
+      <p className="mt-10 text-xs text-stone">
         Automated checks reduce risk; they don't remove it. New coins are extremely volatile. Nothing here is
         financial advice.
       </p>
