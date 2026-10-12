@@ -5,7 +5,7 @@ import { checkSafety } from "./safety";                                     // G
 import { sendTelegram, escapeHtml } from "../telegram";                     // channel alerts
 import { sleep } from "./http";                                             // polite pauses
 
-const SITE = "https://goat-web-sandy.vercel.app"; // links in alerts always point at the live site
+const SITE = "https://goat-web-sandy.vercel.app"; // links and cards always come from the live site
 const MAX_CHECKS = 12;                            // safety checks per run (GoPlus free limit)
 const MAX_ALERTS = 3;                             // Telegram posts per run (no spam)
 const ALERT_WINDOW_HOURS = 6;                     // only alert coins spotted recently
@@ -23,7 +23,19 @@ const money = (n) =>
     ? "n/a"
     : "$" + Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
 
-// Build the Telegram message for one coin
+// Address of the picture card for one coin (drawn by /api/radar/card)
+function cardUrl(t) {
+  const params = new URLSearchParams({
+    s: t.symbol,                                                  // ticker
+    k: t.kind,                                                    // dex or cex
+    c: t.kind === "cex" ? t.source : CHAIN_LABEL[t.chain] || "",  // exchange or chain name
+    l: t.liquidity_usd ?? "",                                     // liquidity (DEX only)
+    v: t.volume_24h ?? "",                                        // volume (DEX only)
+  });
+  return `${SITE}/api/radar/card?${params}`;
+}
+
+// Build the Telegram caption for one coin
 function formatAlert(t) {
   if (t.kind === "cex") {
     return [
@@ -136,7 +148,7 @@ export async function runRadar() {
     await sleep(1200);                                                       // stay under GoPlus's free rate limit
   }
 
-  // ---- 4. Telegram alerts: green coins and new listings ----
+  // ---- 4. Telegram alerts (with picture cards): green coins and new listings ----
   const since = new Date(Date.now() - ALERT_WINDOW_HOURS * 36e5).toISOString();
   const { data: toAlert } = await supabase
     .from("radar_tokens")
@@ -148,7 +160,7 @@ export async function runRadar() {
     .limit(MAX_ALERTS);
   for (const t of toAlert || []) {
     try {
-      const sent = await sendTelegram(formatAlert(t));
+      const sent = await sendTelegram(formatAlert(t), cardUrl(t));           // caption + picture card
       if (sent.skipped) {                                                    // keys missing: don't mark as sent
         report.telegram = "skipped (TELEGRAM_BOT_TOKEN or TELEGRAM_CHANNEL missing)";
         break;
