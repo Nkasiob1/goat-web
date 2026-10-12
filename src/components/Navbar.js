@@ -1,14 +1,15 @@
-import Link from "next/link";
-import Logo from "./Logo";
-import MobileMenu from "./MobileMenu";
-import UserMenu from "./UserMenu";
-import NotificationBell from "./NotificationBell";
-import AdminLink from "./AdminLink";
-import MobileTabBar from "./MobileTabBar";               // NEW: app-style bottom bar on phones
+import Link from "next/link";                            // fast page-to-page links
+import Logo from "./Logo";                               // GOAT logo + wordmark
+import MobileMenu from "./MobileMenu";                   // ☰ menu on phones
+import UserMenu from "./UserMenu";                       // avatar / sign up button
+import NotificationBell from "./NotificationBell";       // 🔔 with unread count
+import AdminLink from "./AdminLink";                     // shield, admins only (laptop)
+import MobileTabBar from "./MobileTabBar";               // app-style bottom bar on phones
 
-const NAV_LINKS = [
+const NAV_LINKS = [                                      // one list feeds the laptop bar AND the ☰ menu
   { href: "/markets", label: "Markets" },
   { href: "/charts", label: "Charts" },
+  { href: "/radar", label: "Radar" },                    // NEW: Launch Radar
   { href: "/scanner", label: "Scanner" },
   { href: "/news", label: "News" },
   { href: "/community", label: "Community" },
@@ -20,7 +21,8 @@ export default function Navbar() {
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Logo />
 
-        <div className="hidden items-center gap-8 text-sm text-stone md:flex">
+        {/* laptop links: gap-7 so six links sit comfortably */}
+        <div className="hidden items-center gap-7 text-sm text-stone md:flex">
           {NAV_LINKS.map((l) => (
             <Link key={l.href} href={l.href} className="hover:text-ink">{l.label}</Link>
           ))}
@@ -30,10 +32,10 @@ export default function Navbar() {
           <AdminLink />
           <NotificationBell />
           <UserMenu />
-          <MobileMenu links={NAV_LINKS} />               {/* ☰ still holds Charts, Dashboard, Notifications, Log out */}
+          <MobileMenu links={NAV_LINKS} />               {/* ☰ holds every link, including Scanner */}
         </div>
       </nav>
-      <MobileTabBar />                                   {/* NEW: fixed to the bottom of the screen, phones only */}
+      <MobileTabBar />                                   {/* fixed to the bottom of the screen, phones only */}
     </header>
   );
 }
