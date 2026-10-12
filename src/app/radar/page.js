@@ -1,5 +1,7 @@
 // app/radar/page.js: the /radar page
-import RadarView from "@/components/RadarView"; // all the UI lives here
+import Navbar from "@/components/Navbar";       // NEW: top bar + phone tab bar (each page brings its own)
+import Footer from "@/components/Footer";       // NEW: footer with the legal links
+import RadarView from "@/components/RadarView"; // all the radar UI
 
 export const metadata = {
   title: "Launch Radar | GOAT",
@@ -7,5 +9,11 @@ export const metadata = {
 };
 
 export default function RadarPage() {
-  return <RadarView />;
+  return (
+    <>                                           {/* fragment: three siblings, no extra wrapper div */}
+      <Navbar />
+      <RadarView />
+      <Footer />
+    </>
+  );
 }
