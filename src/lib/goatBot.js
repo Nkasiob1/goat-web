@@ -1,19 +1,20 @@
-import { getNewPools } from "./scanner";
-import { getNews } from "./news";
+import { getNews } from "./news";                        // headlines from the RSS feeds
+import { CHAIN_LABEL } from "./radar/sources";           // NEW: "solana" → "Solana"
 import {
   fetchImage, findArticleImage, toDataUrl, uploadImage, removeImage,
   listingCard, newsCard, CARD_COLORS,
 } from "./botImages";
 
-const LIMITS = { scanner: 1, news: 1 };                  // per run (hourly)
-const PHOTO_TRIES = 3;                                   // NEW: try up to 3 headlines for a real photo before using a card
-const NEWS_MAX_AGE_HOURS = 12;
-const MEMORY_DAYS = 3;
+const LIMITS = { radar: 1, news: 1 };                    // CHANGED: radar replaces raw scanner pools (per hourly run)
+const PHOTO_TRIES = 3;                                   // try up to 3 headlines for a real photo before using a card
+const NEWS_MAX_AGE_HOURS = 12;                           // ignore stale headlines
+const RADAR_MAX_AGE_HOURS = 12;                          // NEW: only radar coins spotted in the last 12h
+const MEMORY_DAYS = 3;                                   // how far back bot_log is checked for repeats
 
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
-const usd = (n) => "$" + compact.format(n);
+const usd = (n) => (n === null || n === undefined ? "n/a" : "$" + compact.format(n)); // CHANGED: safe on missing numbers
 
-const NEWS_COINS = [
+const NEWS_COINS = [                                     // headline words → coin tag
   ["BTC", /\bbitcoin\b|\bbtc\b/i],
   ["ETH", /\bethereum\b|\bether\b|\beth\b/i],
   ["SOL", /\bsolana\b/i],
@@ -23,48 +24,73 @@ const NEWS_COINS = [
   ["ADA", /\bcardano\b/i],
 ];
 
-function cashtag(symbol) {
+function cashtag(symbol) {                               // "pepe!" → "PEPE", junk → null
   const s = (symbol ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   return /^[A-Z0-9]{2,10}$/.test(s) ? s : null;
 }
 
-function ageText(createdAt) {
-  const mins = Math.round((Date.now() - new Date(createdAt).getTime()) / 60000);
+function ageText(date) {                                 // CHANGED: handles a missing launch time
+  if (!date) return "recently";
+  const mins = Math.round((Date.now() - new Date(date).getTime()) / 60000);
+  if (!Number.isFinite(mins)) return "recently";
   return mins < 60 ? "under an hour ago" : `${Math.round(mins / 60)}h ago`;
 }
 
 const httpsOnly = (url) => (typeof url === "string" && url.startsWith("https://") ? url : null);
 
-function scannerCandidate(p, ctx) {
-  const coin = cashtag(p.symbol);
-  const body = [
-    `New listing on ${p.network}: ${p.name}${coin ? ` $${coin}` : ""}`,
-    `Liquidity ${usd(p.liquidity)} · 24h volume ${usd(p.volume)} · ${p.txns} trades · listed ${ageText(p.createdAt)}`,
-    `Passed the GOAT liquidity filter. Not financial advice, always DYOR.`,
-  ].join("\n").slice(0, 500);
+// NEW: one radar coin (🟢 DEX coin or 🏛 exchange listing) → a post candidate
+function radarCandidate(t, ctx) {
+  const coin = cashtag(t.symbol);
+  const isListing = t.kind === "cex";
+  const chain = CHAIN_LABEL[t.chain] ?? t.chain;
 
-  async function picture() {                             // listings always get our designed card
-    const raw = p.image ? await fetchImage(p.image) : null;
-    const logo = raw && raw.type !== "image/webp" ? toDataUrl(raw) : null;
+  const body = (isListing
+    ? [
+        `🏛 ${coin ? `$${coin}` : t.symbol} just listed on ${t.source} (spot, USDT).`,
+        `Spotted by GOAT Radar. New listings move fast. Not financial advice.`,
+      ]
+    : [
+        `🟢 New on ${chain}: ${t.name || t.symbol}${coin ? ` $${coin}` : ""}`,
+        `Liquidity ${usd(t.liquidity_usd)} · 24h volume ${usd(t.volume_24h)} · launched ${ageText(t.pair_created_at)}`,
+        `Passed GOAT Radar safety checks: ${(t.safety_notes ?? []).join(", ") || "no red flags found"}.`,
+        `Still high risk. Always DYOR.`,
+      ]
+  ).join("\n").slice(0, 500);                            // no contract address in the text: posts_no_wallets would block it
+
+  async function picture() {                             // radar coins always get our designed card
+    const raw = t.image_url ? await fetchImage(t.image_url) : null;
+    const logo = raw && raw.type !== "image/webp" ? toDataUrl(raw) : null; // cards can't draw webp
     const card = await listingCard({
-      mark: ctx.mark, logo, name: p.name, coin, network: p.network, host: ctx.host,
-      stats: [
-        { label: "Liquidity", value: usd(p.liquidity) },
-        { label: "24h volume", value: usd(p.volume) },
-        { label: "24h change", value: `${p.change >= 0 ? "+" : ""}${p.change.toFixed(1)}%`, color: p.change >= 0 ? CARD_COLORS.gain : CARD_COLORS.loss },
-        { label: "Trades", value: compact.format(p.txns) },
-      ],
+      mark: ctx.mark,
+      logo,
+      name: isListing ? t.symbol : t.name || t.symbol,
+      coin,
+      network: isListing ? `${t.source} · Spot` : chain,
+      host: ctx.host,
+      tag: isListing ? "EXCHANGE LISTING" : "SAFETY CHECKED",
+      footer: isListing ? "Spotted by GOAT Radar · Not financial advice" : "Passed GOAT Radar checks · Still high risk · DYOR",
+      stats: isListing
+        ? [
+            { label: "Exchange", value: t.source },
+            { label: "Pair", value: "USDT" },
+            { label: "Status", value: "Live", color: CARD_COLORS.gain },
+          ]
+        : [
+            { label: "Liquidity", value: usd(t.liquidity_usd) },
+            { label: "24h volume", value: usd(t.volume_24h) },
+            { label: "Safety", value: "Passed", color: CARD_COLORS.gain },
+          ],
     });
     return { ...card, source: "card" };
   }
 
   return {
-    key: `pool:${p.id}`,
+    key: `radar:${t.id}`,                                // bot_log key, so the same coin is never posted twice
     body,
     coin,
     link: {
-      url: `https://www.geckoterminal.com/${p.networkId}/pools/${p.address}`,
-      title: `${p.name} chart on GeckoTerminal`.slice(0, 120),
+      url: t.pair_url,                                   // chart (DEX) or trade page (exchange)
+      title: (isListing ? `Trade ${t.symbol} on ${t.source}` : `${t.name || t.symbol} chart`).slice(0, 120),
     },
     picture,
   };
@@ -77,7 +103,7 @@ function newsCandidate(item, ctx) {
     `via ${item.source}${coin ? ` · $${coin}` : ""}`,
   ].join("\n\n");
 
-  async function picture(allowCard) {                    // CHANGED: the card is only allowed when we say so
+  async function picture(allowCard) {                    // the card is only allowed when we say so
     if (item.image) {
       const photo = await fetchImage(item.image);
       if (photo) return { ...photo, source: "article (feed)" };
@@ -101,6 +127,20 @@ function newsCandidate(item, ctx) {
   };
 }
 
+// NEW: the radar's best recent finds, newest first
+async function getRadarPicks(db) {
+  const since = new Date(Date.now() - RADAR_MAX_AGE_HOURS * 3600000).toISOString();
+  const { data, error } = await db
+    .from("radar_tokens")
+    .select("id, kind, chain, symbol, name, source, pair_url, image_url, liquidity_usd, volume_24h, pair_created_at, safety_notes")
+    .in("safety", ["green", "listed"])                   // only 🟢 coins and 🏛 listings
+    .gte("first_seen", since)
+    .order("first_seen", { ascending: false })
+    .limit(20);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function runBot(db, goatId, { origin }) {
   if (!goatId) throw new Error("Missing GOAT_USER_ID");
 
@@ -110,29 +150,32 @@ export async function runBot(db, goatId, { origin }) {
   const markImg = await fetchImage(`${origin}/goat-mark.svg`, ["image/svg+xml"]);
   const ctx = { mark: markImg ? toDataUrl(markImg) : null, host: new URL(origin).host };
 
-  const pools = await getNewPools().catch(() => []);
+  const picks = await getRadarPicks(db).catch((err) => { // CHANGED: radar instead of raw pools
+    console.error("Radar read failed:", err.message);
+    return [];
+  });
   const news = await getNews().catch(() => []);
   const cutoff = Date.now() - NEWS_MAX_AGE_HOURS * 3600000;
 
   const candidates = {
-    scanner: pools.map((p) => scannerCandidate(p, ctx)),
+    radar: picks.map((t) => radarCandidate(t, ctx)),
     news: news.filter((n) => new Date(n.date).getTime() >= cutoff).map((n) => newsCandidate(n, ctx)),
   };
 
   const since = new Date(Date.now() - MEMORY_DAYS * 86400000).toISOString();
   const { data: seen, error: seenError } = await db.from("bot_log").select("key").gte("created_at", since);
   if (seenError) throw seenError;
-  const done = new Set(seen.map((r) => r.key));
+  const done = new Set(seen.map((r) => r.key));          // everything posted in the last 3 days
 
   const posted = [];
   const skipped = [];
 
   for (const [kind, list] of Object.entries(candidates)) {
     let count = 0;
-    let tries = 0;                                       // NEW: how many headlines we've looked at this run
+    let tries = 0;                                       // how many items we've looked at this run
     for (const c of list) {
       if (count >= LIMITS[kind]) break;
-      if (done.has(c.key)) continue;
+      if (done.has(c.key)) continue;                     // already posted → skip
       tries++;
 
       const allowCard = kind !== "news" || tries > PHOTO_TRIES; // news: a card only after 3 photo-less tries
@@ -143,7 +186,7 @@ export async function runBot(db, goatId, { origin }) {
       } catch (err) {
         console.error("Picture failed:", err.message);
       }
-      if (!pic && !allowCard) continue;                  // NEW: no photo → try the next headline (not remembered, may return later)
+      if (!pic && !allowCard) continue;                  // no photo → try the next headline
 
       let imageUrl = null;
       try {
@@ -164,11 +207,11 @@ export async function runBot(db, goatId, { origin }) {
       });
 
       if (error) {
-        if (imageUrl) await removeImage(db, imageUrl);
-        if (error.code !== "23514") throw error;
+        if (imageUrl) await removeImage(db, imageUrl);   // don't leave orphan pictures
+        if (error.code !== "23514") throw error;         // 23514 = blocked by a post rule; anything else is a real error
       }
 
-      await db.from("bot_log").insert({ key: c.key });
+      await db.from("bot_log").insert({ key: c.key });   // remember it either way
       done.add(c.key);
 
       if (error) { skipped.push({ key: c.key, reason: "blocked by post rules" }); continue; }

@@ -1,14 +1,14 @@
-import { ImageResponse } from "next/og";
+import { ImageResponse } from "next/og";                 // turns JSX into a PNG on the server
 
-const BUCKET = "post-images";
-const UA = "Mozilla/5.0 (compatible; GOATNewsBot/1.0; +https://goat-web-sandy.vercel.app)";
-const TIMEOUT = 6000;                                    // CHANGED: 6s per download, so 3 tries fit in the time limit
-const C = {
+const BUCKET = "post-images";                            // Supabase Storage bucket for post pictures
+const UA = "Mozilla/5.0 (compatible; GOATNewsBot/1.0; +https://goat-web-sandy.vercel.app)"; // polite bot identity
+const TIMEOUT = 6000;                                    // 6s per download, so 3 tries fit in the time limit
+const C = {                                              // GOAT palette for cards
   water: "#FFFFFF", mist: "#F6F8F7", line: "#E3E9E6", stone: "#6B7A73", ink: "#121A16",
   sage: "#E8F0EB", moss: "#3D7A5A", forest: "#1F4D36", gain: "#2E8B60", loss: "#C2493F", gold: "#C9A24A",
 };
 
-const ascii = (s = "") =>                                // CHANGED: convert curly punctuation instead of deleting it
+const ascii = (s = "") =>                                // convert curly punctuation instead of deleting it
   s
     .replace(/[‘’‛′]/g, "'")                             // ’ → '
     .replace(/[“”″]/g, '"')                              // “ ” → "
@@ -34,9 +34,9 @@ export async function fetchImage(url, types = ["image/png", "image/jpeg", "image
     });
     if (!res.ok) return null;
     const buf = await res.arrayBuffer();
-    if (buf.byteLength < 500 || buf.byteLength > 5 * 1024 * 1024) return null;
+    if (buf.byteLength < 500 || buf.byteLength > 5 * 1024 * 1024) return null; // too tiny (tracking pixel) or too big
     const header = (res.headers.get("content-type") ?? "").split(";")[0].trim();
-    const type = sniff(buf) ?? header;
+    const type = sniff(buf) ?? header;                   // trust the bytes over the header
     return types.includes(type) ? { buf, type } : null;
   } catch {
     return null;
@@ -66,11 +66,11 @@ export async function findArticleImage(pageUrl) {       // the article's share p
   }
 }
 
-export function toDataUrl(img) {
+export function toDataUrl(img) {                         // picture bytes → inline data: URL for cards
   return `data:${img.type};base64,${Buffer.from(img.buf).toString("base64")}`;
 }
 
-export async function uploadImage(db, goatId, img) {
+export async function uploadImage(db, goatId, img) {    // save to our own bucket, return its public URL
   const ext = img.type === "image/png" ? "png" : img.type === "image/webp" ? "webp" : "jpg";
   const path = `${goatId}/bot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
   const { error } = await db.storage.from(BUCKET).upload(path, img.buf, { contentType: img.type });
@@ -78,18 +78,18 @@ export async function uploadImage(db, goatId, img) {
   return db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
-export async function removeImage(db, url) {
+export async function removeImage(db, url) {            // clean up if the post itself failed
   const i = url?.indexOf(`/${BUCKET}/`) ?? -1;
   if (i === -1) return;
   await db.storage.from(BUCKET).remove([url.slice(i + BUCKET.length + 2)]);
 }
 
-async function render(element) {
+async function render(element) {                         // JSX → PNG bytes
   const res = new ImageResponse(element, { width: 1200, height: 630 });
   return { buf: await res.arrayBuffer(), type: "image/png" };
 }
 
-function Frame({ mark, tag, footer, host, children }) {
+function Frame({ mark, tag, footer, host, children }) {  // shared card layout: logo + tag, body, footer
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: C.water, padding: 64, color: C.ink }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -114,10 +114,14 @@ function Frame({ mark, tag, footer, host, children }) {
   );
 }
 
-export async function listingCard({ mark, logo, name, coin, network, stats, host }) {
+export async function listingCard({
+  mark, logo, name, coin, network, stats, host,
+  tag = "NEW LISTING",                                   // NEW: optional tag (top-right pill)
+  footer = "Passed the GOAT liquidity filter · Not financial advice", // NEW: optional footer line
+}) {
   const title = ascii(name).slice(0, 22) || (coin ? `$${coin}` : "New token");
   return render(
-    <Frame mark={mark} tag="NEW LISTING" footer="Passed the GOAT liquidity filter · Not financial advice" host={host}>
+    <Frame mark={mark} tag={tag} footer={footer} host={host}>
       <div style={{ display: "flex", alignItems: "center" }}>
         {logo
           ? <img src={logo} width={128} height={128} style={{ borderRadius: 64 }} />
