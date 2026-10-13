@@ -4,12 +4,13 @@ import MobileMenu from "./MobileMenu";                   // ☰ menu on phones
 import UserMenu from "./UserMenu";                       // avatar / sign up button
 import NotificationBell from "./NotificationBell";       // 🔔 with unread count
 import AdminLink from "./AdminLink";                     // shield, admins only (laptop)
+import ThemeToggle from "./ThemeToggle";                 // NEW: ☀️/🌙 switch
 import MobileTabBar from "./MobileTabBar";               // app-style bottom bar on phones
 
 const NAV_LINKS = [                                      // one list feeds the laptop bar AND the ☰ menu
   { href: "/markets", label: "Markets" },
   { href: "/charts", label: "Charts" },
-  { href: "/radar", label: "Radar" },                    // NEW: Launch Radar
+  { href: "/radar", label: "Radar" },
   { href: "/scanner", label: "Scanner" },
   { href: "/news", label: "News" },
   { href: "/community", label: "Community" },
@@ -29,6 +30,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />                                {/* NEW: shows on laptops and phones */}
           <AdminLink />
           <NotificationBell />
           <UserMenu />

@@ -1,5 +1,7 @@
 @import "tailwindcss";                 /* load Tailwind into the project */
 
+@custom-variant dark (&:where(.dark, .dark *)); /* NEW: "dark:" classes follow our .dark switch, not just the phone setting */
+
 @theme {                               /* our design tokens: every name here becomes a Tailwind class */
   /* Neutrals — 90% of the screen */
   --color-water: #FFFFFF;              /* main background */
@@ -23,8 +25,26 @@
   --font-mono: var(--font-geist-mono); /* number font: Geist Mono, for prices and balances */
 }
 
+/* NEW: dark mode = the same names, night values. Every page switches at once. */
+.dark {
+  --color-water: #0B1210;              /* background: deep green-black, not pure black (easier on the eyes) */
+  --color-mist: #131C18;               /* cards and inputs: one step lighter than the background */
+  --color-line: #24312B;               /* borders: subtle on dark */
+  --color-stone: #8FA199;              /* secondary text: lighter so it stays readable */
+  --color-ink: #E8EFEB;                /* main text: soft white, not harsh #FFF */
+
+  --color-sage: #15251D;               /* soft green tint, darkened */
+  --color-moss: #6CC596;               /* links and accents: brighter so they show on dark */
+  --color-forest: #4FB386;             /* main button: bright green, so its dark (water) text stays readable */
+
+  --color-gain: #3FBF84;               /* profit: brighter for dark backgrounds */
+  --color-loss: #E2675D;               /* loss: brighter for dark backgrounds */
+
+  color-scheme: dark;                  /* dark scrollbars, checkboxes and date pickers too */
+}
+
 body {                                 /* default styles for the whole site */
-  background: var(--color-water);      /* always white, even if the computer is in dark mode */
+  background: var(--color-water);      /* CHANGED: follows the theme (white by day, green-black by night) */
   color: var(--color-ink);             /* default text colour */
   font-family: var(--font-sans), system-ui, sans-serif; /* use Geist, fall back to system fonts */
 }
