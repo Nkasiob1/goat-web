@@ -4,6 +4,7 @@ import { EXCHANGES, fromGecko, fromDexScreener, fromBirdeye, passesRules, CHAIN_
 import { checkSafety } from "./safety";                                     // GoPlus checks
 import { sendTelegram, escapeHtml } from "../telegram";                     // channel alerts
 import { sleep } from "./http";                                             // polite pauses
+import { PARTNERS, goLink } from "../partners";                             // NEW: partner (referral) links
 
 const SITE = "https://goat-web-sandy.vercel.app"; // links and cards always come from the live site
 const MAX_CHECKS = 12;                            // safety checks per run (GoPlus free limit)
@@ -38,13 +39,18 @@ function cardUrl(t) {
 // Build the Telegram caption for one coin
 function formatAlert(t) {
   if (t.kind === "cex") {
-    return [
+    const lines = [
       `🏛 <b>New listing on ${escapeHtml(t.source)}</b>`,
       `<b>${escapeHtml(t.symbol)}</b> / USDT is now trading.`,
       `<a href="${t.pair_url}">Trade on ${escapeHtml(t.source)}</a> · <a href="${SITE}/radar">GOAT Radar</a>`,
-      "",
-      "<i>New listings move fast. Not financial advice.</i>",
-    ].join("\n");
+    ];
+    if (t.source === "Bybit" && PARTNERS.bybit) {                 // NEW: sign-up line on Bybit listings only
+      lines.push(
+        `New to Bybit? <a href="${SITE}${goLink("bybit", "telegram")}">Sign up with GOAT</a> (partner link)`
+      );
+    }
+    lines.push("", "<i>New listings move fast. Not financial advice.</i>");
+    return lines.join("\n");
   }
   return [
     `🟢 <b>${escapeHtml(t.symbol)}</b> on ${CHAIN_LABEL[t.chain]}`,
