@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CHAIN_LABEL } from "@/lib/radar/sources"; // chain names
+import { PARTNERS, goLink } from "@/lib/partners"; // NEW: partner links
 
 // Filter chips across the top
 const FILTERS = [
@@ -38,6 +39,7 @@ function timeAgo(date) {
 // One coin card
 function TokenCard({ t }) {
   const badge = BADGE[t.safety] || BADGE.yellow;
+  const isBybitListing = t.kind === "cex" && t.source === "Bybit"; // NEW: show the sign-up line on these
   return (
     <article className="flex min-w-0 flex-col rounded-3xl border border-line bg-water p-5"> {/* min-w-0: never wider than its grid cell */}
       <div className="flex min-w-0 items-center gap-3">
@@ -93,6 +95,18 @@ function TokenCard({ t }) {
           {t.kind === "cex" ? `Trade on ${t.source}` : "View chart"} ↗
         </a>
       </div>
+
+      {isBybitListing && (                                             // NEW: referral line on Bybit listings
+        <a
+          href={goLink("bybit", "radar-card")}
+          target="_blank"
+          rel="sponsored noopener"                                      // "sponsored" = honest label for search engines
+          className="mt-3 flex items-center justify-between rounded-2xl bg-sage px-3 py-2 text-xs text-ink hover:text-forest"
+        >
+          <span>New to Bybit? Sign up with GOAT</span>
+          <span className="text-stone">Partner link</span>
+        </a>
+      )}
     </article>
   );
 }
@@ -132,15 +146,17 @@ export default function RadarView() {
     [tokens, filter]
   );
 
+  const bybit = PARTNERS.bybit; // NEW: partner details for the banner
+
   return (
-    // w-full min-w-0: THE FIX. The page stays phone-width; wide children scroll inside instead of stretching it
+    // w-full min-w-0: the page stays phone-width; wide children scroll inside instead of stretching it
     <main className="mx-auto w-full min-w-0 max-w-6xl px-4 py-10 sm:px-6">
       <p className="text-sm font-medium uppercase tracking-wider text-forest">Launch Radar</p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
         New coins, checked before you see them.
       </h1>
       <p className="mt-3 max-w-2xl text-stone">
-        Fresh pools from GeckoTerminal, DexScreener and Birdeye, plus new Binance, Bybit and OKX listings.
+        Fresh pools from GeckoTerminal, DexScreener and Birdeye, plus new Binance and Bybit listings.
         Every coin is scanned for traps like honeypots and hidden owners. Updated every 15 minutes.
       </p>
 
@@ -155,6 +171,22 @@ export default function RadarView() {
           <span className="block text-sm opacity-80">Only coins that pass the checks, and new listings.</span>
         </span>
         <span className="shrink-0 rounded-full bg-water px-4 py-2 text-sm font-medium text-forest">Join</span>
+      </a>
+
+      {/* NEW: partner banner (clearly labelled) */}
+      <a
+        href={goLink("bybit", "radar-banner")}
+        target="_blank"
+        rel="sponsored noopener"
+        className="mt-3 flex items-center justify-between gap-4 rounded-3xl border border-line bg-water p-5"
+      >
+        <span className="min-w-0">
+          <span className="block font-semibold text-ink">{bybit.pitch}</span>
+          <span className="block text-sm text-stone">
+            Sign up through GOAT to support the radar. <span className="whitespace-nowrap">Partner link.</span>
+          </span>
+        </span>
+        <span className="shrink-0 rounded-full bg-forest px-4 py-2 text-sm font-medium text-water">Sign up</span>
       </a>
 
       {/* -mx-4 px-4: chips scroll edge-to-edge on phones, but start aligned with the text */}
@@ -191,7 +223,7 @@ export default function RadarView() {
 
       <p className="mt-10 text-xs text-stone">
         Automated checks reduce risk; they don't remove it. New coins are extremely volatile. Nothing here is
-        financial advice.
+        financial advice. Some links are partner links: GOAT may earn a commission if you sign up, at no cost to you.
       </p>
     </main>
   );

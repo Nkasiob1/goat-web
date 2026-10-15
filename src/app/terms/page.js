@@ -69,6 +69,16 @@ const sections = [                                                 // each secti
     ],
   },
   {
+    id: "partner-links",                                             // NEW
+    title: "Partner links",
+    body: [
+      "Some links on GOAT are partner (referral or affiliate) links, for example to the Bybit exchange. They are labelled \"Partner link\".",
+      "If you sign up or trade through a partner link, GOAT may earn a commission from the partner. This costs you nothing extra.",
+      "Partners never pay for a safety verdict: a coin's 🟢, 🟡 or 🔴 result comes only from our automated checks. A partner link is not a recommendation to use that service; check that it is available and legal where you live.",
+      "When you click a partner link, we count the click (which partner and which page) to measure what's useful. We do not record who clicked.",
+    ],
+  },
+  {
     id: "third-party",
     title: "Third-party links and data",
     body: [
@@ -125,7 +135,7 @@ export default function TermsPage() {
     <LegalPage
       eyebrow="Legal"
       title="Terms of Use"
-      updated="13 October 2026"
+      updated="15 October 2026"
       intro="These terms explain the rules for using GOAT. By creating an account or using the site, you agree to them."
       sections={sections}
     />
