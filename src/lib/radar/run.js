@@ -4,11 +4,13 @@ import { EXCHANGES, fromGecko, fromDexScreener, fromBirdeye, passesRules, CHAIN_
 import { checkSafety } from "./safety";                                     // GoPlus checks
 import { sendTelegram, escapeHtml } from "../telegram";                     // channel alerts
 import { sleep } from "./http";                                             // polite pauses
-import { PARTNERS, goLink } from "../partners";                             // NEW: partner (referral) links
+import { PARTNERS, goLink } from "../partners";                             // partner (referral) links
+import { postRadarToX } from "../x";                                        // NEW: posts to @GOATSRADAR
 
 const SITE = "https://goat-web-sandy.vercel.app"; // links and cards always come from the live site
 const MAX_CHECKS = 12;                            // safety checks per run (GoPlus free limit)
 const MAX_ALERTS = 3;                             // Telegram posts per run (no spam)
+const X_PER_RUN = 1;                              // NEW: X posts per run (each post costs credit)
 const ALERT_WINDOW_HOURS = 6;                     // only alert coins spotted recently
 const KEEP_DAYS = 7;                              // delete radar entries older than this
 
@@ -44,7 +46,7 @@ function formatAlert(t) {
       `<b>${escapeHtml(t.symbol)}</b> / USDT is now trading.`,
       `<a href="${t.pair_url}">Trade on ${escapeHtml(t.source)}</a> · <a href="${SITE}/radar">GOAT Radar</a>`,
     ];
-    if (t.source === "Bybit" && PARTNERS.bybit) {                 // NEW: sign-up line on Bybit listings only
+    if (t.source === "Bybit" && PARTNERS.bybit) {                 // sign-up line on Bybit listings only
       lines.push(
         `New to Bybit? <a href="${SITE}${goLink("bybit", "telegram")}">Sign up with GOAT</a> (partner link)`
       );
@@ -67,7 +69,7 @@ function formatAlert(t) {
 export async function runRadar() {
   const supabase = db();
   const now = new Date().toISOString();
-  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0 };
+  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, x: [] }; // NEW: x results list
 
   // ---- 1. Exchanges: compare today's coin list with the saved one ----
   for (const [name, ex] of Object.entries(EXCHANGES)) {
@@ -179,7 +181,23 @@ export async function runRadar() {
     }
   }
 
-  // ---- 5. Prune old entries ----
+  // ---- 5. NEW: X posts (@GOATSRADAR), separate from Telegram ----
+  const { data: toPost, error: xErr } = await supabase
+    .from("radar_tokens")
+    .select("*")
+    .is("x_posted_at", null)                                                 // not on X yet
+    .in("safety", ["green", "listed"])                                       // same quality bar as Telegram
+    .gte("first_seen", since)                                                // only fresh coins
+    .order("first_seen", { ascending: true })                                // oldest first, so nothing gets stuck
+    .limit(X_PER_RUN);                                                       // 1 per run keeps costs tiny
+  if (xErr) report.x.push({ error: xErr.message });                          // e.g. column missing: run the SQL
+  for (const t of toPost || []) {
+    const result = await postRadarToX(supabase, t, cardUrl(t));              // never throws
+    report.x.push({ symbol: t.symbol, ...result });                          // shows ok / skipped / error in JSON
+    if (!result.ok) break;                                                   // X refused: don't retry others this run
+  }
+
+  // ---- 6. Prune old entries ----
   const cutoff = new Date(Date.now() - KEEP_DAYS * 864e5).toISOString();
   await supabase.from("radar_tokens").delete().lt("first_seen", cutoff);
 
