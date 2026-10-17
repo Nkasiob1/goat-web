@@ -1,9 +1,11 @@
 // src/components/VetView.js
-// The checker screen: search box -> pick a coin -> safety report.
+// The checker screen: search box -> pick a coin -> safety report. Now in 7 languages.
 "use client";
 
 import { useEffect, useState } from "react";
 import { goLink } from "../lib/partners";                  // Bybit partner link
+import { useLang, useT } from "../lib/i18n/useLang";      // NEW: translations
+import { LOCALES } from "../lib/i18n/dictionaries";       // NEW: date format per language
 
 // $1.2M style money
 const money = (n) =>
@@ -25,14 +27,11 @@ const pct = (n) => {
 // green for up, red for down
 const tone = (n) => (n === null || n === undefined ? "text-ink" : n >= 0 ? "text-gain" : "text-loss");
 
-// "12 Oct 2026" style date
-const day = (ms) => new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-
-// how each verdict looks
+// how each verdict looks (labels now come from the dictionary)
 const VERDICT = {
-  green: { label: "Passed safety checks", icon: "🟢", cls: "border-gain/40 bg-gain/10 text-gain" },
-  yellow: { label: "Caution: risks found", icon: "🟡", cls: "border-yellow-500/40 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400" },
-  red: { label: "High risk", icon: "🔴", cls: "border-loss/40 bg-loss/10 text-loss" },
+  green: { key: "vet.green", icon: "🟢", cls: "border-gain/40 bg-gain/10 text-gain" },
+  yellow: { key: "vet.yellow", icon: "🟡", cls: "border-yellow-500/40 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400" },
+  red: { key: "vet.red", icon: "🔴", cls: "border-loss/40 bg-loss/10 text-loss" },
 };
 
 // how each check row looks
@@ -44,12 +43,17 @@ const STATUS = {
 };
 
 export default function VetView() {
+  const t = useT();                                        // NEW: t("vet.title")
+  const lang = useLang();                                  // NEW: "en", "fr", ...
   const [query, setQuery] = useState("");                  // the search box text
   const [loading, setLoading] = useState(false);           // spinner on/off
-  const [error, setError] = useState("");                  // error message
+  const [error, setError] = useState("");                  // error message (already translated)
   const [results, setResults] = useState([]);              // search list
   const [report, setReport] = useState(null);              // the safety report
   const [copied, setCopied] = useState(false);             // "Link copied" feedback
+
+  // "12 Oct 2026" in the visitor's language
+  const day = (ms) => new Date(ms).toLocaleDateString(LOCALES[lang] || "en-GB", { day: "numeric", month: "short", year: "numeric" });
 
   // ask our API, then show either a list or a report
   async function run(q) {
@@ -62,14 +66,14 @@ export default function VetView() {
     try {
       const res = await fetch(`/api/vet?q=${encodeURIComponent(text)}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Something went wrong.");
+      if (!res.ok) throw new Error(data.error || t("vet.error"));
       if (data.type === "report") {
         setReport(data.report);
-        setQuery(data.report.token.address);               // NEW: show the clean address in the box
+        setQuery(data.report.token.address);               // show the clean address in the box
         window.history.replaceState(null, "", `/vet?q=${data.report.token.address}`); // shareable URL
       } else {
         setResults(data.results);
-        if (!data.results.length) setError("No coins found. Try the contract address instead.");
+        if (!data.results.length) setError(t("vet.notFound"));
       }
     } catch (err) {
       setError(err.message);
@@ -92,7 +96,7 @@ export default function VetView() {
   async function share() {
     const url = window.location.href;
     try {
-      if (navigator.share) await navigator.share({ title: "GOAT safety check", url });
+      if (navigator.share) await navigator.share({ title: t("vet.title"), url });
       else {
         await navigator.clipboard.writeText(url);
         setCopied(true);
@@ -109,28 +113,25 @@ export default function VetView() {
   // the number cards (label, value, colour class, small note)
   const stats = report
     ? [
-        ["Price", price(report.market.price), "text-ink", report.market.change24h != null ? `${pct(report.market.change24h)} 24h` : ""],
+        [t("vet.price"), price(report.market.price), "text-ink", report.market.change24h != null ? t("vet.h24", { v: pct(report.market.change24h) }) : ""],
         [
-          h?.fullHistory === false ? "Since first record" : "Since launch",
+          h?.fullHistory === false ? t("vet.sinceFirst") : t("vet.sinceLaunch"),
           h ? pct(h.sinceLaunchPct) : "n/a",
           tone(h?.sinceLaunchPct),
-          h ? `from ${price(h.launchPrice)} · ${day(h.since)}` : "",
+          h ? t("vet.from", { price: price(h.launchPrice), date: day(h.since) }) : "",
         ],
-        ["From peak", h ? pct(h.fromAthPct) : "n/a", tone(h ? Math.min(h.fromAthPct, 0) : null), h ? `peak ${price(h.athPrice)}` : ""],
-        ["Liquidity", money(report.market.liquidity), "text-ink", ""],
-        ["Volume 24h", money(report.market.volume24h), "text-ink", ""],
-        ["Holders", report.holders ? report.holders.toLocaleString() : "n/a", "text-ink", ""],
+        [t("vet.fromPeak"), h ? pct(h.fromAthPct) : "n/a", tone(h ? Math.min(h.fromAthPct, 0) : null), h ? t("vet.peak", { v: price(h.athPrice) }) : ""],
+        [t("vet.liquidity"), money(report.market.liquidity), "text-ink", ""],
+        [t("vet.volume"), money(report.market.volume24h), "text-ink", ""],
+        [t("vet.holders"), report.holders ? report.holders.toLocaleString() : "n/a", "text-ink", ""],
       ]
     : [];
 
   return (
     <main className="mx-auto w-full min-w-0 max-w-3xl px-4 py-10">
       {/* heading */}
-      <h1 className="text-3xl font-semibold text-ink">Token Safety Checker</h1>
-      <p className="mt-2 text-stone">
-        Paste a contract address or type a coin name. We check for honeypots, high taxes, minting, freezing and thin
-        liquidity in seconds. Free, no sign-up.
-      </p>
+      <h1 className="text-3xl font-semibold text-ink">{t("vet.title")}</h1>
+      <p className="mt-2 text-stone">{t("vet.intro")}</p>
 
       {/* search box */}
       <form
@@ -143,11 +144,11 @@ export default function VetView() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="e.g. pepe, or 0x… / Solana address"
+          placeholder={t("vet.placeholder")}
           className="min-w-0 flex-1 rounded-xl border border-line bg-mist px-4 py-3 text-ink placeholder:text-stone focus:border-forest focus:outline-none"
         />
         <button disabled={loading} className="rounded-xl bg-forest px-5 py-3 font-medium text-white disabled:opacity-60">
-          {loading ? "Checking…" : "Check"}
+          {loading ? t("vet.checking") : t("vet.check")}
         </button>
       </form>
 
@@ -175,19 +176,19 @@ export default function VetView() {
                 )}
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-ink">
-                    {r.symbol}
+                    <span className="notranslate" translate="no">{r.symbol}</span> {/* coin names never translated */}
                     <span className="font-normal text-stone">· {r.chainLabel}</span>
-                    {r.official && (                       // NEW: the real one, per CoinGecko
-                      <span className="rounded-full bg-gain/15 px-2 py-0.5 text-[11px] font-semibold text-gain">✓ Official</span>
+                    {r.official && (
+                      <span className="rounded-full bg-gain/15 px-2 py-0.5 text-[11px] font-semibold text-gain">{t("vet.official")}</span>
                     )}
-                    {r.copycat && (                        // NEW: same ticker, different contract
-                      <span className="rounded-full bg-loss/15 px-2 py-0.5 text-[11px] font-semibold text-loss">⚠ Possible copycat</span>
+                    {r.copycat && (
+                      <span className="rounded-full bg-loss/15 px-2 py-0.5 text-[11px] font-semibold text-loss">{t("vet.copycat")}</span>
                     )}
                   </span>
-                  <span className="block truncate text-sm text-stone">{r.name}</span>
+                  <span className="notranslate block truncate text-sm text-stone" translate="no">{r.name}</span>
                 </span>
                 <span className="text-right text-sm text-stone">
-                  {r.official ? `#${r.rank}` : `Liq ${money(r.liquidity)}`} {/* rank for official, liquidity for others */}
+                  {r.official ? `#${r.rank}` : t("vet.liq", { v: money(r.liquidity) })}
                 </span>
               </button>
             </li>
@@ -203,7 +204,7 @@ export default function VetView() {
             <div className="flex items-center gap-3">
               {report.token.image && <img src={report.token.image} alt="" className="h-11 w-11 rounded-full" />}
               <div className="min-w-0">
-                <p className="text-xl font-semibold text-ink">
+                <p className="notranslate text-xl font-semibold text-ink" translate="no">
                   {report.token.symbol} <span className="text-base font-normal text-stone">{report.token.name}</span>
                 </p>
                 <p className="truncate font-mono text-xs text-stone">
@@ -212,9 +213,9 @@ export default function VetView() {
               </div>
             </div>
             <div className={`mt-4 rounded-xl border px-4 py-3 font-semibold ${v.cls}`}>
-              {v.icon} {v.label}
+              {v.icon} {t(v.key)}
               <span className="ml-2 text-sm font-normal opacity-80">
-                {report.counts.fail} fail · {report.counts.warn} warn · {report.counts.pass} pass
+                {t("vet.counts", { fail: report.counts.fail, warn: report.counts.warn, pass: report.counts.pass })}
               </span>
             </div>
           </div>
@@ -229,6 +230,9 @@ export default function VetView() {
               </div>
             ))}
           </div>
+
+          {/* until phase 2: say honestly that the details below are English */}
+          {lang !== "en" && <p className="text-xs text-stone">{t("vet.checksNote")}</p>}
 
           {/* check list */}
           <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-mist">
@@ -248,7 +252,7 @@ export default function VetView() {
           {/* actions */}
           <div className="flex flex-wrap gap-2">
             <button onClick={share} className="rounded-xl bg-forest px-4 py-2 font-medium text-white">
-              {copied ? "Link copied ✓" : "Share this check"}
+              {copied ? t("vet.copied") : t("vet.share")}
             </button>
             <a
               href={report.market.pairUrl}
@@ -256,24 +260,22 @@ export default function VetView() {
               rel="noopener noreferrer"
               className="rounded-xl border border-line px-4 py-2 font-medium text-ink hover:bg-sage"
             >
-              View chart ↗
+              {t("vet.chart")}
             </a>
           </div>
 
           {/* partner line (disclosed) */}
           <p className="text-sm text-stone">
-            Prefer coins already on a major exchange?{" "}
+            {t("vet.partnerPre")}{" "}
             <a href={goLink("bybit", "vet")} className="font-medium text-forest underline">
-              Trade on Bybit
+              {t("vet.partnerLink")}
             </a>{" "}
-            (partner link).
+            {t("vet.partnerTag")}
           </p>
 
           {/* honesty footer */}
           <p className="text-xs text-stone">
-            Automated checks from GoPlus, DexScreener, GeckoTerminal and CoinGecko, run{" "}
-            {new Date(report.checkedAt).toLocaleString()}. &quot;Launch&quot; means the first trade in this pool. A pass
-            is not a guarantee: owners can change things after launch. Not financial advice. DYOR.
+            {t("vet.footer", { time: new Date(report.checkedAt).toLocaleString(LOCALES[lang] || "en-GB") })}
           </p>
         </section>
       )}

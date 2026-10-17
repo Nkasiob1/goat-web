@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useT } from "../lib/i18n/useLang";              // NEW: translations
 
-const TABS = [ // label, address, icon drawing
-  { href: "/", label: "Home", icon: <path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /> },
-  { href: "/markets", label: "Markets", icon: <path d="M4 19V10M10 19V5M16 19v-7M22 19H2" /> },          // bar chart
-  { href: "/radar", label: "Radar", icon: <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><path d="M12 12l6-6" /></> }, // rings + sweep line
-  { href: "/vet", label: "Vet", icon: <><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /><path d="M9 12l2 2 4-4" /></> }, // NEW: shield with a tick (replaces News)
-  { href: "/community", label: "Community", icon: <path d="M4 5h16v11H8l-4 4V5z" /> },                 // speech bubble
+const TABS = [ // address, dictionary key, icon drawing
+  { href: "/", key: "tab.home", icon: <path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /> },
+  { href: "/markets", key: "tab.markets", icon: <path d="M4 19V10M10 19V5M16 19v-7M22 19H2" /> },          // bar chart
+  { href: "/radar", key: "tab.radar", icon: <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><path d="M12 12l6-6" /></> }, // rings + sweep line
+  { href: "/vet", key: "tab.vet", icon: <><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /><path d="M9 12l2 2 4-4" /></> }, // shield with a tick
+  { href: "/community", key: "tab.community", icon: <path d="M4 5h16v11H8l-4 4V5z" /> },                 // speech bubble
 ];
 
 export default function MobileTabBar() {
   const pathname = usePathname();                         // e.g. "/community" or "/post/42"
+  const t = useT();                                       // NEW: t("tab.home") -> "Accueil" in French
 
   function isActive(href) {
     if (href === "/") return pathname === "/";            // Home only when exactly on the homepage
@@ -31,20 +33,20 @@ export default function MobileTabBar() {
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }} // clears the iPhone home bar
       >
         <ul className="mx-auto grid h-16 max-w-md grid-cols-5">
-          {TABS.map((t) => {
-            const active = isActive(t.href);
+          {TABS.map((tab) => {
+            const active = isActive(tab.href);
             return (
-              <li key={t.href}>
+              <li key={tab.href}>
                 <Link
-                  href={t.href}
+                  href={tab.href}
                   aria-current={active ? "page" : undefined}   // tells screen readers which tab is open
                   className={`relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-medium transition ${active ? "text-forest" : "text-stone hover:text-ink"}`}
                 >
                   {active && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-forest"></span>} {/* green line on the active tab */}
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
-                    {t.icon}
+                    {tab.icon}
                   </svg>
-                  {t.label}
+                  <span className="max-w-full truncate px-1">{t(tab.key)}</span> {/* NEW: translated; long words get … */}
                 </Link>
               </li>
             );
