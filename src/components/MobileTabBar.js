@@ -6,9 +6,9 @@ import { usePathname } from "next/navigation";
 const TABS = [ // label, address, icon drawing
   { href: "/", label: "Home", icon: <path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /> },
   { href: "/markets", label: "Markets", icon: <path d="M4 19V10M10 19V5M16 19v-7M22 19H2" /> },          // bar chart
-  { href: "/radar", label: "Radar", icon: <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><path d="M12 12l6-6" /></> }, // NEW: rings + sweep line
+  { href: "/radar", label: "Radar", icon: <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><path d="M12 12l6-6" /></> }, // rings + sweep line
+  { href: "/vet", label: "Vet", icon: <><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /><path d="M9 12l2 2 4-4" /></> }, // NEW: shield with a tick (replaces News)
   { href: "/community", label: "Community", icon: <path d="M4 5h16v11H8l-4 4V5z" /> },                 // speech bubble
-  { href: "/news", label: "News", icon: <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 9h8M8 13h8M8 17h5" /></> }, // page
 ];
 
 export default function MobileTabBar() {
