@@ -62,6 +62,8 @@ export async function fromGecko() {
         liquidity_usd: num(a.reserve_in_usd),
         volume_24h: num(a.volume_usd?.h24),
         price_usd: num(a.base_token_price_usd),
+        market_cap_usd: num(a.market_cap_usd),                                  // often empty for brand-new pools
+        fdv_usd: num(a.fdv_usd),                                                // the fallback
         pair_created_at: a.pool_created_at,
       };
     })
@@ -102,6 +104,8 @@ export async function fromDexScreener() {
         liquidity_usd: num(pair.liquidity?.usd),
         volume_24h: num(pair.volume?.h24),
         price_usd: num(pair.priceUsd),
+        market_cap_usd: num(pair.marketCap),
+        fdv_usd: num(pair.fdv),
         pair_created_at: pair.pairCreatedAt ? new Date(pair.pairCreatedAt).toISOString() : null,
       });
     }
@@ -129,9 +133,14 @@ export async function fromBirdeye() {
     liquidity_usd: num(t.liquidity),
     volume_24h: null,                                                           // Birdeye's list has no volume
     price_usd: null,
+    market_cap_usd: null,                                                       // not in this list
+    fdv_usd: null,
     pair_created_at: t.liquidityAddedAt || null,
   }));
 }
+
+// NEW: OKX tickers that are NOT crypto (tokenised stocks etc.). Add more here if any slip through.
+const OKX_SKIP = new Set([]);
 
 // ----- Exchanges: full USDT coin lists, plus a trade link per coin -----
 export const EXCHANGES = {
@@ -151,13 +160,15 @@ export const EXCHANGES = {
         .map((i) => i.baseCoin);
     },
   },
-  OKX: {
+  OKX: {                                                                        // KEPT: big in the Middle East, India, Asia
     trade: (s) => `https://www.okx.com/trade-spot/${s.toLowerCase()}-usdt`,
     async bases() {
       const json = await getJSON("https://www.okx.com/api/v5/public/instruments?instType=SPOT");
       return (json.data || [])
-        .filter((i) => i.quoteCcy === "USDT" && i.state === "live")
-        .map((i) => i.baseCcy);
+        .filter((i) => i.quoteCcy === "USDT" && i.state === "live")            // live USDT pairs only
+        .filter((i) => i.instCategory === undefined || String(i.instCategory) === "1") // NEW: crypto only (1 = crypto); missing field = assume crypto
+        .map((i) => i.baseCcy)
+        .filter((s) => !OKX_SKIP.has(s));                                       // NEW: manual backstop
     },
   },
 };

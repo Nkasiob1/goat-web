@@ -6,9 +6,9 @@ import { sendTelegram, escapeHtml } from "../telegram";                     // c
 import { sleep } from "./http";                                             // polite pauses
 import { PARTNERS, goLink } from "../partners";                             // partner (referral) links
 import { postRadarToX } from "../x";                                        // posts to @GOATSRADAR
-import { SITE_URL } from "../site";                                         // NEW: the one place our address lives
+import { SITE_URL } from "../site";                                         // the one place our address lives
 
-const SITE = SITE_URL;                            // CHANGED: was the old vercel.app address typed in here
+const SITE = SITE_URL;                            // our public address
 const MAX_CHECKS = 12;                            // safety checks per run (GoPlus free limit)
 const MAX_ALERTS = 3;                             // Telegram posts per run (no spam)
 const X_PER_RUN = 1;                              // X posts per run (each post costs credit)
@@ -27,14 +27,24 @@ const money = (n) =>
     ? "n/a"
     : "$" + Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
 
+// NEW: market cap if we have it, otherwise FDV, and say which one it is
+function capOf(t) {
+  if (t.market_cap_usd) return { kind: "mc", value: t.market_cap_usd };    // real market cap
+  if (t.fdv_usd) return { kind: "fdv", value: t.fdv_usd };                 // fallback: fully diluted value
+  return null;                                                              // neither known
+}
+
 // Address of the picture card for one coin (drawn by /api/radar/card)
 function cardUrl(t) {
+  const cap = capOf(t);                                                     // NEW
   const params = new URLSearchParams({
     s: t.symbol,                                                  // ticker
     k: t.kind,                                                    // dex or cex
     c: t.kind === "cex" ? t.source : CHAIN_LABEL[t.chain] || "",  // exchange or chain name
     l: t.liquidity_usd ?? "",                                     // liquidity (DEX only)
     v: t.volume_24h ?? "",                                        // volume (DEX only)
+    m: cap?.value ?? "",                                          // NEW: market cap (or FDV)
+    mk: cap?.kind ?? "",                                          // NEW: "mc" or "fdv" (sets the label)
   });
   return `${SITE}/api/radar/card?${params}`;
 }
@@ -55,13 +65,15 @@ function formatAlert(t) {
     lines.push("", "<i>New listings move fast. Not financial advice.</i>");
     return lines.join("\n");
   }
+  const cap = capOf(t);                                           // NEW
+  const capText = cap ? ` · ${cap.kind === "mc" ? "MCap" : "FDV"} ${money(cap.value)}` : ""; // NEW
   return [
     `🟢 <b>${escapeHtml(t.symbol)}</b> on ${CHAIN_LABEL[t.chain]}`,
     escapeHtml(t.name || ""),
-    `Liquidity ${money(t.liquidity_usd)} · Vol 24h ${money(t.volume_24h)}`,
+    `Liquidity ${money(t.liquidity_usd)} · Vol 24h ${money(t.volume_24h)}${capText}`, // CHANGED: + market cap
     `Checks: ${escapeHtml((t.safety_notes || []).join(", "))}`,
     `<code>${escapeHtml(t.address)}</code>`,
-    `<a href="${t.pair_url}">Chart</a> · <a href="${SITE}/vet?q=${t.address}">Full safety check</a> · <a href="${SITE}/radar">GOAT Radar</a>`, // NEW: link to the Vet report
+    `<a href="${t.pair_url}">Chart</a> · <a href="${SITE}/vet?q=${t.address}">Full safety check</a> · <a href="${SITE}/radar">GOAT Radar</a>`,
     "",
     "<i>Passed automated checks. Still high risk. DYOR, not financial advice.</i>",
   ].join("\n");
