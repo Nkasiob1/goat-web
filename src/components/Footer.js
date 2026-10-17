@@ -1,32 +1,38 @@
 import Link from "next/link";
 import Logo from "./Logo";
+import T from "./T";                                     // NEW: reuses navbar translations (Markets, Radar...)
+import S from "./S";                                     // NEW: footer translations (site.js)
 
 export default function Footer() {
-  const columns = [                                      // each link has a real address
+  const columns = [                                      // each link has a real address; labels are translated
     {
-      heading: "Product",
+      key: "product",
+      heading: <S k="footer.product" />,
       links: [
-        { label: "Markets", href: "/markets" },
-        { label: "Charts", href: "/charts" },
-        { label: "Radar", href: "/radar" },              // NEW: Launch Radar
-        { label: "Scanner", href: "/scanner" },
-        { label: "News", href: "/news" },
+        { href: "/markets", label: <T k="nav.markets" /> },
+        { href: "/charts", label: <T k="nav.charts" /> },
+        { href: "/radar", label: <T k="nav.radar" /> },
+        { href: "/vet", label: <T k="nav.vet" /> },      // NEW: Token Safety Checker
+        { href: "/scanner", label: <T k="nav.scanner" /> },
+        { href: "/news", label: <T k="nav.news" /> },
       ],
     },
     {
-      heading: "Company",
+      key: "company",
+      heading: <S k="footer.company" />,
       links: [
-        { label: "The Bot", href: "/#bot" },
-        { label: "Community", href: "/community" },
-        { label: "Advertise", href: "/advertise" },
+        { href: "/#bot", label: <S k="footer.bot" /> },
+        { href: "/community", label: <T k="nav.community" /> },
+        { href: "/advertise", label: <S k="footer.advertise" /> },
       ],
     },
     {
-      heading: "Legal",
-      links: [                                           // CHANGED: the pages now exist
-        { label: "Terms", href: "/terms" },
-        { label: "Privacy", href: "/privacy" },
-        { label: "Risk Disclosure", href: "/risk" },
+      key: "legal",
+      heading: <S k="footer.legal" />,
+      links: [
+        { href: "/terms", label: <S k="footer.terms" /> },
+        { href: "/privacy", label: <S k="footer.privacy" /> },
+        { href: "/risk", label: <S k="footer.risk" /> },
       ],
     },
   ];
@@ -37,15 +43,15 @@ export default function Footer() {
         <div className="grid gap-10 md:grid-cols-4">
           <div>
             <Logo />
-            <p className="mt-4 text-sm text-stone">Greatest Of All Trades.</p>
+            <p className="mt-4 text-sm text-stone"><S k="footer.tagline" /></p>
           </div>
 
           {columns.map((col) => (
-            <div key={col.heading}>
+            <div key={col.key}>                          {/* key is now a plain word (headings are components) */}
               <p className="text-sm font-semibold text-ink">{col.heading}</p>
               <ul className="mt-4 space-y-3">
                 {col.links.map((link) => (
-                  <li key={link.label}>
+                  <li key={link.href}>                   {/* href is unique, so it makes a good key */}
                     <Link href={link.href} className="text-sm text-stone hover:text-ink">{link.label}</Link>
                   </li>
                 ))}
@@ -56,13 +62,10 @@ export default function Footer() {
 
         <div className="mt-14 border-t border-line pt-8">
           <p className="text-xs leading-relaxed text-stone">
-            Risk warning: Trading crypto, forex, stocks and indices involves significant risk of loss
-            and is not suitable for everyone. Past performance does not guarantee future results.
-            GOAT provides information and tools, not financial advice. Only trade with money you can
-            afford to lose.{" "}
-            <Link href="/risk" className="underline hover:text-ink">Read the full Risk Disclosure</Link>. {/* NEW */}
+            <S k="footer.warning" />{" "}
+            <Link href="/risk" className="underline hover:text-ink"><S k="footer.readRisk" /></Link>.
           </p>
-          <p className="mt-4 text-xs text-stone">© 2026 GOAT. All rights reserved.</p>
+          <p className="mt-4 text-xs text-stone"><S k="footer.rights" /></p>
         </div>
       </div>
     </footer>
