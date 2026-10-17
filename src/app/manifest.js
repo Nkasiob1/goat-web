@@ -1,25 +1,26 @@
-// app/manifest.js: the app's ID card (name, icons, colours, how it opens)
+// src/app/manifest.js: tells phones how to install and open GOAT as an app
 export default function manifest() {
   return {
-    name: "GOAT | Greatest Of All Trades",           // full name (install screen, app info)
-    short_name: "GOAT",                              // name under the home-screen icon
-    description: "Live markets, a safety-checked Launch Radar for new coins, and a trading community.",
-    id: "/",                                         // the app's permanent identity
-    start_url: "/?source=app",                       // where the app opens (?source=app tells us it came from the icon)
-    scope: "/",                                      // every GOAT page stays inside the app
-    display: "standalone",                           // full screen, no browser address bar
-    orientation: "portrait",                         // phone-first
-    background_color: "#0B1210",                     // splash screen colour while it loads (GOAT night)
-    theme_color: "#0B1210",                          // status bar colour inside the app
-    categories: ["finance", "news", "social"],       // used by app stores
+    name: "GOAT",                                         // shown on the system splash: short and clean
+    short_name: "GOAT",                                   // shown under the home-screen icon
+    description: "Greatest Of All Trades: live markets, a new-coin radar and a free token safety checker.",
+    id: "/",                                              // the app's permanent identity
+    start_url: "/",                                       // page the app opens on
+    scope: "/",                                           // every page belongs to the app
+    display: "standalone",                                // no browser bar: feels like a real app
+    orientation: "portrait",                              // phone app, upright
+    background_color: "#0B1210",                          // system splash colour = our animation's colour (seamless)
+    theme_color: "#0B1210",                               // status bar colour
+    categories: ["finance"],
     icons: [
-      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },        // round coin, transparent
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" }, // Android can crop this one into any shape
+      { src: "/icons/icon-maskable-dark-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" }, // NEW: coin on dark green
+      { src: "/icons/icon-maskable-dark-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" }, // phones crop this into their own shape
     ],
-    shortcuts: [                                     // long-press the icon → jump straight in
-      { name: "Launch Radar", url: "/radar", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
-      { name: "Community", url: "/community", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+    shortcuts: [                                          // long-press the app icon to see these
+      { name: "Radar", url: "/radar", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+      { name: "Vet a coin", url: "/vet", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
       { name: "Markets", url: "/markets", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
     ],
   };

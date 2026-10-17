@@ -15,17 +15,17 @@ const money = (n) =>
 const price = (n) =>
   n === null || n === undefined ? "n/a" : "$" + (n < 0.01 ? Number(n).toPrecision(3) : Number(n).toLocaleString("en-US", { maximumFractionDigits: 4 }));
 
-// NEW: +1,234% / -85.2% style percentages
+// +1,234% / -85.2% style percentages
 const pct = (n) => {
   if (n === null || n === undefined || Number.isNaN(Number(n))) return "n/a";
   const digits = Math.abs(n) >= 100 ? 0 : 1;               // big moves don't need decimals
   return (n > 0 ? "+" : "") + Number(n).toLocaleString("en-US", { maximumFractionDigits: digits }) + "%";
 };
 
-// NEW: green for up, red for down
+// green for up, red for down
 const tone = (n) => (n === null || n === undefined ? "text-ink" : n >= 0 ? "text-gain" : "text-loss");
 
-// NEW: "12 Oct 2026" style date
+// "12 Oct 2026" style date
 const day = (ms) => new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 // how each verdict looks
@@ -65,6 +65,7 @@ export default function VetView() {
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
       if (data.type === "report") {
         setReport(data.report);
+        setQuery(data.report.token.address);               // NEW: show the clean address in the box
         window.history.replaceState(null, "", `/vet?q=${data.report.token.address}`); // shareable URL
       } else {
         setResults(data.results);
@@ -103,9 +104,9 @@ export default function VetView() {
   }
 
   const v = report ? VERDICT[report.verdict] : null;       // current verdict style
-  const h = report?.history;                               // NEW: price history (may be null)
+  const h = report?.history;                               // price history (may be null)
 
-  // NEW: the number cards (label, value, colour class, small note)
+  // the number cards (label, value, colour class, small note)
   const stats = report
     ? [
         ["Price", price(report.market.price), "text-ink", report.market.change24h != null ? `${pct(report.market.change24h)} 24h` : ""],
@@ -153,7 +154,7 @@ export default function VetView() {
       {/* error */}
       {error && <p className="mt-4 rounded-xl border border-loss/40 bg-loss/10 px-4 py-3 text-loss">{error}</p>}
 
-      {/* search results */}
+      {/* search results: official first, copycats flagged */}
       {results.length > 0 && (
         <ul className="mt-6 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-mist">
           {results.map((r) => (
@@ -173,12 +174,21 @@ export default function VetView() {
                   </span>
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block font-medium text-ink">
-                    {r.symbol} <span className="font-normal text-stone">· {r.chainLabel}</span>
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-ink">
+                    {r.symbol}
+                    <span className="font-normal text-stone">· {r.chainLabel}</span>
+                    {r.official && (                       // NEW: the real one, per CoinGecko
+                      <span className="rounded-full bg-gain/15 px-2 py-0.5 text-[11px] font-semibold text-gain">✓ Official</span>
+                    )}
+                    {r.copycat && (                        // NEW: same ticker, different contract
+                      <span className="rounded-full bg-loss/15 px-2 py-0.5 text-[11px] font-semibold text-loss">⚠ Possible copycat</span>
+                    )}
                   </span>
                   <span className="block truncate text-sm text-stone">{r.name}</span>
                 </span>
-                <span className="text-right text-sm text-stone">Liq {money(r.liquidity)}</span>
+                <span className="text-right text-sm text-stone">
+                  {r.official ? `#${r.rank}` : `Liq ${money(r.liquidity)}`} {/* rank for official, liquidity for others */}
+                </span>
               </button>
             </li>
           ))}
@@ -209,7 +219,7 @@ export default function VetView() {
             </div>
           </div>
 
-          {/* NEW: number cards, 2 per row on phones, 3 on wider screens */}
+          {/* number cards, 2 per row on phones, 3 on wider screens */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {stats.map(([label, value, cls, note]) => (
               <div key={label} className="rounded-xl border border-line bg-mist p-3">
@@ -261,9 +271,9 @@ export default function VetView() {
 
           {/* honesty footer */}
           <p className="text-xs text-stone">
-            Automated checks from GoPlus, DexScreener and GeckoTerminal, run {new Date(report.checkedAt).toLocaleString()}.
-            &quot;Launch&quot; means the first trade in this pool. A pass is not a guarantee: owners can change things
-            after launch. Not financial advice. DYOR.
+            Automated checks from GoPlus, DexScreener, GeckoTerminal and CoinGecko, run{" "}
+            {new Date(report.checkedAt).toLocaleString()}. &quot;Launch&quot; means the first trade in this pool. A pass
+            is not a guarantee: owners can change things after launch. Not financial advice. DYOR.
           </p>
         </section>
       )}

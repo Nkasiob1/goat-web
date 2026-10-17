@@ -3,33 +3,68 @@
 
 const GOPLUS = "https://api.gopluslabs.io/api/v1";        // free contract scanner
 const DEX = "https://api.dexscreener.com/latest/dex";      // free market data + search
-const GECKO = "https://api.geckoterminal.com/api/v2";      // NEW: free price history (candles)
+const GECKO = "https://api.geckoterminal.com/api/v2";      // free price history (candles)
+const CG = "https://api.coingecko.com/api/v3";             // official coin list + contracts
 
-// DexScreener chain id -> our label + GoPlus chain id + GeckoTerminal network id
+// DexScreener chain id -> label, GoPlus id, GeckoTerminal id, CoinGecko platform id
 const CHAINS = {
-  ethereum: { label: "Ethereum", goplus: "1", gecko: "eth" },
-  bsc: { label: "BNB Chain", goplus: "56", gecko: "bsc" },
-  base: { label: "Base", goplus: "8453", gecko: "base" },
-  arbitrum: { label: "Arbitrum", goplus: "42161", gecko: "arbitrum" },
-  polygon: { label: "Polygon", goplus: "137", gecko: "polygon_pos" },
-  avalanche: { label: "Avalanche", goplus: "43114", gecko: "avax" },
-  optimism: { label: "Optimism", goplus: "10", gecko: "optimism" },
-  solana: { label: "Solana", goplus: "solana", gecko: "solana" },
+  ethereum: { label: "Ethereum", goplus: "1", gecko: "eth", cg: "ethereum" },
+  solana: { label: "Solana", goplus: "solana", gecko: "solana", cg: "solana" },
+  bsc: { label: "BNB Chain", goplus: "56", gecko: "bsc", cg: "binance-smart-chain" },
+  base: { label: "Base", goplus: "8453", gecko: "base", cg: "base" },
+  arbitrum: { label: "Arbitrum", goplus: "42161", gecko: "arbitrum", cg: "arbitrum-one" },
+  polygon: { label: "Polygon", goplus: "137", gecko: "polygon_pos", cg: "polygon-pos" },
+  avalanche: { label: "Avalanche", goplus: "43114", gecko: "avax", cg: "avalanche" },
+  optimism: { label: "Optimism", goplus: "10", gecko: "optimism", cg: "optimistic-ethereum" },
 };
+const CHAIN_ORDER = Object.keys(CHAINS);                   // preferred order when a coin lives on many chains
+
+// CoinGecko platform id -> our chain id (the reverse of the cg field above)
+const FROM_CG = Object.fromEntries(Object.entries(CHAINS).map(([id, c]) => [c.cg, id]));
+
+// NEW: powers a central issuer (Tether, Circle...) holds BY DESIGN. Scary on a new coin, normal on USDT.
+const ISSUER_POWERS = new Set([
+  "Balance control",
+  "Minting",
+  "Mint authority",
+  "Freeze authority",
+  "Trading pause",
+  "Tax control",
+  "Blacklist",
+  "Upgradeable",
+  "Ownership",
+]);
+const ESTABLISHED_RANK = 200;                              // NEW: CoinGecko top 200 = established coin with a known issuer
 
 // Is the text an EVM address? (0x + 40 hex characters)
 export const isEvmAddress = (q) => /^0x[a-fA-F0-9]{40}$/.test(q);
 // Is the text a Solana address? (32-44 base58 characters: no 0, O, I or l)
 export const isSolAddress = (q) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(q);
 
-// Fetch JSON with a 10-second limit, so a slow service can't hang the page
-async function getJSON(url) {
+// Tidy whatever the user pasted. Finds an address anywhere in it, else cleans the name.
+export function cleanQuery(raw) {
+  const text = String(raw || "").trim();
+  const evm = text.match(/0x[a-fA-F0-9]{40}/);             // an EVM address hiding inside brackets/text
+  if (evm) return evm[0];
+  const sol = text.split(/[^1-9A-HJ-NP-Za-km-z]+/).find((w) => w.length >= 32 && w.length <= 44); // a Solana address
+  if (sol) return sol;
+  return text.replace(/[^\p{L}\p{N}\s.-]/gu, "").trim();   // a name: drop $ ( ) and other symbols
+}
+
+// Fetch JSON with a 10-second limit (with optional extra headers)
+async function getJSON(url, headers = {}) {
   const res = await fetch(url, {
     signal: AbortSignal.timeout(10000),                    // give up after 10s
-    headers: { accept: "application/json" },               // ask for JSON
+    headers: { accept: "application/json", ...headers },   // ask for JSON (+ any API key)
   });
   if (!res.ok) throw new Error(`${new URL(url).hostname} replied ${res.status}`);
   return res.json();
+}
+
+// CoinGecko key header (only if you added COINGECKO_API_KEY)
+function cgHeaders() {
+  const key = process.env.COINGECKO_API_KEY;
+  return key ? { "x-cg-demo-api-key": key } : {};
 }
 
 // Keep only pools on chains we support, deepest liquidity first
@@ -39,25 +74,81 @@ function supportedPairs(pairs) {
     .sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0)); // biggest pool first
 }
 
-// ---------- 1. search by name or ticker ----------
+// ---------- 1a. official coins from CoinGecko ----------
+async function officialCoins(q) {
+  try {
+    const found = await getJSON(`${CG}/search?query=${encodeURIComponent(q)}`, cgHeaders());
+    const ranked = (found.coins || []).filter((c) => c.market_cap_rank); // real, ranked coins only
+    const wanted = q.toLowerCase();                        // what the user typed
+    // only coins whose ticker or name EXACTLY matches the search ("usdt" -> Tether, not evaUSDT)
+    const exact = ranked.filter((c) => c.symbol.toLowerCase() === wanted || c.name.toLowerCase() === wanted);
+    const top = (exact.length ? exact : ranked.slice(0, 1)).slice(0, 2); // no exact match: just the best one
+
+    const details = await Promise.all(                     // look up each coin's contracts at the same time
+      top.map((c) =>
+        getJSON(
+          `${CG}/coins/${c.id}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false`,
+          cgHeaders()
+        ).catch(() => null)                                // one failure doesn't sink the rest
+      )
+    );
+    const out = [];
+    top.forEach((c, i) => {
+      const entries = Object.entries(details[i]?.platforms || {}) // { "ethereum": "0x...", "solana": "..." }
+        .filter(([plat, addr]) => FROM_CG[plat] && addr)   // chains we support, with a real address
+        .sort(([a], [b]) => CHAIN_ORDER.indexOf(FROM_CG[a]) - CHAIN_ORDER.indexOf(FROM_CG[b])); // all supported chains
+      for (const [plat, addr] of entries) {
+        const chain = FROM_CG[plat];
+        out.push({
+          chain,
+          chainLabel: CHAINS[chain].label,
+          address: addr,
+          symbol: c.symbol.toUpperCase(),
+          name: c.name,
+          image: c.large || c.thumb || null,
+          rank: c.market_cap_rank,                         // e.g. 3
+          liquidity: null,                                 // not needed: it's the official one
+          official: true,                                  // shows the ✓ Official badge
+        });
+      }
+    });
+    return out;
+  } catch {
+    return [];                                             // CoinGecko busy: fall back to DexScreener only
+  }
+}
+
+// ---------- 1b. search by name or ticker ----------
 export async function searchTokens(q) {
-  const data = await getJSON(`${DEX}/search?q=${encodeURIComponent(q)}`); // DexScreener search
+  const [official, dex] = await Promise.all([              // both sources at the same time
+    officialCoins(q),
+    getJSON(`${DEX}/search?q=${encodeURIComponent(q)}`).catch(() => ({ pairs: [] })),
+  ]);
+
+  const officialAddrs = new Set(official.map((o) => o.address.toLowerCase())); // the real contracts
+  const officialSymbols = new Set(official.map((o) => o.symbol.toUpperCase())); // their tickers
+
   const seen = new Map();                                  // one entry per coin (not per pool)
-  for (const p of supportedPairs(data.pairs)) {
-    const key = `${p.chainId}:${p.baseToken.address.toLowerCase()}`; // same coin on same chain
+  for (const p of supportedPairs(dex.pairs)) {
+    if ((p.liquidity?.usd || 0) < 1000) continue;          // under $1K liquidity = noise
+    const addr = p.baseToken.address;
+    if (officialAddrs.has(addr.toLowerCase())) continue;   // already listed as official
+    const key = `${p.chainId}:${addr.toLowerCase()}`;
     if (seen.has(key)) continue;                           // already kept its deepest pool
     seen.set(key, {
       chain: p.chainId,
       chainLabel: CHAINS[p.chainId].label,
-      address: p.baseToken.address,
+      address: addr,
       symbol: p.baseToken.symbol,
       name: p.baseToken.name,
-      image: p.info?.imageUrl || null,                     // logo if DexScreener has one
+      image: p.info?.imageUrl || null,
       liquidity: p.liquidity?.usd ?? null,
-      volume24h: p.volume?.h24 ?? null,
+      official: false,
+      copycat: officialSymbols.has(String(p.baseToken.symbol).toUpperCase()), // same ticker, different contract
     });
   }
-  return [...seen.values()].slice(0, 8);                   // top 8 is plenty
+
+  return [...official, ...seen.values()].slice(0, 12);     // official first, then the rest
 }
 
 // ---------- helpers for reading GoPlus answers ----------
@@ -128,8 +219,12 @@ function solChecks(s, list) {
   if (flag(s.metadata_mutable) === true) add(list, "Metadata", "warn", "The name and logo can be changed.");
 }
 
-// ---------- 2c. market checks (DexScreener + price history) ----------
-function marketChecks(pair, history, list) {
+// ---------- 2c. market checks (DexScreener + price history + CoinGecko) ----------
+function marketChecks(pair, history, listing, list) {
+  // is this the contract CoinGecko lists? (info only: never changes the verdict)
+  if (listing?.listed) add(list, "Listed on CoinGecko", "pass", listing.rank ? `Ranked #${listing.rank} by market cap.` : "Tracked by CoinGecko.");
+  else if (listing && !listing.listed) add(list, "Listed on CoinGecko", "unknown", "Not listed. Most new coins aren't, but double-check you have the right contract.");
+
   const liq = pair.liquidity?.usd || 0;
   const liqText = "$" + Intl.NumberFormat("en-US", { notation: "compact" }).format(liq);
   if (liq < 10000) add(list, "Liquidity", "fail", `Only ${liqText}. Easy to manipulate and hard to exit.`);
@@ -142,13 +237,25 @@ function marketChecks(pair, history, list) {
     else add(list, "Age", "pass", `Trading for ${Math.round(hours / 24)} days.`);
   }
 
-  // NEW: a 90%+ crash from the peak is the classic dump / rug shape
+  // a 90%+ crash from the peak is the classic dump / rug shape
   if (history && history.fromAthPct <= -90) {
     add(list, "Price crash", "warn", `Down ${Math.abs(history.fromAthPct).toFixed(0)}% from its peak. Early holders may have dumped.`);
   }
 }
 
-// ---------- NEW: price history -> since launch % and from peak % ----------
+// ---------- NEW: established coins (top 200) -> issuer powers become warnings, with context ----------
+function softenIssuerPowers(checks, listing) {
+  const established = listing?.listed && listing.rank && listing.rank <= ESTABLISHED_RANK; // e.g. USDT is #3
+  if (!established) return false;                          // new/unknown coin: keep the strict verdict
+  for (const c of checks) {
+    if (!ISSUER_POWERS.has(c.label)) continue;             // honeypot, sell limits, liquidity: never softened
+    if (c.status === "fail") c.status = "warn";            // ✕ -> ! for a known issuer
+    if (c.status === "warn") c.detail += " Normal for a centrally issued coin, but the issuer holds this power.";
+  }
+  return true;                                             // tells the report this coin is established
+}
+
+// ---------- price history -> since launch % and from peak % ----------
 async function priceHistory(pair) {
   const net = CHAINS[pair.chainId]?.gecko;                 // GeckoTerminal's name for the chain
   const now = Number(pair.priceUsd);                       // current price
@@ -164,13 +271,11 @@ async function priceHistory(pair) {
     const candles = data?.data?.attributes?.ohlcv_list || []; // each: [time, open, high, low, close, volume]
     if (!candles.length) return null;
 
-    // the oldest candle = the first trades in this pool
-    const first = candles.reduce((a, b) => (b[0] < a[0] ? b : a));
+    const first = candles.reduce((a, b) => (b[0] < a[0] ? b : a)); // the oldest candle = first trades
     const launchPrice = Number(first[1]);                  // its OPEN price
     if (!launchPrice) return null;
 
-    // the highest HIGH of any candle (or today's price if that's higher) = the peak
-    const athPrice = Math.max(now, ...candles.map((c) => Number(c[2]) || 0));
+    const athPrice = Math.max(now, ...candles.map((c) => Number(c[2]) || 0)); // highest HIGH = the peak
 
     return {
       launchPrice,
@@ -199,6 +304,17 @@ async function scanContract(chain, address) {
   }
 }
 
+// ---------- is this exact contract listed on CoinGecko? ----------
+async function coingeckoListing(chain, address) {
+  try {
+    const coin = await getJSON(`${CG}/coins/${chain.cg}/contract/${address}`, cgHeaders());
+    return { listed: true, rank: coin.market_cap_rank || null };
+  } catch (err) {
+    if (String(err.message).includes("404")) return { listed: false }; // 404 = genuinely not listed
+    return null;                                           // busy/throttled = unknown (show nothing)
+  }
+}
+
 // ---------- 3. full report for one address ----------
 export async function vetToken(address) {
   const data = await getJSON(`${DEX}/tokens/${address}`);  // every pool holding this token
@@ -212,16 +328,18 @@ export async function vetToken(address) {
   const isBase = pair.baseToken.address.toLowerCase() === lower; // which side of the pool is ours
   const token = isBase ? pair.baseToken : pair.quoteToken;
 
-  // NEW: scan + price history at the SAME time (faster than one after the other)
-  const [scan, history] = await Promise.all([
+  // scan + price history + CoinGecko check, all at the SAME time
+  const [scan, history, listing] = await Promise.all([
     scanContract(chain, address),
     isBase ? priceHistory(pair) : Promise.resolve(null),   // history only makes sense for the base token
+    coingeckoListing(chain, address),
   ]);
 
   const checks = [];
   if (scan) (chain.goplus === "solana" ? solChecks : evmChecks)(scan, checks);
   else add(checks, "Contract scan", "unknown", "The scanner had no data for this token. Treat it with caution.");
-  marketChecks(pair, history, checks);
+  marketChecks(pair, history, listing, checks);
+  const established = softenIssuerPowers(checks, listing);  // NEW: USDT-style coins get context, not a false alarm
 
   // tally and decide the verdict
   const counts = { pass: 0, warn: 0, fail: 0, unknown: 0 };
@@ -246,7 +364,9 @@ export async function vetToken(address) {
       dex: pair.dexId,
       pairUrl: pair.url,                                   // DexScreener chart link
     },
-    history,                                               // NEW: { sinceLaunchPct, fromAthPct, ... } or null
+    history,                                               // { sinceLaunchPct, fromAthPct, ... } or null
+    listing,                                               // { listed, rank } or null
+    established,                                           // NEW: true for top-200 coins
     holders: scan?.holder_count ? Number(scan.holder_count) : null,
     checks,
     counts,
