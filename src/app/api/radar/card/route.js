@@ -1,6 +1,9 @@
 // app/api/radar/card/route.js: draws a 1200×630 alert card that Telegram downloads
 import { ImageResponse } from "next/og";   // turns JSX into a PNG
 import { connection } from "next/server";  // always draw fresh from the URL values
+import { SITE_URL } from "@/lib/site";     // NEW: our one public address
+
+const HOST = new URL(SITE_URL).host;       // NEW: "goatwatch.app" (no https://), for the card footer
 
 // $1.2M style money
 const money = (n) =>
@@ -79,7 +82,7 @@ export async function GET(request) {
             </div>
           )}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", fontSize: 24, color: "#a7d7bf" }}>
-            <div style={{ display: "flex" }}>goat-web-sandy.vercel.app/radar</div>
+            <div style={{ display: "flex" }}>{HOST}/radar</div>                {/* CHANGED: was the old vercel.app address */}
             <div style={{ display: "flex" }}>DYOR · not financial advice</div>
           </div>
         </div>

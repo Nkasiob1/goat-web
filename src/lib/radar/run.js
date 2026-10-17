@@ -5,12 +5,13 @@ import { checkSafety } from "./safety";                                     // G
 import { sendTelegram, escapeHtml } from "../telegram";                     // channel alerts
 import { sleep } from "./http";                                             // polite pauses
 import { PARTNERS, goLink } from "../partners";                             // partner (referral) links
-import { postRadarToX } from "../x";                                        // NEW: posts to @GOATSRADAR
+import { postRadarToX } from "../x";                                        // posts to @GOATSRADAR
+import { SITE_URL } from "../site";                                         // NEW: the one place our address lives
 
-const SITE = "https://goat-web-sandy.vercel.app"; // links and cards always come from the live site
+const SITE = SITE_URL;                            // CHANGED: was the old vercel.app address typed in here
 const MAX_CHECKS = 12;                            // safety checks per run (GoPlus free limit)
 const MAX_ALERTS = 3;                             // Telegram posts per run (no spam)
-const X_PER_RUN = 1;                              // NEW: X posts per run (each post costs credit)
+const X_PER_RUN = 1;                              // X posts per run (each post costs credit)
 const ALERT_WINDOW_HOURS = 6;                     // only alert coins spotted recently
 const KEEP_DAYS = 7;                              // delete radar entries older than this
 
@@ -60,7 +61,7 @@ function formatAlert(t) {
     `Liquidity ${money(t.liquidity_usd)} · Vol 24h ${money(t.volume_24h)}`,
     `Checks: ${escapeHtml((t.safety_notes || []).join(", "))}`,
     `<code>${escapeHtml(t.address)}</code>`,
-    `<a href="${t.pair_url}">Chart</a> · <a href="${SITE}/radar">GOAT Radar</a>`,
+    `<a href="${t.pair_url}">Chart</a> · <a href="${SITE}/vet?q=${t.address}">Full safety check</a> · <a href="${SITE}/radar">GOAT Radar</a>`, // NEW: link to the Vet report
     "",
     "<i>Passed automated checks. Still high risk. DYOR, not financial advice.</i>",
   ].join("\n");
@@ -69,7 +70,7 @@ function formatAlert(t) {
 export async function runRadar() {
   const supabase = db();
   const now = new Date().toISOString();
-  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, x: [] }; // NEW: x results list
+  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, x: [] };
 
   // ---- 1. Exchanges: compare today's coin list with the saved one ----
   for (const [name, ex] of Object.entries(EXCHANGES)) {
@@ -181,7 +182,7 @@ export async function runRadar() {
     }
   }
 
-  // ---- 5. NEW: X posts (@GOATSRADAR), separate from Telegram ----
+  // ---- 5. X posts (@GOATSRADAR), separate from Telegram ----
   const { data: toPost, error: xErr } = await supabase
     .from("radar_tokens")
     .select("*")

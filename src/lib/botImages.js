@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";                 // turns JSX into a PNG on the server
+import { SITE_URL } from "./site";                       // NEW: our one public address
 
 const BUCKET = "post-images";                            // Supabase Storage bucket for post pictures
-const UA = "Mozilla/5.0 (compatible; GOATNewsBot/1.0; +https://goat-web-sandy.vercel.app)"; // polite bot identity
+const UA = `Mozilla/5.0 (compatible; GOATNewsBot/1.0; +${SITE_URL})`; // CHANGED: polite bot identity now uses the new domain
 const TIMEOUT = 6000;                                    // 6s per download, so 3 tries fit in the time limit
 const C = {                                              // GOAT palette for cards
   water: "#FFFFFF", mist: "#F6F8F7", line: "#E3E9E6", stone: "#6B7A73", ink: "#121A16",
@@ -116,8 +117,8 @@ function Frame({ mark, tag, footer, host, children }) {  // shared card layout: 
 
 export async function listingCard({
   mark, logo, name, coin, network, stats, host,
-  tag = "NEW LISTING",                                   // NEW: optional tag (top-right pill)
-  footer = "Passed the GOAT liquidity filter · Not financial advice", // NEW: optional footer line
+  tag = "NEW LISTING",                                   // optional tag (top-right pill)
+  footer = "Passed the GOAT liquidity filter · Not financial advice", // optional footer line
 }) {
   const title = ascii(name).slice(0, 22) || (coin ? `$${coin}` : "New token");
   return render(
