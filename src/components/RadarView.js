@@ -2,23 +2,32 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CHAIN_LABEL } from "@/lib/radar/sources"; // chain names
-import { PARTNERS, goLink } from "@/lib/partners"; // NEW: partner links
+import { goLink } from "@/lib/partners"; // partner links
+import { useLang } from "@/lib/i18n/useLang"; // current language
+import { RADAR } from "@/lib/i18n/radar"; // this page's words
+import { translateNote } from "@/lib/i18n/notes"; // NEW: phrasebook for safety notes
 
-// Filter chips across the top
-const FILTERS = [
-  { id: "all", label: "All" },
-  { id: "green", label: "🟢 Passed checks" },
-  { id: "yellow", label: "🟡 Caution" },
-  { id: "red", label: "🔴 Risky" },
-  { id: "listed", label: "🏛 Listings" },
-];
+// r("key", { vars }) -> this page's text in the current language (English if missing)
+function useR() {
+  const lang = useLang();
+  return {
+    lang,
+    r: (key, vars) => {
+      const text = RADAR[lang]?.[key] ?? RADAR.en[key] ?? key;
+      return vars ? text.replace(/\{(\w+)\}/g, (_, name) => (vars[name] ?? "").toString()) : text; // fill {n}, {source}...
+    },
+  };
+}
 
-// Badge text + colours per verdict (traffic-light colours carry meaning, so they stay)
+// Filter chips across the top (labels come from the dictionary: "f.all", "f.green"...)
+const FILTERS = ["all", "green", "yellow", "red", "listed"];
+
+// Badge colours per verdict (text comes from the dictionary: "b.green"...)
 const BADGE = {
-  green: { text: "Passed", cls: "bg-emerald-50 text-emerald-800 ring-emerald-200" },
-  yellow: { text: "Caution", cls: "bg-amber-50 text-amber-800 ring-amber-200" },
-  red: { text: "Risky", cls: "bg-rose-50 text-rose-700 ring-rose-200" },
-  listed: { text: "Listing", cls: "bg-sky-50 text-sky-800 ring-sky-200" },
+  green: "bg-emerald-50 text-emerald-800 ring-emerald-200",
+  yellow: "bg-amber-50 text-amber-800 ring-amber-200",
+  red: "bg-rose-50 text-rose-700 ring-rose-200",
+  listed: "bg-sky-50 text-sky-800 ring-sky-200",
 };
 
 // $1.2M style money
@@ -27,19 +36,20 @@ const money = (n) =>
     ? "n/a"
     : "$" + Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
 
-// "5m ago", "3h ago", "2d ago"
-function timeAgo(date) {
+// "5m ago" / "il y a 5 min" / "minti 5 da suka wuce": the number goes wherever each language wants it
+function timeAgo(date, r) {
   if (!date) return "n/a";
   const mins = Math.max(1, Math.round((Date.now() - new Date(date).getTime()) / 60000));
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return r("agoM", { n: mins });
   const hours = Math.round(mins / 60);
-  return hours < 48 ? `${hours}h ago` : `${Math.round(hours / 24)}d ago`;
+  return hours < 48 ? r("agoH", { n: hours }) : r("agoD", { n: Math.round(hours / 24) });
 }
 
 // One coin card
 function TokenCard({ t }) {
-  const badge = BADGE[t.safety] || BADGE.yellow;
-  const isBybitListing = t.kind === "cex" && t.source === "Bybit"; // NEW: show the sign-up line on these
+  const { r, lang } = useR();                                      // translations inside the card
+  const verdict = BADGE[t.safety] ? t.safety : "yellow";           // unknown verdicts show as caution
+  const isBybitListing = t.kind === "cex" && t.source === "Bybit"; // show the sign-up line on these
   return (
     <article className="flex min-w-0 flex-col rounded-3xl border border-line bg-water p-5"> {/* min-w-0: never wider than its grid cell */}
       <div className="flex min-w-0 items-center gap-3">
@@ -51,60 +61,60 @@ function TokenCard({ t }) {
           </div>
         )}
         <div className="min-w-0 flex-1"> {/* min-w-0 lets long names truncate instead of pushing the badge out */}
-          <p className="truncate font-semibold text-ink">{t.symbol}</p>
+          <p className="notranslate truncate font-semibold text-ink" translate="no">{t.symbol}</p> {/* coin names never translated */}
           <p className="truncate text-sm text-stone">
-            {t.kind === "cex" ? `${t.source} spot listing` : `${CHAIN_LABEL[t.chain]} · ${t.source}`}
+            {t.kind === "cex" ? r("spot", { source: t.source }) : `${CHAIN_LABEL[t.chain]} · ${t.source}`}
           </p>
         </div>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${badge.cls}`}>
-          {badge.text}
+        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${BADGE[verdict]}`}>
+          {r(`b.${verdict}`)}
         </span>
       </div>
 
       {t.kind === "dex" && (
         <dl className="mt-4 grid grid-cols-3 gap-2 text-sm">
           <div className="min-w-0">
-            <dt className="text-stone">Liquidity</dt>
+            <dt className="truncate text-stone">{r("liquidity")}</dt>
             <dd className="truncate font-medium text-ink">{money(t.liquidity_usd)}</dd>
           </div>
           <div className="min-w-0">
-            <dt className="text-stone">Vol 24h</dt>
+            <dt className="truncate text-stone">{r("vol")}</dt>
             <dd className="truncate font-medium text-ink">{money(t.volume_24h)}</dd>
           </div>
           <div className="min-w-0">
-            <dt className="text-stone">Launched</dt>
-            <dd className="truncate font-medium text-ink">{timeAgo(t.pair_created_at)}</dd>
+            <dt className="truncate text-stone">{r("launched")}</dt>
+            <dd className="truncate font-medium text-ink">{timeAgo(t.pair_created_at, r)}</dd>
           </div>
         </dl>
       )}
 
       <ul className="mt-4 space-y-1 text-sm text-stone">
         {(t.safety_notes || []).slice(0, 3).map((note) => (
-          <li key={note} className="break-words">• {note}</li> // the reasons behind the badge
+          <li key={note} className="break-words">• {translateNote(note, lang)}</li> // NEW: translated by the phrasebook
         ))}
       </ul>
 
       <div className="mt-auto flex items-center justify-between gap-3 pt-5 text-sm">
-        <span className="text-stone">Spotted {timeAgo(t.first_seen)}</span>
+        <span className="text-stone">{r("spotted", { ago: timeAgo(t.first_seen, r) })}</span>
         <a
           href={t.pair_url}
           target="_blank"
           rel="noopener noreferrer"
           className="shrink-0 font-medium text-forest hover:underline"
         >
-          {t.kind === "cex" ? `Trade on ${t.source}` : "View chart"} ↗
+          {t.kind === "cex" ? r("trade", { source: t.source }) : r("chart")} ↗
         </a>
       </div>
 
-      {isBybitListing && (                                             // NEW: referral line on Bybit listings
+      {isBybitListing && (                                             // referral line on Bybit listings
         <a
           href={goLink("bybit", "radar-card")}
           target="_blank"
           rel="sponsored noopener"                                      // "sponsored" = honest label for search engines
-          className="mt-3 flex items-center justify-between rounded-2xl bg-sage px-3 py-2 text-xs text-ink hover:text-forest"
+          className="mt-3 flex items-center justify-between gap-2 rounded-2xl bg-sage px-3 py-2 text-xs text-ink hover:text-forest"
         >
-          <span>New to Bybit? Sign up with GOAT</span>
-          <span className="text-stone">Partner link</span>
+          <span>{r("bybitNew")}</span>
+          <span className="shrink-0 text-stone">{r("partnerLink")}</span>
         </a>
       )}
     </article>
@@ -112,9 +122,10 @@ function TokenCard({ t }) {
 }
 
 export default function RadarView() {
+  const { r } = useR();                                            // translations
   const [tokens, setTokens] = useState(null); // null = still loading
   const [filter, setFilter] = useState("all");
-  const [error, setError] = useState("");
+  const [error, setError] = useState("");                          // "" or "load" (translated when shown)
 
   // Load now, then every 60 seconds
   useEffect(() => {
@@ -123,13 +134,13 @@ export default function RadarView() {
       try {
         const res = await fetch("/api/radar/feed", { cache: "no-store" });
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Could not load the radar");
+        if (!res.ok) throw new Error(json.error || "load");
         if (alive) {
           setTokens(json.tokens);
           setError("");
         }
       } catch (err) {
-        if (alive) setError(err.message);
+        if (alive) setError(err.message || "load");
       }
     }
     load();
@@ -146,19 +157,12 @@ export default function RadarView() {
     [tokens, filter]
   );
 
-  const bybit = PARTNERS.bybit; // NEW: partner details for the banner
-
   return (
     // w-full min-w-0: the page stays phone-width; wide children scroll inside instead of stretching it
     <main className="mx-auto w-full min-w-0 max-w-6xl px-4 py-10 sm:px-6">
-      <p className="text-sm font-medium uppercase tracking-wider text-forest">Launch Radar</p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-        New coins, checked before you see them.
-      </h1>
-      <p className="mt-3 max-w-2xl text-stone">
-        Fresh pools from GeckoTerminal, DexScreener and Birdeye, plus new Binance and Bybit listings.
-        Every coin is scanned for traps like honeypots and hidden owners. Updated every 15 minutes.
-      </p>
+      <p className="text-sm font-medium uppercase tracking-wider text-forest">{r("eyebrow")}</p>
+      <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">{r("title")}</h1>
+      <p className="mt-3 max-w-2xl text-stone">{r("intro")}</p>
 
       <a
         href="https://t.me/Goatsradar"
@@ -167,13 +171,13 @@ export default function RadarView() {
         className="mt-6 flex items-center justify-between gap-4 rounded-3xl bg-forest p-5 text-water"
       >
         <span className="min-w-0"> {/* min-w-0: text wraps so the Join button always fits */}
-          <span className="block font-semibold">Get 🟢 alerts on Telegram</span>
-          <span className="block text-sm opacity-80">Only coins that pass the checks, and new listings.</span>
+          <span className="block font-semibold">{r("tgTitle")}</span>
+          <span className="block text-sm opacity-80">{r("tgSub")}</span>
         </span>
-        <span className="shrink-0 rounded-full bg-water px-4 py-2 text-sm font-medium text-forest">Join</span>
+        <span className="shrink-0 rounded-full bg-water px-4 py-2 text-sm font-medium text-forest">{r("join")}</span>
       </a>
 
-      {/* NEW: partner banner (clearly labelled) */}
+      {/* partner banner (clearly labelled) */}
       <a
         href={goLink("bybit", "radar-banner")}
         target="_blank"
@@ -181,38 +185,40 @@ export default function RadarView() {
         className="mt-3 flex items-center justify-between gap-4 rounded-3xl border border-line bg-water p-5"
       >
         <span className="min-w-0">
-          <span className="block font-semibold text-ink">{bybit.pitch}</span>
+          <span className="block font-semibold text-ink">{r("pitch")}</span>
           <span className="block text-sm text-stone">
-            Sign up through GOAT to support the radar. <span className="whitespace-nowrap">Partner link.</span>
+            {r("partnerSub")} <span className="whitespace-nowrap">{r("partnerTag")}</span>
           </span>
         </span>
-        <span className="shrink-0 rounded-full bg-forest px-4 py-2 text-sm font-medium text-water">Sign up</span>
+        <span className="shrink-0 rounded-full bg-forest px-4 py-2 text-sm font-medium text-water">{r("signup")}</span>
       </a>
 
       {/* -mx-4 px-4: chips scroll edge-to-edge on phones, but start aligned with the text */}
       <div className="-mx-4 mt-8 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-        {FILTERS.map((f) => (
+        {FILTERS.map((id) => (
           <button
-            key={f.id}
-            onClick={() => setFilter(f.id)}
+            key={id}
+            onClick={() => setFilter(id)}
             className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium ring-1 transition ${
-              filter === f.id
+              filter === id
                 ? "bg-forest text-water ring-forest"
                 : "bg-water text-ink ring-line hover:text-forest"
             }`}
           >
-            {f.label}
+            {r(`f.${id}`)}
           </button>
         ))}
       </div>
 
-      {error && <p className="mt-6 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}
-
-      {tokens === null && !error && <p className="mt-10 text-stone">Scanning…</p>}
-
-      {tokens !== null && shown.length === 0 && (
-        <p className="mt-10 text-stone">Nothing here yet. The radar checks again every 15 minutes.</p>
+      {error && (
+        <p className="mt-6 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">
+          {error === "load" ? r("loadError") : error}
+        </p>
       )}
+
+      {tokens === null && !error && <p className="mt-10 text-stone">{r("scanning")}</p>}
+
+      {tokens !== null && shown.length === 0 && <p className="mt-10 text-stone">{r("empty")}</p>}
 
       {/* grid-cols-1 on phones: one card per row, each exactly screen-width */}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -221,10 +227,7 @@ export default function RadarView() {
         ))}
       </div>
 
-      <p className="mt-10 text-xs text-stone">
-        Automated checks reduce risk; they don't remove it. New coins are extremely volatile. Nothing here is
-        financial advice. Some links are partner links: GOAT may earn a commission if you sign up, at no cost to you.
-      </p>
+      <p className="mt-10 text-xs text-stone">{r("disclaimer")}</p>
     </main>
   );
 }

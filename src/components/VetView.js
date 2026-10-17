@@ -1,11 +1,12 @@
 // src/components/VetView.js
-// The checker screen: search box -> pick a coin -> safety report. Now in 7 languages.
+// The checker screen: search box -> pick a coin -> safety report. In 7 languages, check details included.
 "use client";
 
 import { useEffect, useState } from "react";
 import { goLink } from "../lib/partners";                  // Bybit partner link
-import { useLang, useT } from "../lib/i18n/useLang";      // NEW: translations
-import { LOCALES } from "../lib/i18n/dictionaries";       // NEW: date format per language
+import { useLang, useT } from "../lib/i18n/useLang";      // translations
+import { LOCALES } from "../lib/i18n/dictionaries";       // date format per language
+import { translateNote } from "../lib/i18n/notes";        // NEW: phrasebook for the check details
 
 // $1.2M style money
 const money = (n) =>
@@ -27,7 +28,7 @@ const pct = (n) => {
 // green for up, red for down
 const tone = (n) => (n === null || n === undefined ? "text-ink" : n >= 0 ? "text-gain" : "text-loss");
 
-// how each verdict looks (labels now come from the dictionary)
+// how each verdict looks (labels come from the dictionary)
 const VERDICT = {
   green: { key: "vet.green", icon: "🟢", cls: "border-gain/40 bg-gain/10 text-gain" },
   yellow: { key: "vet.yellow", icon: "🟡", cls: "border-yellow-500/40 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400" },
@@ -43,8 +44,9 @@ const STATUS = {
 };
 
 export default function VetView() {
-  const t = useT();                                        // NEW: t("vet.title")
-  const lang = useLang();                                  // NEW: "en", "fr", ...
+  const t = useT();                                        // t("vet.title")
+  const lang = useLang();                                  // "en", "fr", ...
+  const tn = (text) => translateNote(text, lang);          // NEW: translate a server note
   const [query, setQuery] = useState("");                  // the search box text
   const [loading, setLoading] = useState(false);           // spinner on/off
   const [error, setError] = useState("");                  // error message (already translated)
@@ -231,10 +233,7 @@ export default function VetView() {
             ))}
           </div>
 
-          {/* until phase 2: say honestly that the details below are English */}
-          {lang !== "en" && <p className="text-xs text-stone">{t("vet.checksNote")}</p>}
-
-          {/* check list */}
+          {/* check list: names and details now translated by the phrasebook */}
           <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-mist">
             {report.checks.map((c) => (
               <li key={c.label} className="flex items-start gap-3 px-4 py-3">
@@ -242,8 +241,8 @@ export default function VetView() {
                   {STATUS[c.status].icon}
                 </span>
                 <span>
-                  <span className="block font-medium text-ink">{c.label}</span>
-                  <span className="block text-sm text-stone">{c.detail}</span>
+                  <span className="block font-medium text-ink">{tn(c.label)}</span>   {/* NEW */}
+                  <span className="block text-sm text-stone">{tn(c.detail)}</span>    {/* NEW */}
                 </span>
               </li>
             ))}
