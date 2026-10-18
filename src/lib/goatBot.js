@@ -14,7 +14,7 @@ const MEMORY_DAYS = 3;                                   // how far back bot_log
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 const usd = (n) => (n === null || n === undefined ? "n/a" : "$" + compact.format(n)); // safe on missing numbers
 
-// NEW: market cap if known, else FDV (labelled honestly), else nothing (same rule as the radar)
+// market cap if known, else FDV (labelled honestly), else nothing (same rule as the radar)
 function capOf(t) {
   if (t.market_cap_usd) return { label: "Market cap", short: "MCap", value: Number(t.market_cap_usd) };
   if (t.fdv_usd) return { label: "FDV", short: "FDV", value: Number(t.fdv_usd) };
@@ -50,7 +50,7 @@ function radarCandidate(t, ctx) {
   const coin = cashtag(t.symbol);
   const isListing = t.kind === "cex";
   const chain = CHAIN_LABEL[t.chain] ?? t.chain;
-  const cap = isListing ? null : capOf(t);               // NEW: listings have no pool numbers
+  const cap = isListing ? null : capOf(t);               // listings have no pool numbers
 
   const body = (isListing
     ? [
@@ -59,10 +59,9 @@ function radarCandidate(t, ctx) {
       ]
     : [
         `🟢 New on ${chain}: ${t.name || t.symbol}${coin ? ` $${coin}` : ""}`,
-        `${cap ? `${cap.short} ${usd(cap.value)} · ` : ""}Liquidity ${usd(t.liquidity_usd)} · 24h volume ${usd(t.volume_24h)}`, // CHANGED: market cap first
-        `Launched ${ageText(t.pair_created_at)}`,        // CHANGED: own line, so the line above stays short
-        `Passed GOAT Radar safety checks: ${(t.safety_notes ?? []).join(", ") || "no red flags found"}.`,
-        `Still high risk. Always DYOR.`,
+        `${cap ? `${cap.short} ${usd(cap.value)} · ` : ""}Liquidity ${usd(t.liquidity_usd)} · 24h volume ${usd(t.volume_24h)}`,
+        `Launched ${ageText(t.pair_created_at)}`,
+        `Passed GOAT's full safety Vet. Still high risk. Always DYOR.`, // CHANGED: says which check it passed
       ]
   ).join("\n").slice(0, 500);                            // no contract address in the text: posts_no_wallets would block it
 
@@ -76,8 +75,8 @@ function radarCandidate(t, ctx) {
       coin,
       network: isListing ? `${t.source} · Spot` : chain,
       host: ctx.host,
-      tag: isListing ? "EXCHANGE LISTING" : "SAFETY CHECKED",
-      footer: isListing ? "Spotted by GOAT Radar · Not financial advice" : "Passed GOAT Radar checks · Still high risk · DYOR",
+      tag: isListing ? "EXCHANGE LISTING" : "FULL VET PASSED",   // CHANGED: matches what it now means
+      footer: isListing ? "Spotted by GOAT Radar · Not financial advice" : "Passed GOAT's full Vet · Still high risk · DYOR",
       stats: isListing
         ? [
             { label: "Exchange", value: t.source },
@@ -85,7 +84,7 @@ function radarCandidate(t, ctx) {
             { label: "Status", value: "Live", color: CARD_COLORS.gain },
           ]
         : [
-            cap                                          // CHANGED: market cap box (Safety box if no number)
+            cap                                          // market cap box (Safety box if no number)
               ? { label: cap.label, value: usd(cap.value) }
               : { label: "Safety", value: "Passed", color: CARD_COLORS.gain },
             { label: "Liquidity", value: usd(t.liquidity_usd) },
@@ -138,13 +137,13 @@ function newsCandidate(item, ctx) {
   };
 }
 
-// The radar's best recent finds, newest first
+// The radar's best recent finds, newest first. ONLY coins the full Vet approved (or exchange listings).
 async function getRadarPicks(db) {
   const since = new Date(Date.now() - RADAR_MAX_AGE_HOURS * 3600000).toISOString();
   const { data, error } = await db
     .from("radar_tokens")
-    .select("id, kind, chain, symbol, name, source, pair_url, image_url, liquidity_usd, volume_24h, market_cap_usd, fdv_usd, pair_created_at, safety_notes") // CHANGED: + market_cap_usd, fdv_usd
-    .in("safety", ["green", "listed"])                   // only 🟢 coins and 🏛 listings
+    .select("id, kind, chain, symbol, name, source, pair_url, image_url, liquidity_usd, volume_24h, market_cap_usd, fdv_usd, pair_created_at, safety_notes")
+    .or("safety.eq.listed,and(safety.eq.green,vetted_at.not.is.null)") // CHANGED: listings, or green AND fully vetted
     .gte("first_seen", since)
     .order("first_seen", { ascending: false })
     .limit(20);
