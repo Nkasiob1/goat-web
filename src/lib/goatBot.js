@@ -1,18 +1,25 @@
 import { getNews } from "./news";                        // headlines from the RSS feeds
-import { CHAIN_LABEL } from "./radar/sources";           // NEW: "solana" → "Solana"
+import { CHAIN_LABEL } from "./radar/sources";           // "solana" → "Solana"
 import {
   fetchImage, findArticleImage, toDataUrl, uploadImage, removeImage,
   listingCard, newsCard, CARD_COLORS,
 } from "./botImages";
 
-const LIMITS = { radar: 1, news: 1 };                    // CHANGED: radar replaces raw scanner pools (per hourly run)
+const LIMITS = { radar: 1, news: 1 };                    // radar coins and news per hourly run
 const PHOTO_TRIES = 3;                                   // try up to 3 headlines for a real photo before using a card
 const NEWS_MAX_AGE_HOURS = 12;                           // ignore stale headlines
-const RADAR_MAX_AGE_HOURS = 12;                          // NEW: only radar coins spotted in the last 12h
+const RADAR_MAX_AGE_HOURS = 12;                          // only radar coins spotted in the last 12h
 const MEMORY_DAYS = 3;                                   // how far back bot_log is checked for repeats
 
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
-const usd = (n) => (n === null || n === undefined ? "n/a" : "$" + compact.format(n)); // CHANGED: safe on missing numbers
+const usd = (n) => (n === null || n === undefined ? "n/a" : "$" + compact.format(n)); // safe on missing numbers
+
+// NEW: market cap if known, else FDV (labelled honestly), else nothing (same rule as the radar)
+function capOf(t) {
+  if (t.market_cap_usd) return { label: "Market cap", short: "MCap", value: Number(t.market_cap_usd) };
+  if (t.fdv_usd) return { label: "FDV", short: "FDV", value: Number(t.fdv_usd) };
+  return null;
+}
 
 const NEWS_COINS = [                                     // headline words → coin tag
   ["BTC", /\bbitcoin\b|\bbtc\b/i],
@@ -29,7 +36,7 @@ function cashtag(symbol) {                               // "pepe!" → "PEPE", 
   return /^[A-Z0-9]{2,10}$/.test(s) ? s : null;
 }
 
-function ageText(date) {                                 // CHANGED: handles a missing launch time
+function ageText(date) {                                 // handles a missing launch time
   if (!date) return "recently";
   const mins = Math.round((Date.now() - new Date(date).getTime()) / 60000);
   if (!Number.isFinite(mins)) return "recently";
@@ -38,11 +45,12 @@ function ageText(date) {                                 // CHANGED: handles a m
 
 const httpsOnly = (url) => (typeof url === "string" && url.startsWith("https://") ? url : null);
 
-// NEW: one radar coin (🟢 DEX coin or 🏛 exchange listing) → a post candidate
+// One radar coin (🟢 DEX coin or 🏛 exchange listing) → a post candidate
 function radarCandidate(t, ctx) {
   const coin = cashtag(t.symbol);
   const isListing = t.kind === "cex";
   const chain = CHAIN_LABEL[t.chain] ?? t.chain;
+  const cap = isListing ? null : capOf(t);               // NEW: listings have no pool numbers
 
   const body = (isListing
     ? [
@@ -51,7 +59,8 @@ function radarCandidate(t, ctx) {
       ]
     : [
         `🟢 New on ${chain}: ${t.name || t.symbol}${coin ? ` $${coin}` : ""}`,
-        `Liquidity ${usd(t.liquidity_usd)} · 24h volume ${usd(t.volume_24h)} · launched ${ageText(t.pair_created_at)}`,
+        `${cap ? `${cap.short} ${usd(cap.value)} · ` : ""}Liquidity ${usd(t.liquidity_usd)} · 24h volume ${usd(t.volume_24h)}`, // CHANGED: market cap first
+        `Launched ${ageText(t.pair_created_at)}`,        // CHANGED: own line, so the line above stays short
         `Passed GOAT Radar safety checks: ${(t.safety_notes ?? []).join(", ") || "no red flags found"}.`,
         `Still high risk. Always DYOR.`,
       ]
@@ -76,9 +85,11 @@ function radarCandidate(t, ctx) {
             { label: "Status", value: "Live", color: CARD_COLORS.gain },
           ]
         : [
+            cap                                          // CHANGED: market cap box (Safety box if no number)
+              ? { label: cap.label, value: usd(cap.value) }
+              : { label: "Safety", value: "Passed", color: CARD_COLORS.gain },
             { label: "Liquidity", value: usd(t.liquidity_usd) },
             { label: "24h volume", value: usd(t.volume_24h) },
-            { label: "Safety", value: "Passed", color: CARD_COLORS.gain },
           ],
     });
     return { ...card, source: "card" };
@@ -127,12 +138,12 @@ function newsCandidate(item, ctx) {
   };
 }
 
-// NEW: the radar's best recent finds, newest first
+// The radar's best recent finds, newest first
 async function getRadarPicks(db) {
   const since = new Date(Date.now() - RADAR_MAX_AGE_HOURS * 3600000).toISOString();
   const { data, error } = await db
     .from("radar_tokens")
-    .select("id, kind, chain, symbol, name, source, pair_url, image_url, liquidity_usd, volume_24h, pair_created_at, safety_notes")
+    .select("id, kind, chain, symbol, name, source, pair_url, image_url, liquidity_usd, volume_24h, market_cap_usd, fdv_usd, pair_created_at, safety_notes") // CHANGED: + market_cap_usd, fdv_usd
     .in("safety", ["green", "listed"])                   // only 🟢 coins and 🏛 listings
     .gte("first_seen", since)
     .order("first_seen", { ascending: false })
@@ -150,7 +161,7 @@ export async function runBot(db, goatId, { origin }) {
   const markImg = await fetchImage(`${origin}/goat-mark.svg`, ["image/svg+xml"]);
   const ctx = { mark: markImg ? toDataUrl(markImg) : null, host: new URL(origin).host };
 
-  const picks = await getRadarPicks(db).catch((err) => { // CHANGED: radar instead of raw pools
+  const picks = await getRadarPicks(db).catch((err) => { // radar coins, not raw pools
     console.error("Radar read failed:", err.message);
     return [];
   });
