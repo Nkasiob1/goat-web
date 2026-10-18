@@ -11,12 +11,12 @@ const fieldClass =
 export default function AuthForm({ mode }) {             // mode: "login" or "signup"
   const router = useRouter();
   const params = useSearchParams();
-  const [email, setEmail] = useState(params.get("email") ?? ""); // pre-fill from the homepage email box
+  const [email, setEmail] = useState(params.get("email") ?? ""); // pre-fill from the homepage email box (or the link below)
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);       // is the password visible? starts hidden
-  const [agreed, setAgreed] = useState(false);                   // NEW: ticked the Terms box? (sign-up only)
+  const [agreed, setAgreed] = useState(false);                   // ticked the Terms box? (sign-up only)
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(false);                   // CHANGED: true = show the "Almost there" box
   const [pending, setPending] = useState(false);
 
   const isSignup = mode === "signup";
@@ -24,14 +24,14 @@ export default function AuthForm({ mode }) {             // mode: "login" or "si
   async function handleSubmit(event) {
     event.preventDefault();                              // no full-page reload
     setError("");
-    setNotice("");
+    setNotice(false);
 
     if (password.length < 8) {
       setError("Use at least 8 characters for your password.");
       return;
     }
 
-    if (isSignup && !agreed) {                           // NEW: backup check in case the browser skips "required"
+    if (isSignup && !agreed) {                           // backup check in case the browser skips "required"
       setError("Please confirm you're 18+ and agree to the Terms to continue.");
       return;
     }
@@ -47,7 +47,7 @@ export default function AuthForm({ mode }) {             // mode: "login" or "si
       setPending(false);
       if (error) return setError(error.message);
       if (data.session) return router.push("/dashboard");
-      setNotice("Check your email and click the link to confirm your account.");
+      setNotice(true);                                   // CHANGED: the box below covers new AND existing emails
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       setPending(false);
@@ -60,10 +60,26 @@ export default function AuthForm({ mode }) {             // mode: "login" or "si
   }
 
   if (notice) {
+    // CHANGED: Supabase answers the SAME way for new and existing emails (so nobody can test which emails
+    // have accounts). This box therefore speaks to both, and gives a returning user a way forward.
     return (
       <div className="rounded-3xl bg-sage p-8 text-center">
         <p className="font-semibold text-ink">Almost there</p>
-        <p className="mt-2 text-sm text-stone">{notice}</p>
+        <p className="mt-2 text-sm text-stone">
+          If this email is new to GOAT, check your inbox (and spam folder) and click the link to confirm your account.
+        </p>
+        <p className="mt-4 text-sm text-stone">Already have an account?</p>
+        <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm font-medium">
+          <Link
+            href={`/login?email=${encodeURIComponent(email)}`}   // carries the email over, no retyping
+            className="text-moss hover:text-forest"
+          >
+            Log in
+          </Link>
+          <Link href="/forgot-password" className="text-moss hover:text-forest">
+            Forgot password?
+          </Link>
+        </div>
       </div>
     );
   }
@@ -112,7 +128,7 @@ export default function AuthForm({ mode }) {             // mode: "login" or "si
         </div>
       )}
 
-      {isSignup && (                                     // NEW: agreement box, sign-up only
+      {isSignup && (                                     // agreement box, sign-up only
         <label className="mt-5 flex items-start gap-3 text-sm text-stone">
           <input
             type="checkbox"
