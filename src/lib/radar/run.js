@@ -2,7 +2,7 @@
 import { createClient } from "@supabase/supabase-js";                       // database client
 import { EXCHANGES, fromGecko, fromDexScreener, fromBirdeye, passesRules, CHAIN_LABEL } from "./sources";
 import { checkSafety } from "./safety";                                     // GoPlus checks (quick gate)
-import { vetToken } from "../vet";                                          // NEW: the full Vet (final gate)
+import { vetToken } from "../vet";                                          // the full Vet (final gate)
 import { sendTelegram, escapeHtml } from "../telegram";                     // channel alerts
 import { sleep } from "./http";                                             // polite pauses
 import { PARTNERS, goLink } from "../partners";                             // partner (referral) links
@@ -14,7 +14,7 @@ const MAX_CHECKS = 12;                            // quick GoPlus checks per run
 const MAX_ALERTS = 3;                             // Telegram posts per run (no spam)
 const X_PER_RUN = 1;                              // X posts per run (each post costs credit)
 const X_MIN_GAP_HOURS = 2;                        // at least 2h between X posts, so 10/day spread over the day
-const RECHECK_PER_RUN = 2;                        // NEW: rug watch: re-vet this many green coins every run
+const RECHECK_PER_RUN = 2;                        // rug watch: re-vet this many green coins every run
 const ALERT_WINDOW_HOURS = 6;                     // only alert coins spotted recently
 const KEEP_DAYS = 7;                              // delete radar entries older than this
 
@@ -71,15 +71,25 @@ async function enrich(supabase, t, cache) {
   return out;
 }
 
-// NEW: the final gate. Runs the SAME full Vet as goatwatch.app/vet and saves its verdict.
+// The final gate. Runs the SAME full Vet as goatwatch.app/vet and saves its verdict AND its numbers.
 // Returns { ok: true } only for a 🟢 Vet verdict. Listings skip it (the exchange already vetted them).
 async function vetGate(supabase, t) {
   if (t.kind !== "dex") return { ok: true, t };                            // exchange listings: no pool to vet
+  const stamp = new Date().toISOString();                                  // NEW: one timestamp for this check
   let report;
   try {
     report = await vetToken(t.address);                                    // contract + liquidity + age + price history
   } catch (err) {
-    return { ok: false, t, reason: `vet unavailable: ${err.message}` };    // can't verify = don't post (row unchanged, retried later)
+    const notTrading = String(err.message).includes("isn't trading");      // NEW: Vet can't find any pool for it
+    await supabase
+      .from("radar_tokens")
+      .update(
+        notTrading
+          ? { safety: "yellow", safety_notes: ["Not trading on any tracked DEX right now"], vetted_at: stamp } // can't verify = not green
+          : { vetted_at: stamp }                                           // temporary error: just move it to the back of the queue
+      )
+      .eq("id", t.id);
+    return { ok: false, t, reason: notTrading ? "yellow (not trading)" : `vet unavailable: ${err.message}` };
   }
   const problems = report.checks                                           // only the checks that aren't clean
     .filter((c) => c.status === "fail" || c.status === "warn")
@@ -87,15 +97,21 @@ async function vetGate(supabase, t) {
   const notes = report.verdict === "green"
     ? [`Full Vet passed (${report.counts.pass} checks)`, ...problems]      // green: say so, plus any single warning
     : problems;                                                            // yellow/red: the reasons
+  const measured = {                                                       // NEW: save what Vet MEASURED, not just its verdict
+    liquidity_usd: report.market.liquidity ?? 0,                           // e.g. ADP: $1.06M (stale) → $2.2K (real)
+    volume_24h: report.market.volume24h ?? t.volume_24h,
+    fdv_usd: report.market.fdv ?? t.fdv_usd,
+  };
   await supabase
     .from("radar_tokens")
     .update({
+      ...measured,                                                         // CHANGED: the radar page shows the same numbers as Vet
       safety: report.verdict,                                              // green | yellow | red, same as the Vet page
       safety_notes: notes,
-      vetted_at: new Date().toISOString(),                                 // the rug watch uses this to take turns
+      vetted_at: stamp,                                                    // the rug watch uses this to take turns
     })
     .eq("id", t.id);
-  const out = { ...t, safety: report.verdict, safety_notes: notes };       // the caption shows Vet's notes
+  const out = { ...t, ...measured, safety: report.verdict, safety_notes: notes }; // the caption and card use Vet's numbers too
   return { ok: report.verdict === "green", t: out, reason: report.verdict };
 }
 
@@ -136,18 +152,18 @@ function formatAlert(t) {
     `🟢 <b>${escapeHtml(t.symbol)}</b> on ${CHAIN_LABEL[t.chain]}`,
     escapeHtml(t.name || ""),
     `Liquidity ${money(t.liquidity_usd)} · Vol 24h ${money(t.volume_24h)}${capText}`,
-    `Checks: ${escapeHtml((t.safety_notes || []).join(" · "))}`,  // CHANGED: Vet's notes, separated by dots
+    `Checks: ${escapeHtml((t.safety_notes || []).join(" · "))}`,  // Vet's notes, separated by dots
     `<code>${escapeHtml(t.address)}</code>`,
     `<a href="${t.pair_url}">Chart</a> · <a href="${SITE}/vet?q=${t.address}">Full safety check</a> · <a href="${SITE}/radar">GOAT Radar</a>`,
     "",
-    "<i>Passed GOAT's full Vet. Still high risk. DYOR, not financial advice.</i>", // CHANGED: says which check it passed
+    "<i>Passed GOAT's full Vet. Still high risk. DYOR, not financial advice.</i>",
   ].join("\n");
 }
 
 export async function runRadar() {
   const supabase = db();
   const now = new Date().toISOString();
-  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, x: [], blocked: [], rechecked: [] }; // NEW: blocked + rechecked lists
+  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, x: [], blocked: [], rechecked: [] };
   const fresh = new Map();                                                   // enrich() results for this run
 
   // ---- 1. Exchanges: compare today's coin list with the saved one ----
@@ -235,7 +251,7 @@ export async function runRadar() {
     await sleep(1200);                                                       // stay under GoPlus's free rate limit
   }
 
-  // ---- 3b. NEW: rug watch. Re-vet green coins already on the radar, longest-unchecked first ----
+  // ---- 3b. Rug watch: re-vet green coins already on the radar, longest-unchecked first ----
   const { data: watch } = await supabase
     .from("radar_tokens")
     .select("*")
@@ -244,7 +260,7 @@ export async function runRadar() {
     .order("vetted_at", { ascending: true, nullsFirst: true })               // never-vetted first, then the oldest check
     .limit(RECHECK_PER_RUN);
   for (const row of watch || []) {
-    const gate = await vetGate(supabase, row);                               // saves the new verdict either way
+    const gate = await vetGate(supabase, row);                               // saves the new verdict + numbers either way
     report.rechecked.push(`${row.symbol}: ${gate.reason ?? "green"}`);       // e.g. "YOYO: red" when liquidity is pulled
   }
 
@@ -264,7 +280,7 @@ export async function runRadar() {
       report.blocked.push(`${row.symbol}: ${gate.reason}`);                  // why it wasn't posted (yellow/red/unavailable)
       continue;                                                              // never post a coin Vet doesn't call green
     }
-    const t = gate.t;                                                        // the coin with Vet's notes
+    const t = gate.t;                                                        // the coin with Vet's notes and numbers
     try {
       const sent = await sendTelegram(formatAlert(t), cardUrl(t));           // caption + picture card
       if (sent.skipped) {                                                    // keys missing: don't mark as sent
