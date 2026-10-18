@@ -1,7 +1,8 @@
 // lib/radar/run.js: one full radar scan, start to finish
 import { createClient } from "@supabase/supabase-js";                       // database client
 import { EXCHANGES, fromGecko, fromDexScreener, fromBirdeye, passesRules, CHAIN_LABEL } from "./sources";
-import { checkSafety } from "./safety";                                     // GoPlus checks
+import { checkSafety } from "./safety";                                     // GoPlus checks (quick gate)
+import { vetToken } from "../vet";                                          // NEW: the full Vet (final gate)
 import { sendTelegram, escapeHtml } from "../telegram";                     // channel alerts
 import { sleep } from "./http";                                             // polite pauses
 import { PARTNERS, goLink } from "../partners";                             // partner (referral) links
@@ -9,10 +10,11 @@ import { postRadarToX } from "../x";                                        // p
 import { SITE_URL } from "../site";                                         // the one place our address lives
 
 const SITE = SITE_URL;                            // our public address
-const MAX_CHECKS = 12;                            // safety checks per run (GoPlus free limit)
+const MAX_CHECKS = 12;                            // quick GoPlus checks per run (free limit)
 const MAX_ALERTS = 3;                             // Telegram posts per run (no spam)
 const X_PER_RUN = 1;                              // X posts per run (each post costs credit)
 const X_MIN_GAP_HOURS = 2;                        // at least 2h between X posts, so 10/day spread over the day
+const RECHECK_PER_RUN = 2;                        // NEW: rug watch: re-vet this many green coins every run
 const ALERT_WINDOW_HOURS = 6;                     // only alert coins spotted recently
 const KEEP_DAYS = 7;                              // delete radar entries older than this
 
@@ -35,7 +37,7 @@ function capOf(t) {
   return null;                                                                    // neither known
 }
 
-// Look the coin up FRESH on DexScreener right before alerting, and save the new numbers
+// Fresh market numbers (market cap, liquidity, volume) from DexScreener, saved back to the row
 async function enrich(supabase, t, cache) {
   if (t.kind !== "dex" || !t.address || !t.chain) return t;                // listings have no pool to look up
   if (cache.has(t.id)) return cache.get(t.id);                             // already looked up this run
@@ -54,7 +56,7 @@ async function enrich(supabase, t, cache) {
         const fresh = {
           market_cap_usd: best.marketCap ?? t.market_cap_usd ?? null,      // newest value wins, else keep the old one
           fdv_usd: best.fdv ?? t.fdv_usd ?? null,
-          liquidity_usd: best.liquidity?.usd ?? 0,                         // CHANGED: no liquidity reported = treat as $0 (can't verify = don't promote)
+          liquidity_usd: best.liquidity?.usd ?? 0,                         // no liquidity reported = treat as $0
           volume_24h: best.volume?.h24 ?? t.volume_24h,
           price_usd: best.priceUsd ? Number(best.priceUsd) : t.price_usd,
         };
@@ -63,25 +65,38 @@ async function enrich(supabase, t, cache) {
       }
     }
   } catch {
-    /* DexScreener slow or down: alert with what we have */
+    /* DexScreener slow or down: carry on with what we have */
   }
-  cache.set(t.id, out);                                                    // remember for step 5 (X)
+  cache.set(t.id, out);                                                    // remember for later steps
   return out;
 }
 
-// NEW: after fresh numbers, does the coin STILL pass the same rules it passed at the door?
-// If not (e.g. liquidity pulled), mark it red so nobody promotes it, and warn on the radar page.
-async function stillPasses(supabase, t) {
-  if (t.kind !== "dex") return true;                                       // exchange listings have no pool rules
-  if (passesRules(t)) return true;                                         // same bar as step 2: one source of truth
+// NEW: the final gate. Runs the SAME full Vet as goatwatch.app/vet and saves its verdict.
+// Returns { ok: true } only for a 🟢 Vet verdict. Listings skip it (the exchange already vetted them).
+async function vetGate(supabase, t) {
+  if (t.kind !== "dex") return { ok: true, t };                            // exchange listings: no pool to vet
+  let report;
+  try {
+    report = await vetToken(t.address);                                    // contract + liquidity + age + price history
+  } catch (err) {
+    return { ok: false, t, reason: `vet unavailable: ${err.message}` };    // can't verify = don't post (row unchanged, retried later)
+  }
+  const problems = report.checks                                           // only the checks that aren't clean
+    .filter((c) => c.status === "fail" || c.status === "warn")
+    .map((c) => `${c.label}: ${c.detail}`);                                // e.g. "Liquidity: Only $0. Easy to manipulate..."
+  const notes = report.verdict === "green"
+    ? [`Full Vet passed (${report.counts.pass} checks)`, ...problems]      // green: say so, plus any single warning
+    : problems;                                                            // yellow/red: the reasons
   await supabase
     .from("radar_tokens")
     .update({
-      safety: "red",                                                       // 🔴 on the radar page
-      safety_notes: [...(t.safety_notes || []), "Liquidity pulled or too thin"], // keep old notes, add the reason
+      safety: report.verdict,                                              // green | yellow | red, same as the Vet page
+      safety_notes: notes,
+      vetted_at: new Date().toISOString(),                                 // the rug watch uses this to take turns
     })
     .eq("id", t.id);
-  return false;                                                            // caller skips this coin
+  const out = { ...t, safety: report.verdict, safety_notes: notes };       // the caption shows Vet's notes
+  return { ok: report.verdict === "green", t: out, reason: report.verdict };
 }
 
 // Address of the picture card for one coin (drawn by /api/radar/card)
@@ -121,18 +136,18 @@ function formatAlert(t) {
     `🟢 <b>${escapeHtml(t.symbol)}</b> on ${CHAIN_LABEL[t.chain]}`,
     escapeHtml(t.name || ""),
     `Liquidity ${money(t.liquidity_usd)} · Vol 24h ${money(t.volume_24h)}${capText}`,
-    `Checks: ${escapeHtml((t.safety_notes || []).join(", "))}`,
+    `Checks: ${escapeHtml((t.safety_notes || []).join(" · "))}`,  // CHANGED: Vet's notes, separated by dots
     `<code>${escapeHtml(t.address)}</code>`,
     `<a href="${t.pair_url}">Chart</a> · <a href="${SITE}/vet?q=${t.address}">Full safety check</a> · <a href="${SITE}/radar">GOAT Radar</a>`,
     "",
-    "<i>Passed automated checks. Still high risk. DYOR, not financial advice.</i>",
+    "<i>Passed GOAT's full Vet. Still high risk. DYOR, not financial advice.</i>", // CHANGED: says which check it passed
   ].join("\n");
 }
 
 export async function runRadar() {
   const supabase = db();
   const now = new Date().toISOString();
-  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, x: [], dropped: [] }; // NEW: dropped list
+  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, x: [], blocked: [], rechecked: [] }; // NEW: blocked + rechecked lists
   const fresh = new Map();                                                   // enrich() results for this run
 
   // ---- 1. Exchanges: compare today's coin list with the saved one ----
@@ -201,7 +216,7 @@ export async function runRadar() {
     if (error) throw error;
   }
 
-  // ---- 3. Safety checks on the newest unchecked coins ----
+  // ---- 3. Quick safety checks (GoPlus) on the newest unchecked coins ----
   const { data: pending } = await supabase
     .from("radar_tokens")
     .select("id, chain, address")
@@ -220,7 +235,20 @@ export async function runRadar() {
     await sleep(1200);                                                       // stay under GoPlus's free rate limit
   }
 
-  // ---- 4. Telegram alerts (with picture cards): green coins and new listings ----
+  // ---- 3b. NEW: rug watch. Re-vet green coins already on the radar, longest-unchecked first ----
+  const { data: watch } = await supabase
+    .from("radar_tokens")
+    .select("*")
+    .eq("kind", "dex")
+    .eq("safety", "green")                                                   // only coins we currently call safe
+    .order("vetted_at", { ascending: true, nullsFirst: true })               // never-vetted first, then the oldest check
+    .limit(RECHECK_PER_RUN);
+  for (const row of watch || []) {
+    const gate = await vetGate(supabase, row);                               // saves the new verdict either way
+    report.rechecked.push(`${row.symbol}: ${gate.reason ?? "green"}`);       // e.g. "YOYO: red" when liquidity is pulled
+  }
+
+  // ---- 4. Telegram alerts: only coins that pass the FULL Vet, plus exchange listings ----
   const since = new Date(Date.now() - ALERT_WINDOW_HOURS * 36e5).toISOString();
   const { data: toAlert } = await supabase
     .from("radar_tokens")
@@ -231,11 +259,12 @@ export async function runRadar() {
     .order("first_seen", { ascending: true })
     .limit(MAX_ALERTS);
   for (const row of toAlert || []) {
-    const t = await enrich(supabase, row, fresh);                            // fresh numbers first
-    if (!(await stillPasses(supabase, t))) {                                 // NEW: re-check the rules on the fresh numbers
-      report.dropped.push(`${t.symbol}: liquidity ${money(t.liquidity_usd)}`); // shows in the JSON why it was skipped
-      continue;                                                              // never alert a coin that now fails
+    const gate = await vetGate(supabase, await enrich(supabase, row, fresh)); // fresh numbers, then the full Vet
+    if (!gate.ok) {
+      report.blocked.push(`${row.symbol}: ${gate.reason}`);                  // why it wasn't posted (yellow/red/unavailable)
+      continue;                                                              // never post a coin Vet doesn't call green
     }
+    const t = gate.t;                                                        // the coin with Vet's notes
     try {
       const sent = await sendTelegram(formatAlert(t), cardUrl(t));           // caption + picture card
       if (sent.skipped) {                                                    // keys missing: don't mark as sent
@@ -250,7 +279,7 @@ export async function runRadar() {
     }
   }
 
-  // ---- 5. X posts (@GOATSRADAR), spaced out across the day ----
+  // ---- 5. X posts (@GOATSRADAR), spaced out, full Vet too ----
   const { data: last } = await supabase                                      // when did we last post on X?
     .from("radar_tokens")
     .select("x_posted_at")
@@ -273,13 +302,17 @@ export async function runRadar() {
       .limit(X_PER_RUN);                                                     // 1 per run keeps costs tiny
     if (xErr) report.x.push({ error: xErr.message });                        // e.g. column missing: run the SQL
     for (const row of toPost || []) {
-      const t = await enrich(supabase, row, fresh);                          // fresh numbers (re-used if step 4 had them)
-      if (!(await stillPasses(supabase, t))) {                               // NEW: same re-check before X
-        report.x.push({ symbol: t.symbol, skipped: true, reason: "failed re-check (liquidity)" });
+      const cached = fresh.get(row.id);                                      // step 4 may have vetted it already this run
+      const gate = cached?.safety === "green"
+        ? { ok: true, t: cached }                                            // already passed this run: don't vet twice
+        : await vetGate(supabase, await enrich(supabase, row, fresh));       // otherwise: fresh numbers + full Vet
+      if (!gate.ok) {
+        report.x.push({ symbol: row.symbol, skipped: true, reason: `vet: ${gate.reason}` });
         continue;                                                            // the next run picks another coin
       }
-      const result = await postRadarToX(supabase, t, cardUrl(t));            // never throws
-      report.x.push({ symbol: t.symbol, ...result });                        // shows ok / skipped / error in JSON
+      fresh.set(row.id, gate.t);                                             // remember the vetted version
+      const result = await postRadarToX(supabase, gate.t, cardUrl(gate.t));  // never throws
+      report.x.push({ symbol: row.symbol, ...result });                      // shows ok / skipped / error in JSON
       if (!result.ok) break;                                                 // X refused: don't retry others this run
     }
   }
