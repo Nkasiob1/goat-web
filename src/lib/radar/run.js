@@ -12,6 +12,7 @@ const SITE = SITE_URL;                            // our public address
 const MAX_CHECKS = 12;                            // safety checks per run (GoPlus free limit)
 const MAX_ALERTS = 3;                             // Telegram posts per run (no spam)
 const X_PER_RUN = 1;                              // X posts per run (each post costs credit)
+const X_MIN_GAP_HOURS = 2;                        // NEW: at least 2h between X posts, so 10/day spread over the day
 const ALERT_WINDOW_HOURS = 6;                     // only alert coins spotted recently
 const KEEP_DAYS = 7;                              // delete radar entries older than this
 
@@ -27,24 +28,58 @@ const money = (n) =>
     ? "n/a"
     : "$" + Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
 
-// NEW: market cap if we have it, otherwise FDV, and say which one it is
+// market cap if we have it, otherwise FDV, and say which one it is
 function capOf(t) {
-  if (t.market_cap_usd) return { kind: "mc", value: t.market_cap_usd };    // real market cap
-  if (t.fdv_usd) return { kind: "fdv", value: t.fdv_usd };                 // fallback: fully diluted value
-  return null;                                                              // neither known
+  if (t.market_cap_usd) return { kind: "mc", value: Number(t.market_cap_usd) };   // real market cap
+  if (t.fdv_usd) return { kind: "fdv", value: Number(t.fdv_usd) };                // fallback: fully diluted value
+  return null;                                                                    // neither known
+}
+
+// Look the coin up FRESH on DexScreener right before alerting, and save the new numbers
+async function enrich(supabase, t, cache) {
+  if (t.kind !== "dex" || !t.address || !t.chain) return t;                // listings have no pool to look up
+  if (cache.has(t.id)) return cache.get(t.id);                             // already looked up this run
+  let out = t;                                                             // fall back to what we saved
+  try {
+    const res = await fetch(`https://api.dexscreener.com/tokens/v1/${t.chain}/${t.address}`, {
+      signal: AbortSignal.timeout(8000),                                   // never let this slow the run much
+    });
+    if (res.ok) {
+      const pairs = await res.json();                                      // every pool holding this coin
+      const mine = (pairs || [])
+        .filter((p) => p.baseToken?.address?.toLowerCase() === t.address.toLowerCase()) // pools where it's the main token
+        .sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));             // deepest first
+      const best = mine[0];
+      if (best) {
+        const fresh = {
+          market_cap_usd: best.marketCap ?? t.market_cap_usd ?? null,      // newest value wins, else keep the old one
+          fdv_usd: best.fdv ?? t.fdv_usd ?? null,
+          liquidity_usd: best.liquidity?.usd ?? t.liquidity_usd,
+          volume_24h: best.volume?.h24 ?? t.volume_24h,
+          price_usd: best.priceUsd ? Number(best.priceUsd) : t.price_usd,
+        };
+        await supabase.from("radar_tokens").update(fresh).eq("id", t.id);  // the radar page gets them too
+        out = { ...t, ...fresh };                                          // use the fresh numbers below
+      }
+    }
+  } catch {
+    /* DexScreener slow or down: alert with what we have */
+  }
+  cache.set(t.id, out);                                                    // remember for step 5 (X)
+  return out;
 }
 
 // Address of the picture card for one coin (drawn by /api/radar/card)
 function cardUrl(t) {
-  const cap = capOf(t);                                                     // NEW
+  const cap = capOf(t);
   const params = new URLSearchParams({
     s: t.symbol,                                                  // ticker
     k: t.kind,                                                    // dex or cex
     c: t.kind === "cex" ? t.source : CHAIN_LABEL[t.chain] || "",  // exchange or chain name
     l: t.liquidity_usd ?? "",                                     // liquidity (DEX only)
     v: t.volume_24h ?? "",                                        // volume (DEX only)
-    m: cap?.value ?? "",                                          // NEW: market cap (or FDV)
-    mk: cap?.kind ?? "",                                          // NEW: "mc" or "fdv" (sets the label)
+    m: cap?.value ?? "",                                          // market cap (or FDV)
+    mk: cap?.kind ?? "",                                          // "mc" or "fdv" (sets the label)
   });
   return `${SITE}/api/radar/card?${params}`;
 }
@@ -65,12 +100,12 @@ function formatAlert(t) {
     lines.push("", "<i>New listings move fast. Not financial advice.</i>");
     return lines.join("\n");
   }
-  const cap = capOf(t);                                           // NEW
-  const capText = cap ? ` · ${cap.kind === "mc" ? "MCap" : "FDV"} ${money(cap.value)}` : ""; // NEW
+  const cap = capOf(t);
+  const capText = cap ? ` · ${cap.kind === "mc" ? "MCap" : "FDV"} ${money(cap.value)}` : "";
   return [
     `🟢 <b>${escapeHtml(t.symbol)}</b> on ${CHAIN_LABEL[t.chain]}`,
     escapeHtml(t.name || ""),
-    `Liquidity ${money(t.liquidity_usd)} · Vol 24h ${money(t.volume_24h)}${capText}`, // CHANGED: + market cap
+    `Liquidity ${money(t.liquidity_usd)} · Vol 24h ${money(t.volume_24h)}${capText}`,
     `Checks: ${escapeHtml((t.safety_notes || []).join(", "))}`,
     `<code>${escapeHtml(t.address)}</code>`,
     `<a href="${t.pair_url}">Chart</a> · <a href="${SITE}/vet?q=${t.address}">Full safety check</a> · <a href="${SITE}/radar">GOAT Radar</a>`,
@@ -83,6 +118,7 @@ export async function runRadar() {
   const supabase = db();
   const now = new Date().toISOString();
   const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, x: [] };
+  const fresh = new Map();                                                   // enrich() results for this run
 
   // ---- 1. Exchanges: compare today's coin list with the saved one ----
   for (const [name, ex] of Object.entries(EXCHANGES)) {
@@ -97,10 +133,10 @@ export async function runRadar() {
         report.exchanges[name] = `baseline saved (${bases.length} coins)`;
         continue;
       }
-      const fresh = data.new || [];                                          // truly new listings
-      report.exchanges[name] = fresh.length ? `new: ${fresh.join(", ")}` : "no new listings";
-      if (fresh.length) {
-        const rows = fresh.map((sym) => ({
+      const freshList = data.new || [];                                      // truly new listings
+      report.exchanges[name] = freshList.length ? `new: ${freshList.join(", ")}` : "no new listings";
+      if (freshList.length) {
+        const rows = freshList.map((sym) => ({
           id: `cex:${name.toLowerCase()}:${sym}`,
           kind: "cex",
           symbol: sym,
@@ -179,7 +215,8 @@ export async function runRadar() {
     .gte("first_seen", since)
     .order("first_seen", { ascending: true })
     .limit(MAX_ALERTS);
-  for (const t of toAlert || []) {
+  for (const row of toAlert || []) {
+    const t = await enrich(supabase, row, fresh);                            // fresh numbers first
     try {
       const sent = await sendTelegram(formatAlert(t), cardUrl(t));           // caption + picture card
       if (sent.skipped) {                                                    // keys missing: don't mark as sent
@@ -194,20 +231,34 @@ export async function runRadar() {
     }
   }
 
-  // ---- 5. X posts (@GOATSRADAR), separate from Telegram ----
-  const { data: toPost, error: xErr } = await supabase
+  // ---- 5. X posts (@GOATSRADAR), spaced out across the day ----
+  const { data: last } = await supabase                                      // NEW: when did we last post on X?
     .from("radar_tokens")
-    .select("*")
-    .is("x_posted_at", null)                                                 // not on X yet
-    .in("safety", ["green", "listed"])                                       // same quality bar as Telegram
-    .gte("first_seen", since)                                                // only fresh coins
-    .order("first_seen", { ascending: true })                                // oldest first, so nothing gets stuck
-    .limit(X_PER_RUN);                                                       // 1 per run keeps costs tiny
-  if (xErr) report.x.push({ error: xErr.message });                          // e.g. column missing: run the SQL
-  for (const t of toPost || []) {
-    const result = await postRadarToX(supabase, t, cardUrl(t));              // never throws
-    report.x.push({ symbol: t.symbol, ...result });                          // shows ok / skipped / error in JSON
-    if (!result.ok) break;                                                   // X refused: don't retry others this run
+    .select("x_posted_at")
+    .not("x_posted_at", "is", null)                                          // only rows that were posted
+    .order("x_posted_at", { ascending: false })                              // newest first
+    .limit(1);
+  const lastAt = last?.[0]?.x_posted_at ? new Date(last[0].x_posted_at).getTime() : 0; // 0 = never posted
+  const waitMs = lastAt + X_MIN_GAP_HOURS * 36e5 - Date.now();               // time left before the next post is allowed
+
+  if (waitMs > 0) {
+    report.x.push({ skipped: true, reason: `gap: next X post in ${Math.ceil(waitMs / 6e4)} min` }); // too soon, wait
+  } else {
+    const { data: toPost, error: xErr } = await supabase
+      .from("radar_tokens")
+      .select("*")
+      .is("x_posted_at", null)                                               // not on X yet
+      .in("safety", ["green", "listed"])                                     // same quality bar as Telegram
+      .gte("first_seen", since)                                              // only fresh coins
+      .order("first_seen", { ascending: false })                             // CHANGED: newest first, freshest coin wins
+      .limit(X_PER_RUN);                                                     // 1 per run keeps costs tiny
+    if (xErr) report.x.push({ error: xErr.message });                        // e.g. column missing: run the SQL
+    for (const row of toPost || []) {
+      const t = await enrich(supabase, row, fresh);                          // fresh numbers (re-used if step 4 had them)
+      const result = await postRadarToX(supabase, t, cardUrl(t));            // never throws
+      report.x.push({ symbol: t.symbol, ...result });                        // shows ok / skipped / error in JSON
+      if (!result.ok) break;                                                 // X refused: don't retry others this run
+    }
   }
 
   // ---- 6. Prune old entries ----
