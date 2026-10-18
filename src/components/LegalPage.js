@@ -1,10 +1,11 @@
 import Link from "next/link";                                       // links between the legal pages
 import Navbar from "./Navbar";                                      // top bar + phone tab bar
 import Footer from "./Footer";                                      // site footer
-import S from "./S";                                                // NEW: translated page frame
-import LegalBanner from "./LegalBanner";                            // NEW: "English version applies" note
+import S from "./S";                                                // translated page frame
+import LegalBanner from "./LegalBanner";                            // "English version applies" note
+import { SUPPORT_EMAIL } from "../lib/site";                        // NEW: the one place our email lives
 
-export const CONTACT_EMAIL = "goat0support@gmail.com";              // GOAT's public support address
+export const CONTACT_EMAIL = SUPPORT_EMAIL;                         // CHANGED: kept so other files that import it still work
 
 // One shared layout for Terms, Privacy and Risk Disclosure.
 // The legal TEXT stays English (it's the binding version); the frame around it is translated.
@@ -18,7 +19,7 @@ export default function LegalPage({ eyebrow, title, updated, intro, sections }) 
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">{title}</h1>
         <p className="mt-2 text-sm text-stone"><S k="legal.updated" vars={{ date: updated }} /></p>
 
-        <LegalBanner />                                             {/* NEW: only shows for non-English readers */}
+        <LegalBanner />                                             {/* only shows for non-English readers */}
 
         <p className="mt-6 text-lg leading-relaxed text-ink">{intro}</p>
 
