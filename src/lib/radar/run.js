@@ -12,7 +12,7 @@ const SITE = SITE_URL;                            // our public address
 const MAX_CHECKS = 12;                            // safety checks per run (GoPlus free limit)
 const MAX_ALERTS = 3;                             // Telegram posts per run (no spam)
 const X_PER_RUN = 1;                              // X posts per run (each post costs credit)
-const X_MIN_GAP_HOURS = 2;                        // NEW: at least 2h between X posts, so 10/day spread over the day
+const X_MIN_GAP_HOURS = 2;                        // at least 2h between X posts, so 10/day spread over the day
 const ALERT_WINDOW_HOURS = 6;                     // only alert coins spotted recently
 const KEEP_DAYS = 7;                              // delete radar entries older than this
 
@@ -54,7 +54,7 @@ async function enrich(supabase, t, cache) {
         const fresh = {
           market_cap_usd: best.marketCap ?? t.market_cap_usd ?? null,      // newest value wins, else keep the old one
           fdv_usd: best.fdv ?? t.fdv_usd ?? null,
-          liquidity_usd: best.liquidity?.usd ?? t.liquidity_usd,
+          liquidity_usd: best.liquidity?.usd ?? 0,                         // CHANGED: no liquidity reported = treat as $0 (can't verify = don't promote)
           volume_24h: best.volume?.h24 ?? t.volume_24h,
           price_usd: best.priceUsd ? Number(best.priceUsd) : t.price_usd,
         };
@@ -67,6 +67,21 @@ async function enrich(supabase, t, cache) {
   }
   cache.set(t.id, out);                                                    // remember for step 5 (X)
   return out;
+}
+
+// NEW: after fresh numbers, does the coin STILL pass the same rules it passed at the door?
+// If not (e.g. liquidity pulled), mark it red so nobody promotes it, and warn on the radar page.
+async function stillPasses(supabase, t) {
+  if (t.kind !== "dex") return true;                                       // exchange listings have no pool rules
+  if (passesRules(t)) return true;                                         // same bar as step 2: one source of truth
+  await supabase
+    .from("radar_tokens")
+    .update({
+      safety: "red",                                                       // 🔴 on the radar page
+      safety_notes: [...(t.safety_notes || []), "Liquidity pulled or too thin"], // keep old notes, add the reason
+    })
+    .eq("id", t.id);
+  return false;                                                            // caller skips this coin
 }
 
 // Address of the picture card for one coin (drawn by /api/radar/card)
@@ -117,7 +132,7 @@ function formatAlert(t) {
 export async function runRadar() {
   const supabase = db();
   const now = new Date().toISOString();
-  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, x: [] };
+  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, x: [], dropped: [] }; // NEW: dropped list
   const fresh = new Map();                                                   // enrich() results for this run
 
   // ---- 1. Exchanges: compare today's coin list with the saved one ----
@@ -217,6 +232,10 @@ export async function runRadar() {
     .limit(MAX_ALERTS);
   for (const row of toAlert || []) {
     const t = await enrich(supabase, row, fresh);                            // fresh numbers first
+    if (!(await stillPasses(supabase, t))) {                                 // NEW: re-check the rules on the fresh numbers
+      report.dropped.push(`${t.symbol}: liquidity ${money(t.liquidity_usd)}`); // shows in the JSON why it was skipped
+      continue;                                                              // never alert a coin that now fails
+    }
     try {
       const sent = await sendTelegram(formatAlert(t), cardUrl(t));           // caption + picture card
       if (sent.skipped) {                                                    // keys missing: don't mark as sent
@@ -232,7 +251,7 @@ export async function runRadar() {
   }
 
   // ---- 5. X posts (@GOATSRADAR), spaced out across the day ----
-  const { data: last } = await supabase                                      // NEW: when did we last post on X?
+  const { data: last } = await supabase                                      // when did we last post on X?
     .from("radar_tokens")
     .select("x_posted_at")
     .not("x_posted_at", "is", null)                                          // only rows that were posted
@@ -250,11 +269,15 @@ export async function runRadar() {
       .is("x_posted_at", null)                                               // not on X yet
       .in("safety", ["green", "listed"])                                     // same quality bar as Telegram
       .gte("first_seen", since)                                              // only fresh coins
-      .order("first_seen", { ascending: false })                             // CHANGED: newest first, freshest coin wins
+      .order("first_seen", { ascending: false })                             // newest first, freshest coin wins
       .limit(X_PER_RUN);                                                     // 1 per run keeps costs tiny
     if (xErr) report.x.push({ error: xErr.message });                        // e.g. column missing: run the SQL
     for (const row of toPost || []) {
       const t = await enrich(supabase, row, fresh);                          // fresh numbers (re-used if step 4 had them)
+      if (!(await stillPasses(supabase, t))) {                               // NEW: same re-check before X
+        report.x.push({ symbol: t.symbol, skipped: true, reason: "failed re-check (liquidity)" });
+        continue;                                                            // the next run picks another coin
+      }
       const result = await postRadarToX(supabase, t, cardUrl(t));            // never throws
       report.x.push({ symbol: t.symbol, ...result });                        // shows ok / skipped / error in JSON
       if (!result.ok) break;                                                 // X refused: don't retry others this run
