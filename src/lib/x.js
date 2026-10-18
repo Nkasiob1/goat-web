@@ -112,7 +112,7 @@ export function formatTweet(t) {
   const tag = cashtag(t.symbol); // e.g. $PEPE
   const name = t.name && t.name !== t.symbol ? ` (${t.name})` : ""; // add the name if it's different
 
-  // exchange listing (Binance / Bybit)
+  // exchange listing (Binance / Bybit / OKX)
   if (t.safety === "listed") {
     return [
       `🚨 New listing on ${title(t.source)}`, // e.g. "New listing on Bybit"
@@ -130,17 +130,21 @@ export function formatTweet(t) {
   // new DEX coin that passed the safety checks
   if (t.safety === "green") {
     const chain = CHAINS[String(t.chain || "").toLowerCase()] || title(t.chain); // pretty chain
+    const cap = money(t.market_cap_usd);                    // NEW: market cap first...
+    const fdv = cap ? null : money(t.fdv_usd);              // NEW: ...FDV only if market cap is missing
     const liq = money(t.liquidity_usd); // liquidity
     const vol = money(t.volume_24h); // 24h volume
     return [
       `🟢 New coin passed GOAT safety checks`,
       ``,
       `${tag}${name}${chain ? ` on ${chain}` : ""}`,
+      cap ? `🏦 Market cap: ${cap}` : null,                  // NEW
+      fdv ? `🏦 FDV: ${fdv}` : null,                         // NEW: honest label when it's FDV
       liq ? `💧 Liquidity: ${liq}` : null, // only show lines we have data for
       vol ? `📊 24h volume: ${vol}` : null,
       `🛡 Contract scanned: no honeypot flags`,
       ``,
-      `Live radar: link in bio`,
+      `Full safety check + live radar: link in bio`,       // CHANGED: mentions the checker too
       `Not financial advice. DYOR.`,
       `#crypto #${chain ? chain.replace(/\s/g, "") : "altcoins"}`,
     ]
@@ -222,7 +226,7 @@ export async function sendTweet(text, imageUrl) {
 
 // postRadarToX: daily cap -> format -> post -> remember. One line to call from run.js.
 export async function postRadarToX(supabase, token, imageUrl) {
-  if (!xKeys()) return { skipped: true, reason: "X keys not set" }; // before tomorrow: do nothing
+  if (!xKeys()) return { skipped: true, reason: "X keys not set" }; // keys missing: do nothing
   if (token.x_posted_at) return { skipped: true, reason: "already on X" }; // never double-post
 
   const text = formatTweet(token); // build the post
