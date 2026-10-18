@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import { goLink } from "../lib/partners";                  // Bybit partner link
 import { useLang, useT } from "../lib/i18n/useLang";      // translations
 import { LOCALES } from "../lib/i18n/dictionaries";       // date format per language
-import { translateNote } from "../lib/i18n/notes";        // NEW: phrasebook for the check details
+import { translateNote } from "../lib/i18n/notes";        // phrasebook for the check details
+import WaitlistBox from "./WaitlistBox";                  // NEW: Premium waitlist under each report
 
 // $1.2M style money
 const money = (n) =>
@@ -46,7 +47,7 @@ const STATUS = {
 export default function VetView() {
   const t = useT();                                        // t("vet.title")
   const lang = useLang();                                  // "en", "fr", ...
-  const tn = (text) => translateNote(text, lang);          // NEW: translate a server note
+  const tn = (text) => translateNote(text, lang);          // translate a server note
   const [query, setQuery] = useState("");                  // the search box text
   const [loading, setLoading] = useState(false);           // spinner on/off
   const [error, setError] = useState("");                  // error message (already translated)
@@ -233,7 +234,7 @@ export default function VetView() {
             ))}
           </div>
 
-          {/* check list: names and details now translated by the phrasebook */}
+          {/* check list: names and details translated by the phrasebook */}
           <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-mist">
             {report.checks.map((c) => (
               <li key={c.label} className="flex items-start gap-3 px-4 py-3">
@@ -241,8 +242,8 @@ export default function VetView() {
                   {STATUS[c.status].icon}
                 </span>
                 <span>
-                  <span className="block font-medium text-ink">{tn(c.label)}</span>   {/* NEW */}
-                  <span className="block text-sm text-stone">{tn(c.detail)}</span>    {/* NEW */}
+                  <span className="block font-medium text-ink">{tn(c.label)}</span>
+                  <span className="block text-sm text-stone">{tn(c.detail)}</span>
                 </span>
               </li>
             ))}
@@ -271,6 +272,9 @@ export default function VetView() {
             </a>{" "}
             {t("vet.partnerTag")}
           </p>
+
+          {/* NEW: Premium waitlist, shown right after someone has seen what a report gives them */}
+          <WaitlistBox source="vet" />
 
           {/* honesty footer */}
           <p className="text-xs text-stone">
