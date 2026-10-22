@@ -11,6 +11,15 @@ export const maxDuration = 30;                             // the Vet calls seve
 
 const BOT_USERNAME = "goatvetbot";                         // lowercase, for comparing "/vet@GoatVetbot"
 const COOLDOWN_SECONDS = 15;                               // one check per chat every 15s (protects free API limits)
+const ADD_TO_GROUP = "https://t.me/GoatVetbot?startgroup=true"; // NEW: opens Telegram's "choose a group" screen for the bot
+
+// NEW: buttons under a message. Each inner array is one row of buttons.
+function buttons(reportUrl) {
+  const rows = [];
+  if (reportUrl) rows.push([{ text: "📋 Full report on goatwatch.app", url: reportUrl }]); // only under a coin report
+  rows.push([{ text: "➕ Add GOAT Vet to your group", url: ADD_TO_GROUP }]);                // under every reply
+  return { inline_keyboard: rows };
+}
 
 // Server-side database client (secret key, never in the browser)
 const db = () =>
@@ -29,14 +38,16 @@ async function tg(method, body) {
   return res.ok;
 }
 
-// Reply in the same chat, as a reply to the user's message, with no big link preview
-const reply = (msg, html) =>
+// Reply in the same chat, as a reply to the user's message, with no big link preview.
+// CHANGED: optional `markup` adds the buttons under the message.
+const reply = (msg, html, markup) =>
   tg("sendMessage", {
     chat_id: msg.chat.id,
     text: html,
     parse_mode: "HTML",                                    // allows <b>, <a>, <code>
     reply_parameters: { message_id: msg.message_id, allow_sending_without_reply: true },
     link_preview_options: { is_disabled: true },
+    ...(markup ? { reply_markup: markup } : {}),           // only include buttons when given
   });
 
 // $1.2M style money
@@ -56,7 +67,7 @@ const HELP = [
   "In a group, you can also <b>reply</b> to a message containing an address with <code>/vet</code>.",
   "Works on Ethereum, BSC, Solana, Base, Arbitrum, Polygon, Avalanche and Optimism.",
   "",
-  `Full checker: <a href="${SITE_URL}/vet?ref=tg-bot">goatwatch.app/vet</a>`,
+  "Tap the button below to add GOAT Vet to your own group. It's free.", // CHANGED: points to the button
 ].join("\n");
 
 // verdict -> headline (careful wording: green is "no major red flags", never "safe")
@@ -66,6 +77,9 @@ const HEAD = {
   red: "🔴 <b>High risk</b>",
 };
 const ICON = { fail: "✕", warn: "!", pass: "✓", unknown: "?" };
+
+// Address of the full report on the website (ref=tg-bot lets us count visits that came from the bot)
+const reportUrl = (address) => `${SITE_URL}/vet?q=${encodeURIComponent(address)}&ref=tg-bot`;
 
 // Build the short report from the same object the Vet page uses
 function formatReport(r) {
@@ -83,11 +97,7 @@ function formatReport(r) {
     lines.push(`${ICON[c.status]} <b>${escapeHtml(c.label)}</b>: ${escapeHtml(c.detail)}`);
   }
   if (passes.length) lines.push(`✓ Passed: ${escapeHtml(passes.map((c) => c.label).join(", "))}`); // passes as one short line
-  lines.push(
-    "",
-    `<a href="${SITE_URL}/vet?q=${encodeURIComponent(t.address)}&ref=tg-bot">Full report on goatwatch.app</a>`,
-    "<i>Automated check. Not financial advice. DYOR.</i>"
-  );
+  lines.push("", "<i>Automated check. Not financial advice. DYOR.</i>");          // CHANGED: the link is now a button
   return lines.join("\n");
 }
 
@@ -114,7 +124,7 @@ export async function POST(request) {
 
   try {
     if (command.toLowerCase() !== "vet") {                 // /start or /help
-      await reply(msg, HELP);
+      await reply(msg, HELP, buttons());                   // CHANGED: + "Add to your group" button
       return NextResponse.json({ ok: true });
     }
 
@@ -148,9 +158,9 @@ export async function POST(request) {
     try {
       const report = await vetToken(address);
       verdict = report.verdict;
-      await reply(msg, formatReport(report));
+      await reply(msg, formatReport(report), buttons(reportUrl(report.token.address))); // CHANGED: report + 2 buttons
     } catch (err) {
-      await reply(msg, `Couldn't check that coin: ${escapeHtml(err.message)}`); // e.g. "isn't trading on any supported DEX yet"
+      await reply(msg, `Couldn't check that coin: ${escapeHtml(err.message)}`, buttons()); // CHANGED: + add-to-group button
     }
 
     // 7. Log it (cooldown + growth data). Group names only, never a person's name.
