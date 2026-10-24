@@ -1,19 +1,34 @@
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import InstallPrompt from "@/components/InstallPrompt";   // NEW: "Get the GOAT app" banner + service worker
+import InstallPrompt from "@/components/InstallPrompt";   // "Get the GOAT app" banner + service worker
 import "./globals.css";
 
 export const metadata = {
-  title: "GOAT | Greatest Of All Trades",
-  description: "Live crypto, forex, stock and index prices, a quality-filtered new coin scanner, and trusted places to buy.",
-  applicationName: "GOAT",                                // NEW: app name for browsers
-  appleWebApp: {                                          // NEW: iPhone "Add to Home Screen" settings
+  metadataBase: new URL("https://goatwatch.app"),         // NEW: full site address, so preview images get a complete https:// link
+  title: "GOAT | Check any coin before you buy",          // CHANGED: leads with what's live today
+  description: "Free rug-pull checks for new crypto coins, live prices for crypto, forex, stocks and indices, and the news that moves markets.", // CHANGED
+  applicationName: "GOAT",                                // app name for browsers
+  openGraph: {                                            // NEW: the preview card on WhatsApp, Telegram, Facebook, LinkedIn
+    title: "GOAT | Check any coin before you buy",        // bold title on the card
+    description: "Rug checks · Live prices · Market news", // short line under the title
+    url: "/",                                             // becomes https://goatwatch.app thanks to metadataBase
+    siteName: "GOAT",                                     // small site name on the card
+    type: "website",                                      // tells apps this is a website (not an article or video)
+    // the image itself comes from src/app/opengraph-image.png automatically
+  },
+  twitter: {                                              // NEW: the preview card on X
+    card: "summary_large_image",                          // big image card, not the small square one
+    title: "GOAT | Check any coin before you buy",
+    description: "Rug checks · Live prices · Market news",
+    // the image comes from src/app/twitter-image.png automatically
+  },
+  appleWebApp: {                                          // iPhone "Add to Home Screen" settings
     capable: true,                                        // open full screen, like an app
     title: "GOAT",                                        // name under the iPhone icon
     statusBarStyle: "black-translucent",                  // content runs under the status bar (our safe-area padding handles it)
   },
   icons: {
-    apple: "/icons/apple-touch-icon.png",                 // NEW: iPhone home-screen icon
+    apple: "/icons/apple-touch-icon.png",                 // iPhone home-screen icon
   },
 };
 
@@ -22,7 +37,7 @@ export const viewport = {                                 // colours the phone's
     { media: "(prefers-color-scheme: light)", color: "#FFFFFF" }, // light phones: white bar
     { media: "(prefers-color-scheme: dark)", color: "#0B1210" },  // dark phones: GOAT night bar
   ],
-  viewportFit: "cover",                                   // NEW: use the full screen on notched phones (safe-area padding needs this)
+  viewportFit: "cover",                                   // use the full screen on notched phones (safe-area padding needs this)
 };
 
 // Runs before the page paints, so there's no white flash for dark-mode users.
