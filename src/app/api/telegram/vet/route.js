@@ -1,6 +1,7 @@
 // src/app/api/telegram/vet/route.js
-// Telegram calls this (webhook) whenever someone sends /vet to @GoatVetbot, in a private chat or a group.
-// It runs the same full Vet as goatwatch.app/vet and replies with a short report + link to the full one.
+// Telegram calls this (webhook) for messages to @GoatVetbot, in a private chat or a group.
+// 1) /vet runs the same full Vet as goatwatch.app/vet and replies with a short report + buttons.
+// 2) NEW: GOAT Guard counts group activity per day (joins, leaves, messages, contracts). Numbers only, never message text.
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { vetToken, cleanQuery, isEvmAddress, isSolAddress } from "../../../../lib/vet"; // the one Vet engine
@@ -11,9 +12,9 @@ export const maxDuration = 30;                             // the Vet calls seve
 
 const BOT_USERNAME = "goatvetbot";                         // lowercase, for comparing "/vet@GoatVetbot"
 const COOLDOWN_SECONDS = 15;                               // one check per chat every 15s (protects free API limits)
-const ADD_TO_GROUP = "https://t.me/GoatVetbot?startgroup=true"; // NEW: opens Telegram's "choose a group" screen for the bot
+const ADD_TO_GROUP = "https://t.me/GoatVetbot?startgroup=true"; // opens Telegram's "choose a group" screen for the bot
 
-// NEW: buttons under a message. Each inner array is one row of buttons.
+// Buttons under a message. Each inner array is one row of buttons.
 function buttons(reportUrl) {
   const rows = [];
   if (reportUrl) rows.push([{ text: "📋 Full report on goatwatch.app", url: reportUrl }]); // only under a coin report
@@ -39,7 +40,7 @@ async function tg(method, body) {
 }
 
 // Reply in the same chat, as a reply to the user's message, with no big link preview.
-// CHANGED: optional `markup` adds the buttons under the message.
+// Optional `markup` adds the buttons under the message.
 const reply = (msg, html, markup) =>
   tg("sendMessage", {
     chat_id: msg.chat.id,
@@ -67,7 +68,7 @@ const HELP = [
   "In a group, you can also <b>reply</b> to a message containing an address with <code>/vet</code>.",
   "Works on Ethereum, BSC, Solana, Base, Arbitrum, Polygon, Avalanche and Optimism.",
   "",
-  "Tap the button below to add GOAT Vet to your own group. It's free.", // CHANGED: points to the button
+  "Tap the button below to add GOAT Vet to your own group. It's free.",
 ].join("\n");
 
 // verdict -> headline (careful wording: green is "no major red flags", never "safe")
@@ -97,8 +98,36 @@ function formatReport(r) {
     lines.push(`${ICON[c.status]} <b>${escapeHtml(c.label)}</b>: ${escapeHtml(c.detail)}`);
   }
   if (passes.length) lines.push(`✓ Passed: ${escapeHtml(passes.map((c) => c.label).join(", "))}`); // passes as one short line
-  lines.push("", "<i>Automated check. Not financial advice. DYOR.</i>");          // CHANGED: the link is now a button
+  lines.push("", "<i>Automated check. Not financial advice. DYOR.</i>");
   return lines.join("\n");
+}
+
+// NEW: today's date in Nigeria time, as "2026-10-24" (en-CA happens to format dates exactly like that)
+const todayWAT = () => new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" });
+
+// NEW: GOAT Guard. Count this group event. Only NUMBERS go to the database, never what anyone wrote.
+async function countGroupActivity(msg) {
+  const isGroup = msg.chat.type === "group" || msg.chat.type === "supergroup";
+  if (!isGroup) return;                                    // only count groups, never private chats
+
+  const joins = (msg.new_chat_members || []).filter((u) => !u.is_bot).length; // people who joined (bots don't count)
+  const leaves = msg.left_chat_member && !msg.left_chat_member.is_bot ? 1 : 0; // a person who left or was removed
+  const words = msg.text || msg.caption || "";             // the message, read in memory only (never saved)
+  const isPersonMessage = !msg.from?.is_bot && !joins && !leaves && (words || msg.photo || msg.sticker || msg.video); // a real chat message
+  const found = words ? cleanQuery(words) : "";            // look for a contract address inside the message
+  const hasContract = isEvmAddress(found) || isSolAddress(found);
+
+  if (!joins && !leaves && !isPersonMessage) return;       // nothing worth counting (e.g. a pinned-message notice)
+
+  await db().rpc("bump_group_stats", {                     // the database adds to today's row in ONE step (no lost counts)
+    p_chat_id: msg.chat.id,
+    p_day: todayWAT(),
+    p_title: msg.chat.title?.slice(0, 120) || null,        // the group's name (public), never a person's name
+    p_joins: joins,
+    p_leaves: leaves,
+    p_messages: isPersonMessage ? 1 : 0,
+    p_contracts: isPersonMessage && hasContract ? 1 : 0,
+  });
 }
 
 export async function POST(request) {
@@ -114,9 +143,18 @@ export async function POST(request) {
     return NextResponse.json({ ok: true });                // junk: ignore (always 200 so Telegram doesn't retry)
   }
   const msg = update.message;
-  if (!msg?.text) return NextResponse.json({ ok: true });  // not a text message: nothing to do
+  if (!msg) return NextResponse.json({ ok: true });        // CHANGED: no message at all (e.g. an edit): nothing to do
 
-  // 2. Is this a command for us? "/vet", "/vet@GoatVetbot", "/start", "/help"
+  // NEW: 2. GOAT Guard counts first. A counting error must never stop /vet, so it has its own try/catch.
+  try {
+    await countGroupActivity(msg);
+  } catch (err) {
+    console.error("GOAT Guard count error:", err.message); // visible in Vercel logs
+  }
+
+  if (!msg.text) return NextResponse.json({ ok: true });   // MOVED: joins, photos, stickers: counted above, nothing to reply
+
+  // 3. Is this a command for us? "/vet", "/vet@GoatVetbot", "/start", "/help"
   const m = msg.text.trim().match(/^\/(vet|start|help)(?:@(\w+))?(?:\s+([\s\S]*))?$/i);
   if (!m) return NextResponse.json({ ok: true });          // ordinary chat message: stay quiet
   const [, command, mention, arg] = m;
@@ -124,11 +162,11 @@ export async function POST(request) {
 
   try {
     if (command.toLowerCase() !== "vet") {                 // /start or /help
-      await reply(msg, HELP, buttons());                   // CHANGED: + "Add to your group" button
+      await reply(msg, HELP, buttons());                   // help text + "Add to your group" button
       return NextResponse.json({ ok: true });
     }
 
-    // 3. Find the address: after "/vet", or in the message being replied to
+    // 4. Find the address: after "/vet", or in the message being replied to
     const raw = arg || msg.reply_to_message?.text || msg.reply_to_message?.caption || "";
     const address = cleanQuery(raw);                       // pulls an address out of any text (same as the Vet page)
     if (!isEvmAddress(address) && !isSolAddress(address)) {
@@ -136,7 +174,7 @@ export async function POST(request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 4. Cooldown: one check per chat every 15 seconds
+    // 5. Cooldown: one check per chat every 15 seconds
     const supabase = db();
     const { data: last } = await supabase
       .from("vet_bot_log")
@@ -150,20 +188,20 @@ export async function POST(request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 5. Show "typing..." while the Vet runs (a few seconds)
+    // 6. Show "typing..." while the Vet runs (a few seconds)
     await tg("sendChatAction", { chat_id: msg.chat.id, action: "typing" });
 
-    // 6. The full Vet (the same engine as goatwatch.app/vet)
+    // 7. The full Vet (the same engine as goatwatch.app/vet)
     let verdict = "error";
     try {
       const report = await vetToken(address);
       verdict = report.verdict;
-      await reply(msg, formatReport(report), buttons(reportUrl(report.token.address))); // CHANGED: report + 2 buttons
+      await reply(msg, formatReport(report), buttons(reportUrl(report.token.address))); // report + 2 buttons
     } catch (err) {
-      await reply(msg, `Couldn't check that coin: ${escapeHtml(err.message)}`, buttons()); // CHANGED: + add-to-group button
+      await reply(msg, `Couldn't check that coin: ${escapeHtml(err.message)}`, buttons()); // + add-to-group button
     }
 
-    // 7. Log it (cooldown + growth data). Group names only, never a person's name.
+    // 8. Log it (cooldown + growth data). Group names only, never a person's name.
     const isGroup = msg.chat.type === "group" || msg.chat.type === "supergroup";
     await supabase.from("vet_bot_log").insert({
       chat_id: msg.chat.id,
