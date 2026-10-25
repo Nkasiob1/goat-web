@@ -1,7 +1,8 @@
 // src/app/api/telegram/vet/route.js
 // Telegram calls this (webhook) for messages to @GoatVetbot, in a private chat or a group.
 // 1) /vet runs the same full Vet as goatwatch.app/vet and replies with a short report + buttons.
-// 2) NEW: GOAT Guard counts group activity per day (joins, leaves, messages, contracts). Numbers only, never message text.
+// 2) GOAT Guard counts group activity per day (joins, leaves, messages, contracts). Numbers only, never message text.
+// 3) NEW: Auto-check. Any message containing a contract address gets checked automatically (no /vet needed).
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { vetToken, cleanQuery, isEvmAddress, isSolAddress } from "../../../../lib/vet"; // the one Vet engine
@@ -12,6 +13,7 @@ export const maxDuration = 30;                             // the Vet calls seve
 
 const BOT_USERNAME = "goatvetbot";                         // lowercase, for comparing "/vet@GoatVetbot"
 const COOLDOWN_SECONDS = 15;                               // one check per chat every 15s (protects free API limits)
+const AUTO_RECHECK_HOURS = 6;                              // NEW: auto-check skips a coin already checked in this chat within 6h
 const ADD_TO_GROUP = "https://t.me/GoatVetbot?startgroup=true"; // opens Telegram's "choose a group" screen for the bot
 
 // Buttons under a message. Each inner array is one row of buttons.
@@ -65,6 +67,7 @@ const HELP = [
   "Send <code>/vet</code> followed by a contract address:",
   "<code>/vet 0x6982508145454ce325ddbe47a25d4ec3d2311933</code>",
   "",
+  "Or just paste a contract address: GOAT checks it automatically.", // NEW
   "In a group, you can also <b>reply</b> to a message containing an address with <code>/vet</code>.",
   "Works on Ethereum, BSC, Solana, Base, Arbitrum, Polygon, Avalanche and Optimism.",
   "",
@@ -102,10 +105,17 @@ function formatReport(r) {
   return lines.join("\n");
 }
 
-// NEW: today's date in Nigeria time, as "2026-10-24" (en-CA happens to format dates exactly like that)
+// Today's date in Nigeria time, as "2026-10-24"
 const todayWAT = () => new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" });
 
-// NEW: GOAT Guard. Count this group event. Only NUMBERS go to the database, never what anyone wrote.
+// NEW: find a contract address inside any text ("" if there isn't one)
+function findAddress(text) {
+  if (!text) return "";
+  const found = cleanQuery(text);                          // the same extractor the Vet page uses
+  return isEvmAddress(found) || isSolAddress(found) ? found : "";
+}
+
+// GOAT Guard: count this group event. Only NUMBERS go to the database, never what anyone wrote.
 async function countGroupActivity(msg) {
   const isGroup = msg.chat.type === "group" || msg.chat.type === "supergroup";
   if (!isGroup) return;                                    // only count groups, never private chats
@@ -114,12 +124,11 @@ async function countGroupActivity(msg) {
   const leaves = msg.left_chat_member && !msg.left_chat_member.is_bot ? 1 : 0; // a person who left or was removed
   const words = msg.text || msg.caption || "";             // the message, read in memory only (never saved)
   const isPersonMessage = !msg.from?.is_bot && !joins && !leaves && (words || msg.photo || msg.sticker || msg.video); // a real chat message
-  const found = words ? cleanQuery(words) : "";            // look for a contract address inside the message
-  const hasContract = isEvmAddress(found) || isSolAddress(found);
+  const hasContract = !!findAddress(words);                // CHANGED: uses the shared helper
 
-  if (!joins && !leaves && !isPersonMessage) return;       // nothing worth counting (e.g. a pinned-message notice)
+  if (!joins && !leaves && !isPersonMessage) return;       // nothing worth counting
 
-  await db().rpc("bump_group_stats", {                     // the database adds to today's row in ONE step (no lost counts)
+  await db().rpc("bump_group_stats", {                     // the database adds to today's row in ONE step
     p_chat_id: msg.chat.id,
     p_day: todayWAT(),
     p_title: msg.chat.title?.slice(0, 120) || null,        // the group's name (public), never a person's name
@@ -127,6 +136,60 @@ async function countGroupActivity(msg) {
     p_leaves: leaves,
     p_messages: isPersonMessage ? 1 : 0,
     p_contracts: isPersonMessage && hasContract ? 1 : 0,
+  });
+}
+
+// NEW: one function runs every check, typed (/vet) or automatic. `auto` changes how polite/quiet it is.
+async function runVet(msg, address, auto) {
+  const supabase = db();
+
+  // Cooldown: one check per chat every 15 seconds
+  const { data: last } = await supabase
+    .from("vet_bot_log")
+    .select("at")
+    .eq("chat_id", msg.chat.id)
+    .order("at", { ascending: false })
+    .limit(1);
+  const lastAt = last?.[0]?.at ? new Date(last[0].at).getTime() : 0;
+  if (Date.now() - lastAt < COOLDOWN_SECONDS * 1000) {
+    if (!auto) await reply(msg, `⏳ One check every ${COOLDOWN_SECONDS} seconds per chat. Try again in a moment.`);
+    return;                                                // auto-check stays silent: never spam a group with "wait"
+  }
+
+  // Auto-check only: skip a coin this chat already saw checked recently (shills repost the same contract)
+  if (auto) {
+    const since = new Date(Date.now() - AUTO_RECHECK_HOURS * 3600 * 1000).toISOString();
+    const { data: seen } = await supabase
+      .from("vet_bot_log")
+      .select("at")
+      .eq("chat_id", msg.chat.id)
+      .eq("address", address)
+      .gte("at", since)                                    // "greater than or equal": only the last 6 hours
+      .limit(1);
+    if (seen?.length) return;                              // already answered: stay quiet
+  }
+
+  await tg("sendChatAction", { chat_id: msg.chat.id, action: "typing" }); // "typing..." while the Vet runs
+
+  let verdict = "error";
+  try {
+    const report = await vetToken(address);                // the same engine as goatwatch.app/vet
+    verdict = report.verdict;
+    const header = auto ? "🔎 <b>GOAT auto-check</b>\n" : ""; // tells the group why the bot spoke up
+    await reply(msg, header + formatReport(report), buttons(reportUrl(report.token.address)));
+  } catch (err) {
+    if (!auto) await reply(msg, `Couldn't check that coin: ${escapeHtml(err.message)}`, buttons()); // auto: stay quiet on errors
+  }
+
+  // Log it (cooldown, repeat check, growth data). Group names only, never a person's name.
+  const isGroup = msg.chat.type === "group" || msg.chat.type === "supergroup";
+  await supabase.from("vet_bot_log").insert({
+    chat_id: msg.chat.id,
+    chat_type: msg.chat.type,
+    chat_title: isGroup ? msg.chat.title?.slice(0, 120) : null,
+    address,
+    verdict,
+    auto,                                                  // NEW: true = automatic, false = typed /vet
   });
 }
 
@@ -143,73 +206,44 @@ export async function POST(request) {
     return NextResponse.json({ ok: true });                // junk: ignore (always 200 so Telegram doesn't retry)
   }
   const msg = update.message;
-  if (!msg) return NextResponse.json({ ok: true });        // CHANGED: no message at all (e.g. an edit): nothing to do
+  if (!msg) return NextResponse.json({ ok: true });        // no message at all (e.g. an edit): nothing to do
 
-  // NEW: 2. GOAT Guard counts first. A counting error must never stop /vet, so it has its own try/catch.
+  // 2. GOAT Guard counts first. A counting error must never stop the Vet, so it has its own try/catch.
   try {
     await countGroupActivity(msg);
   } catch (err) {
     console.error("GOAT Guard count error:", err.message); // visible in Vercel logs
   }
 
-  if (!msg.text) return NextResponse.json({ ok: true });   // MOVED: joins, photos, stickers: counted above, nothing to reply
-
-  // 3. Is this a command for us? "/vet", "/vet@GoatVetbot", "/start", "/help"
-  const m = msg.text.trim().match(/^\/(vet|start|help)(?:@(\w+))?(?:\s+([\s\S]*))?$/i);
-  if (!m) return NextResponse.json({ ok: true });          // ordinary chat message: stay quiet
-  const [, command, mention, arg] = m;
-  if (mention && mention.toLowerCase() !== BOT_USERNAME) return NextResponse.json({ ok: true }); // meant for another bot
+  const words = msg.text || msg.caption || "";             // CHANGED: captions too (contracts are often posted under a picture)
+  if (!words || msg.from?.is_bot || msg.via_bot) return NextResponse.json({ ok: true }); // nothing to read, or a bot wrote it (avoid bot loops)
 
   try {
+    // 3. Is this a command for us? "/vet", "/vet@GoatVetbot", "/start", "/help"
+    const m = words.trim().match(/^\/(vet|start|help)(?:@(\w+))?(?:\s+([\s\S]*))?$/i);
+
+    if (!m) {                                              // NEW: not a command -> auto-check if it contains a contract
+      const address = findAddress(words);
+      if (address) await runVet(msg, address, true);
+      return NextResponse.json({ ok: true });              // ordinary chat with no contract: stay quiet
+    }
+
+    const [, command, mention, arg] = m;
+    if (mention && mention.toLowerCase() !== BOT_USERNAME) return NextResponse.json({ ok: true }); // meant for another bot
+
     if (command.toLowerCase() !== "vet") {                 // /start or /help
-      await reply(msg, HELP, buttons());                   // help text + "Add to your group" button
+      await reply(msg, HELP, buttons());
       return NextResponse.json({ ok: true });
     }
 
-    // 4. Find the address: after "/vet", or in the message being replied to
+    // 4. /vet: the address is after "/vet", or in the message being replied to
     const raw = arg || msg.reply_to_message?.text || msg.reply_to_message?.caption || "";
-    const address = cleanQuery(raw);                       // pulls an address out of any text (same as the Vet page)
-    if (!isEvmAddress(address) && !isSolAddress(address)) {
+    const address = findAddress(raw);                      // CHANGED: shared helper
+    if (!address) {
       await reply(msg, "Send a contract address after /vet, for example:\n<code>/vet 0x6982508145454ce325ddbe47a25d4ec3d2311933</code>");
       return NextResponse.json({ ok: true });
     }
-
-    // 5. Cooldown: one check per chat every 15 seconds
-    const supabase = db();
-    const { data: last } = await supabase
-      .from("vet_bot_log")
-      .select("at")
-      .eq("chat_id", msg.chat.id)
-      .order("at", { ascending: false })
-      .limit(1);
-    const lastAt = last?.[0]?.at ? new Date(last[0].at).getTime() : 0;
-    if (Date.now() - lastAt < COOLDOWN_SECONDS * 1000) {
-      await reply(msg, `⏳ One check every ${COOLDOWN_SECONDS} seconds per chat. Try again in a moment.`);
-      return NextResponse.json({ ok: true });
-    }
-
-    // 6. Show "typing..." while the Vet runs (a few seconds)
-    await tg("sendChatAction", { chat_id: msg.chat.id, action: "typing" });
-
-    // 7. The full Vet (the same engine as goatwatch.app/vet)
-    let verdict = "error";
-    try {
-      const report = await vetToken(address);
-      verdict = report.verdict;
-      await reply(msg, formatReport(report), buttons(reportUrl(report.token.address))); // report + 2 buttons
-    } catch (err) {
-      await reply(msg, `Couldn't check that coin: ${escapeHtml(err.message)}`, buttons()); // + add-to-group button
-    }
-
-    // 8. Log it (cooldown + growth data). Group names only, never a person's name.
-    const isGroup = msg.chat.type === "group" || msg.chat.type === "supergroup";
-    await supabase.from("vet_bot_log").insert({
-      chat_id: msg.chat.id,
-      chat_type: msg.chat.type,
-      chat_title: isGroup ? msg.chat.title?.slice(0, 120) : null,
-      address,
-      verdict,
-    });
+    await runVet(msg, address, false);                     // CHANGED: the shared check, typed mode
   } catch (err) {
     console.error("Vet bot error:", err.message);          // visible in Vercel logs
   }
