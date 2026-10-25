@@ -1,21 +1,24 @@
 @import "tailwindcss";                 /* load Tailwind into the project */
 
-@custom-variant dark (&:where(.dark, .dark *)); /* NEW: "dark:" classes follow our .dark switch, not just the phone setting */
+@custom-variant dark (&:where(.dark, .dark *)); /* "dark:" classes follow our .dark switch, not just the phone setting */
 
+/* "Lagoon at dusk", refined: one calm base + ONE accent family (gold, the colour of the GOAT coin). */
 @theme {                               /* our design tokens: every name here becomes a Tailwind class */
-  /* Neutrals — 90% of the screen */
-  --color-water: #FFFFFF;              /* main background */
-  --color-mist: #F6F8F7;               /* cards and input fields */
-  --color-line: #E3E9E6;               /* borders and dividers */
-  --color-stone: #6B7A73;              /* secondary text and labels */
-  --color-ink: #121A16;                /* headlines and body text */
+  /* Neutrals: 90% of the screen */
+  --color-water: #F7F2E8;              /* main background: warm sand */
+  --color-mist: #EFE7D8;               /* cards and input fields */
+  --color-line: #E2D8C6;               /* borders and dividers */
+  --color-stone: #6A675C;              /* secondary text and labels */
+  --color-ink: #1A2420;                /* headlines and body text: deep lagoon, softer than black */
 
-  /* Greens — used sparingly */
-  --color-sage: #E8F0EB;               /* soft tint behind highlighted sections */
-  --color-moss: #3D7A5A;               /* icons, links, small accents */
-  --color-forest: #1F4D36;             /* the main button only */
+  /* Brand: deep green + gold, the coin's own colours */
+  --color-sage: #E4EDE6;               /* soft tint behind highlighted sections */
+  --color-moss: #2E7468;               /* links and small accents (day) */
+  --color-forest: #1F4D40;             /* the main button (day): deep green */
+  --color-clay: #C26F2E;               /* warm accent for small highlights */
+  --color-glow: rgba(201, 162, 74, 0.30); /* CHANGED: pure coin gold (no orange-on-green mud) */
 
-  /* Data colours — numbers only, never decoration */
+  /* Data colours: numbers only, never decoration */
   --color-gain: #2E8B60;               /* profit */
   --color-loss: #C2493F;               /* loss */
 }
@@ -25,17 +28,19 @@
   --font-mono: var(--font-geist-mono); /* number font: Geist Mono, for prices and balances */
 }
 
-/* NEW: dark mode = the same names, night values. Every page switches at once. */
+/* Dark mode: calm green-black base, sand text, and a single gold accent family */
 .dark {
-  --color-water: #0B1210;              /* background: deep green-black, not pure black (easier on the eyes) */
-  --color-mist: #131C18;               /* cards and inputs: one step lighter than the background */
-  --color-line: #24312B;               /* borders: subtle on dark */
-  --color-stone: #8FA199;              /* secondary text: lighter so it stays readable */
-  --color-ink: #E8EFEB;                /* main text: soft white, not harsh #FFF */
+  --color-water: #0F1A18;              /* background: deep lagoon at night (matches the coin's dark green) */
+  --color-mist: #16221F;               /* cards and inputs: one step lighter */
+  --color-line: #24332E;               /* borders: quiet on dark */
+  --color-stone: #93A39C;              /* secondary text: evening mist */
+  --color-ink: #F2EBDD;                /* main text: warm sand, never harsh white */
 
-  --color-sage: #15251D;               /* soft green tint, darkened */
-  --color-moss: #6CC596;               /* links and accents: brighter so they show on dark */
-  --color-forest: #4FB386;             /* main button: bright green, so its dark (water) text stays readable */
+  --color-sage: #1C2A22;               /* soft tint, darkened */
+  --color-moss: #E3B566;               /* CHANGED: links and the pill are soft GOLD now (teal removed: one accent family) */
+  --color-forest: #D98E4A;             /* main button: the amber you liked, same gold family */
+  --color-clay: #E0A15E;               /* warm accent */
+  --color-glow: rgba(201, 162, 74, 0.38); /* CHANGED: coin gold, a little stronger at night */
 
   --color-gain: #3FBF84;               /* profit: brighter for dark backgrounds */
   --color-loss: #E2675D;               /* loss: brighter for dark backgrounds */
@@ -44,7 +49,49 @@
 }
 
 body {                                 /* default styles for the whole site */
-  background: var(--color-water);      /* CHANGED: follows the theme (white by day, green-black by night) */
+  background: var(--color-water);      /* sand by day, lagoon by night */
   color: var(--color-ink);             /* default text colour */
   font-family: var(--font-sans), system-ui, sans-serif; /* use Geist, fall back to system fonts */
+}
+
+/* NEW: the glowing GOAT coin. A gold halo that breathes behind a coin that gently floats. */
+.coin-stage {
+  position: relative;                  /* lets the halo sit exactly behind the coin */
+  display: flex;
+  align-items: center;                 /* centre the coin inside its stage */
+  justify-content: center;
+  flex-shrink: 0;                      /* never squash the coin when space is tight */
+}
+
+.coin-stage::before {                  /* the halo: an invisible extra layer drawn behind the coin */
+  content: "";                         /* required for ::before to appear at all */
+  position: absolute;
+  width: 150%;                         /* the halo spreads half again beyond the coin */
+  aspect-ratio: 1;                     /* always a perfect circle */
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--color-glow) 0%, transparent 65%); /* bright gold centre fading to nothing */
+  animation: goat-breathe 6s ease-in-out infinite; /* one slow breath every 6 seconds */
+  pointer-events: none;                /* clicks pass straight through */
+}
+
+.coin-stage img {
+  position: relative;                  /* sits on top of the halo */
+  border-radius: 50%;                  /* the shadow follows the coin's round edge */
+  box-shadow: 0 0 48px 4px var(--color-glow); /* a tight golden rim of light */
+  animation: goat-float 6s ease-in-out infinite; /* the coin drifts up and down, gently */
+}
+
+@keyframes goat-breathe {              /* halo: a little brighter and bigger, then back */
+  0%, 100% { opacity: 0.7; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes goat-float {                /* coin: rises 8px, then settles back */
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) { /* people who turned on "reduce motion" get a still coin and halo */
+  .coin-stage::before,
+  .coin-stage img { animation: none; }
 }
