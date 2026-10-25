@@ -2,25 +2,25 @@
 
 @custom-variant dark (&:where(.dark, .dark *)); /* "dark:" classes follow our .dark switch, not just the phone setting */
 
-/* "Lagoon at dusk", refined: one calm base + ONE accent family (gold, the colour of the GOAT coin). */
+/* Day: the exchange formula. Pure white, cool grey cards, near-black text, ONE vivid brand colour (emerald) + the gold coin. */
 @theme {                               /* our design tokens: every name here becomes a Tailwind class */
   /* Neutrals: 90% of the screen */
-  --color-water: #F7F2E8;              /* main background: warm sand */
-  --color-mist: #EFE7D8;               /* cards and input fields */
-  --color-line: #E2D8C6;               /* borders and dividers */
-  --color-stone: #6A675C;              /* secondary text and labels */
-  --color-ink: #1A2420;                /* headlines and body text: deep lagoon, softer than black */
+  --color-water: #FFFFFF;              /* CHANGED: pure white background, like Binance, Bybit and Trust Wallet */
+  --color-mist: #F5F6F7;               /* CHANGED: cool light-grey cards and inputs that separate crisply from white */
+  --color-line: #E6E8EB;               /* CHANGED: cool grey borders */
+  --color-stone: #6B7280;              /* CHANGED: neutral grey secondary text */
+  --color-ink: #101814;                /* CHANGED: near-black text with a hint of GOAT green */
 
-  /* Brand: deep green + gold, the coin's own colours */
-  --color-sage: #E4EDE6;               /* soft tint behind highlighted sections */
-  --color-moss: #2E7468;               /* links and small accents (day) */
-  --color-forest: #1F4D40;             /* the main button (day): deep green */
-  --color-clay: #C26F2E;               /* warm accent for small highlights */
-  --color-glow: rgba(201, 162, 74, 0.46); /* CHANGED: 0.30 -> 0.42, visible on sand but still soft */
+  /* Brand: vivid emerald + the gold coin */
+  --color-sage: #E9F7EF;               /* CHANGED: fresh mint tint for highlighted sections */
+  --color-moss: #065F46;               /* CHANGED: links and button hover, deep emerald */
+  --color-forest: #047857;             /* CHANGED: main button, VIVID emerald (white text on it is easy to read) */
+  --color-clay: #D97706;               /* CHANGED: bright amber for small highlights */
+  --color-glow: rgba(245, 184, 46, 0.45); /* CHANGED: brighter gold halo that glows on white */
 
   /* Data colours: numbers only, never decoration */
-  --color-gain: #2E8B60;               /* profit */
-  --color-loss: #C2493F;               /* loss */
+  --color-gain: #059669;               /* CHANGED: profit, a clearer green on white */
+  --color-loss: #DC2626;               /* CHANGED: loss, a clearer red on white */
 }
 
 @theme inline {                        /* "inline" lets these point at fonts loaded in layout.js */
@@ -28,16 +28,16 @@
   --font-mono: var(--font-geist-mono); /* number font: Geist Mono, for prices and balances */
 }
 
-/* Dark mode: calm green-black base, sand text, and a single gold accent family */
+/* Night: calm green-black base, sand text, and a single gold accent family (unchanged) */
 .dark {
-  --color-water: #0F1A18;              /* background: deep lagoon at night (matches the coin's dark green) */
+  --color-water: #0F1A18;              /* background: deep lagoon at night */
   --color-mist: #16221F;               /* cards and inputs: one step lighter */
   --color-line: #24332E;               /* borders: quiet on dark */
   --color-stone: #93A39C;              /* secondary text: evening mist */
   --color-ink: #F2EBDD;                /* main text: warm sand, never harsh white */
 
   --color-sage: #1C2A22;               /* soft tint, darkened */
-  --color-moss: #E3B566;               /* links and the pill: soft gold (one accent family) */
+  --color-moss: #E3B566;               /* links and the pill: soft gold */
   --color-forest: #D98E4A;             /* main button: amber, the same gold family */
   --color-clay: #E0A15E;               /* warm accent */
   --color-glow: rgba(201, 162, 74, 0.38); /* coin gold, a little stronger at night */
@@ -49,7 +49,7 @@
 }
 
 body {                                 /* default styles for the whole site */
-  background: var(--color-water);      /* sand by day, lagoon by night */
+  background: var(--color-water);      /* white by day, lagoon by night */
   color: var(--color-ink);             /* default text colour */
   font-family: var(--font-sans), system-ui, sans-serif; /* use Geist, fall back to system fonts */
 }

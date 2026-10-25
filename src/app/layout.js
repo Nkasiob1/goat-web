@@ -34,8 +34,8 @@ export const metadata = {
 
 export const viewport = {                                 // colours the phone's browser bar to match the theme
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F7F2E8" }, // CHANGED: light phones: warm sand bar
-    { media: "(prefers-color-scheme: dark)", color: "#0F1A18" },  // CHANGED: dark phones: lagoon night bar
+    { media: "(prefers-color-scheme: light)", color: "#FFFDF8" }, // CHANGED: light phones: bright warm white bar
+    { media: "(prefers-color-scheme: dark)", color: "#0F1A18" },  // dark phones: lagoon night bar
   ],
   viewportFit: "cover",                                   // use the full screen on notched phones (safe-area padding needs this)
 };
