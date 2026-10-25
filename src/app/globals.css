@@ -3,24 +3,26 @@
 @custom-variant dark (&:where(.dark, .dark *)); /* "dark:" classes follow our .dark switch, not just the phone setting */
 
 /* Day: the exchange formula. Pure white, cool grey cards, near-black text, ONE vivid brand colour (emerald) + the gold coin. */
-@theme {                               /* our design tokens: every name here becomes a Tailwind class */
+@theme static {                        /* CHANGED: "static" = always output EVERY token, even ones only our plain CSS uses (shimmer, live dot) */
   /* Neutrals: 90% of the screen */
-  --color-water: #FFFFFF;              /* CHANGED: pure white background, like Binance, Bybit and Trust Wallet */
-  --color-mist: #F5F6F7;               /* CHANGED: cool light-grey cards and inputs that separate crisply from white */
-  --color-line: #E6E8EB;               /* CHANGED: cool grey borders */
-  --color-stone: #6B7280;              /* CHANGED: neutral grey secondary text */
-  --color-ink: #101814;                /* CHANGED: near-black text with a hint of GOAT green */
+  --color-water: #FFFFFF;              /* pure white background */
+  --color-mist: #F5F6F7;               /* cool light-grey cards and inputs */
+  --color-line: #E6E8EB;               /* cool grey borders */
+  --color-stone: #6B7280;              /* neutral grey secondary text */
+  --color-ink: #101814;                /* near-black text with a hint of GOAT green */
 
   /* Brand: vivid emerald + the gold coin */
-  --color-sage: #E9F7EF;               /* CHANGED: fresh mint tint for highlighted sections */
-  --color-moss: #065F46;               /* CHANGED: links and button hover, deep emerald */
-  --color-forest: #047857;             /* CHANGED: main button, VIVID emerald (white text on it is easy to read) */
-  --color-clay: #D97706;               /* CHANGED: bright amber for small highlights */
-  --color-glow: rgba(245, 184, 46, 0.45); /* CHANGED: brighter gold halo that glows on white */
+  --color-sage: #E9F7EF;               /* fresh mint tint for highlighted sections */
+  --color-moss: #065F46;               /* links and button hover: deep emerald */
+  --color-forest: #047857;             /* main button: vivid emerald (white text reads clearly) */
+  --color-clay: #D97706;               /* bright amber for small highlights */
+  --color-glow: rgba(245, 184, 46, 0.45); /* gold halo that glows on white */
+  --color-gold-a: #B7791F;             /* shimmer: deep gold (readable on white) */
+  --color-gold-b: #F2C14E;             /* shimmer: the bright "light catching the coin" */
 
   /* Data colours: numbers only, never decoration */
-  --color-gain: #059669;               /* CHANGED: profit, a clearer green on white */
-  --color-loss: #DC2626;               /* CHANGED: loss, a clearer red on white */
+  --color-gain: #059669;               /* profit (and the live dot) */
+  --color-loss: #DC2626;               /* loss */
 }
 
 @theme inline {                        /* "inline" lets these point at fonts loaded in layout.js */
@@ -28,7 +30,7 @@
   --font-mono: var(--font-geist-mono); /* number font: Geist Mono, for prices and balances */
 }
 
-/* Night: calm green-black base, sand text, and a single gold accent family (unchanged) */
+/* Night: calm green-black base, sand text, and a single gold accent family */
 .dark {
   --color-water: #0F1A18;              /* background: deep lagoon at night */
   --color-mist: #16221F;               /* cards and inputs: one step lighter */
@@ -41,6 +43,8 @@
   --color-forest: #D98E4A;             /* main button: amber, the same gold family */
   --color-clay: #E0A15E;               /* warm accent */
   --color-glow: rgba(201, 162, 74, 0.38); /* coin gold, a little stronger at night */
+  --color-gold-a: #D9A441;             /* shimmer gold, brighter for the dark */
+  --color-gold-b: #FFE3A1;             /* shimmer highlight */
 
   --color-gain: #3FBF84;               /* profit: brighter for dark backgrounds */
   --color-loss: #E2675D;               /* loss: brighter for dark backgrounds */
@@ -91,7 +95,62 @@ body {                                 /* default styles for the whole site */
   50% { transform: translateY(-8px); }
 }
 
-@media (prefers-reduced-motion: reduce) { /* people who turned on "reduce motion" get a still coin and halo */
+/* Gold shimmer on the headline's key words. Light sweeps across, then rests. */
+.text-shimmer {
+  background: linear-gradient(100deg,
+    var(--color-gold-a) 0%, var(--color-gold-a) 35%,   /* deep gold... */
+    var(--color-gold-b) 50%,                           /* ...a band of bright light... */
+    var(--color-gold-a) 65%, var(--color-gold-a) 100%); /* ...deep gold again */
+  background-size: 250% 100%;          /* the gradient is wider than the words, so it can slide across */
+  -webkit-background-clip: text;       /* paint the gradient INSIDE the letters only (Safari/Chrome) */
+  background-clip: text;               /* the same, standard name */
+  color: transparent;                  /* hide the normal text colour so the gold shows through */
+  animation: goat-shimmer 5s ease-in-out infinite; /* sweep, rest, repeat */
+}
+
+@keyframes goat-shimmer {              /* the light band travels right to left, then pauses */
+  0% { background-position: 100% 0; }
+  60%, 100% { background-position: 0% 0; } /* 60-100% = holds still: a calm pause between sweeps */
+}
+
+/* The pulsing "live" dot */
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-gain);       /* green = live */
+  animation: goat-pulse 2s ease-out infinite; /* a ring ripples outward every 2 seconds */
+}
+
+@keyframes goat-pulse {
+  0% { box-shadow: 0 0 0 0 var(--color-gain); }       /* ring starts at the dot */
+  100% { box-shadow: 0 0 0 7px transparent; }         /* and fades as it grows */
+}
+
+/* The ticker. The track holds the list twice and slides left by exactly half, then repeats. */
+.ticker-window {
+  mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); /* soft fade at both edges */
+}
+
+.ticker-track {
+  animation: goat-ticker 45s linear infinite; /* one full loop every 45 seconds, steady speed */
+}
+
+.ticker-window:hover .ticker-track {
+  animation-play-state: paused;        /* hover (or long-press) to stop and read */
+}
+
+@keyframes goat-ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }  /* -50% = exactly one copy of the list: the seam is invisible */
+}
+
+/* People who turned on "reduce motion": everything still, and the ticker becomes a strip you swipe */
+@media (prefers-reduced-motion: reduce) {
   .coin-stage::before,
-  .coin-stage img { animation: none; }
+  .coin-stage img,
+  .text-shimmer,
+  .live-dot,
+  .ticker-track { animation: none; }
+  .ticker-window { overflow-x: auto; }  /* swipe instead of auto-scroll */
 }

@@ -1,15 +1,20 @@
 // src/lib/i18n/home.js
-// Home page words (Hero, NewsPreview, Features), per language.
-// CHANGED: the hero now leads with what's live today (Vet). The bot section is labelled "in testing".
+// Home page words (Hero, ticker, NewsPreview, Features), per language.
+// hero.title: the *starred* words shimmer in gold (S with "highlight").
 export const HOME = {
   en: {
-    "hero.pill": "Free crypto safety checks",                                   // CHANGED
-    "hero.title": "Check any coin before you buy.",                             // CHANGED
-    "hero.sub": "GOAT scans new crypto coins for rug-pull red flags in seconds, and tracks the prices and news that move every market.", // CHANGED
-    "hero.vetBtn": "Check coin",                                                // NEW: button on the coin box
-    "hero.signup": "New here? Create a free account →",                         // NEW: link under the box for visitors
+    "hero.pill": "Free crypto safety checks",
+    "hero.title": "Check *any coin* before you buy.",            // CHANGED: stars mark the gold words
+    "hero.sub": "GOAT scans new crypto coins for rug-pull red flags in seconds, and tracks the prices and news that move every market.",
+    "hero.vetBtn": "Check coin",
+    "hero.signup": "New here? Create a free account →",
+    "tk.live": "Live",                                           // NEW: ticker label
+    "tk.green": "No major red flags",                            // NEW: ticker verdicts (never "safe")
+    "tk.yellow": "Caution",
+    "tk.red": "High risk",
+    "tk.listed": "Exchange listed",
     "news.label": "News", "news.title": "What's moving markets", "news.all": "All news →",
-    "bot.label": "The Bot · In testing", "bot.title": "Disciplined by design, so you don't have to be.", // CHANGED: label
+    "bot.label": "The Bot · In testing", "bot.title": "Disciplined by design, so you don't have to be.",
     "f1.title": "Liquidity sweep + structure break",
     "f1.text": "GOAT waits for price to sweep a recent high or low, then trades only after a closed candle breaks structure. No chasing, no guessing.",
     "f2.title": "Confidence score",
@@ -21,10 +26,15 @@ export const HOME = {
   },
   fr: {
     "hero.pill": "Vérifications crypto gratuites",
-    "hero.title": "Vérifiez chaque crypto avant d'acheter.",
+    "hero.title": "Vérifiez *chaque crypto* avant d'acheter.",
     "hero.sub": "GOAT analyse les nouvelles cryptos en quelques secondes pour repérer les signaux d'arnaque (rug pull), et suit les prix et l'actualité qui font bouger tous les marchés.",
     "hero.vetBtn": "Vérifier",
     "hero.signup": "Nouveau ? Créez un compte gratuit →",
+    "tk.live": "En direct",
+    "tk.green": "Aucun signal majeur",
+    "tk.yellow": "Prudence",
+    "tk.red": "Risque élevé",
+    "tk.listed": "Listé sur exchange",
     "news.label": "Actualités", "news.title": "Ce qui fait bouger les marchés", "news.all": "Toutes les actualités →",
     "bot.label": "Le Bot · En test", "bot.title": "Discipliné par conception, pour que vous n'ayez pas à l'être.",
     "f1.title": "Balayage de liquidité + cassure de structure",
@@ -38,10 +48,15 @@ export const HOME = {
   },
   es: {
     "hero.pill": "Verificaciones cripto gratuitas",
-    "hero.title": "Revisa cualquier moneda antes de comprar.",
+    "hero.title": "Revisa *cualquier moneda* antes de comprar.",
     "hero.sub": "GOAT analiza nuevas criptomonedas en segundos en busca de señales de estafa (rug pull) y sigue los precios y noticias que mueven todos los mercados.",
     "hero.vetBtn": "Revisar",
     "hero.signup": "¿Eres nuevo? Crea una cuenta gratis →",
+    "tk.live": "En vivo",
+    "tk.green": "Sin alertas graves",
+    "tk.yellow": "Precaución",
+    "tk.red": "Alto riesgo",
+    "tk.listed": "Listado en exchange",
     "news.label": "Noticias", "news.title": "Lo que mueve los mercados", "news.all": "Todas las noticias →",
     "bot.label": "El Bot · En pruebas", "bot.title": "Disciplinado por diseño, para que tú no tengas que serlo.",
     "f1.title": "Barrido de liquidez + ruptura de estructura",
@@ -55,10 +70,15 @@ export const HOME = {
   },
   pt: {
     "hero.pill": "Verificações cripto gratuitas",
-    "hero.title": "Verifique qualquer moeda antes de comprar.",
+    "hero.title": "Verifique *qualquer moeda* antes de comprar.",
     "hero.sub": "A GOAT analisa novas criptomoedas em segundos em busca de sinais de golpe (rug pull) e acompanha os preços e notícias que movem todos os mercados.",
     "hero.vetBtn": "Verificar",
     "hero.signup": "Novo por aqui? Crie uma conta grátis →",
+    "tk.live": "Ao vivo",
+    "tk.green": "Sem alertas graves",
+    "tk.yellow": "Cautela",
+    "tk.red": "Alto risco",
+    "tk.listed": "Listado em exchange",
     "news.label": "Notícias", "news.title": "O que move os mercados", "news.all": "Todas as notícias →",
     "bot.label": "O Bot · Em teste", "bot.title": "Disciplinado por design, para que você não precise ser.",
     "f1.title": "Varredura de liquidez + quebra de estrutura",
@@ -72,10 +92,15 @@ export const HOME = {
   },
   ha: {
     "hero.pill": "Binciken crypto kyauta",
-    "hero.title": "Duba kowane coin kafin ka saya.",
+    "hero.title": "Duba *kowane coin* kafin ka saya.",
     "hero.sub": "GOAT na binciken sababbin coins na crypto don alamun zamba (rug pull) cikin dakiku, kuma tana bin farashi da labaran da ke motsa kowace kasuwa.",
     "hero.vetBtn": "Duba coin",
     "hero.signup": "Sabon shiga? Buɗe asusu kyauta →",
+    "tk.live": "Kai tsaye",
+    "tk.green": "Babu babbar matsala",
+    "tk.yellow": "A yi hankali",
+    "tk.red": "Haɗari mai yawa",
+    "tk.listed": "Yana kan exchange",
     "news.label": "Labarai", "news.title": "Abin da ke motsa kasuwanni", "news.all": "Duk labarai →",
     "bot.label": "Bot ɗin · Ana gwaji", "bot.title": "An gina shi da ladabi, don kada ka damu da hakan.",
     "f1.title": "Share liquidity + karya tsari",
@@ -89,10 +114,15 @@ export const HOME = {
   },
   yo: {
     "hero.pill": "Àyẹ̀wò crypto lọ́fẹ̀ẹ́",
-    "hero.title": "Ṣàyẹ̀wò coin kọ̀ọ̀kan kí o tó rà á.",
+    "hero.title": "Ṣàyẹ̀wò *coin kọ̀ọ̀kan* kí o tó rà á.",
     "hero.sub": "GOAT ń ṣàyẹ̀wò àwọn coin crypto tuntun fún àmì jìbìtì (rug pull) láàárín ìṣẹ́jú-àáyá, ó sì ń tọpinpin iye owó àti ìròyìn tó ń mì gbogbo ọjà.",
     "hero.vetBtn": "Ṣàyẹ̀wò",
     "hero.signup": "Ṣé o jẹ́ tuntun? Ṣí àkáǹtì ọ̀fẹ́ →",
+    "tk.live": "Láàyè",
+    "tk.green": "Kò sí àmì ewu ńlá",
+    "tk.yellow": "Ṣọ́ra",
+    "tk.red": "Ewu ńlá",
+    "tk.listed": "Wà lórí exchange",
     "news.label": "Ìròyìn", "news.title": "Ohun tó ń mì ọjà", "news.all": "Gbogbo ìròyìn →",
     "bot.label": "Bot náà · À ń dán an wò", "bot.title": "A kọ́ ọ pẹ̀lú ìbáwí, kí ìwọ má bàa ṣe é.",
     "f1.title": "Gbígbá liquidity + fífọ́ ètò ọjà",
@@ -106,10 +136,15 @@ export const HOME = {
   },
   ig: {
     "hero.pill": "Nlele crypto n'efu",
-    "hero.title": "Lelee coin ọ bụla tupu ị zụọ ya.",
+    "hero.title": "Lelee *coin ọ bụla* tupu ị zụọ ya.",
     "hero.sub": "GOAT na-enyocha coin crypto ọhụrụ maka ihe ịrịba ama aghụghọ (rug pull) n'ime sekọnd ole na ole, ma na-eso ọnụahịa na akụkọ na-akpali ahịa niile.",
     "hero.vetBtn": "Lelee coin",
     "hero.signup": "Ị bụ onye ọhụrụ? Mepee akaụntụ n'efu →",
+    "tk.live": "Ugbu a",
+    "tk.green": "Enweghị nnukwu ihe ize ndụ",
+    "tk.yellow": "Kpachara anya",
+    "tk.red": "Nnukwu ihe ize ndụ",
+    "tk.listed": "Dị na exchange",
     "news.label": "Akụkọ", "news.title": "Ihe na-akpali ahịa", "news.all": "Akụkọ niile →",
     "bot.label": "Bot ahụ · A na-anwale ya", "bot.title": "Ewuru ya n'ịdọ aka ná ntị, ka ị ghara inwe nsogbu ya.",
     "f1.title": "Nzacha liquidity + mgbaji usoro",
