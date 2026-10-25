@@ -4,23 +4,23 @@ import InstallPrompt from "@/components/InstallPrompt";   // "Get the GOAT app" 
 import "./globals.css";
 
 export const metadata = {
-  metadataBase: new URL("https://goatwatch.app"),         // NEW: full site address, so preview images get a complete https:// link
-  title: "GOAT | Check any coin before you buy",          // CHANGED: leads with what's live today
-  description: "Free rug-pull checks for new crypto coins, live prices for crypto, forex, stocks and indices, and the news that moves markets.", // CHANGED
+  metadataBase: new URL("https://goatwatch.app"),         // full site address, so preview images get a complete https:// link
+  title: "GOAT | Check any coin before you buy",          // leads with what's live today
+  description: "Free rug-pull checks for new crypto coins, live prices for crypto, forex, stocks and indices, and the news that moves markets.",
   applicationName: "GOAT",                                // app name for browsers
-  openGraph: {                                            // NEW: the preview card on WhatsApp, Telegram, Facebook, LinkedIn
-    title: "GOAT | Check any coin before you buy",        // bold title on the card
-    description: "Rug checks · Live prices · Market news", // short line under the title
+  openGraph: {                                            // the preview card on WhatsApp, Telegram, Facebook, LinkedIn
+    title: "GOAT | Check any coin before you buy",
+    description: "Rug checks · Live prices · Market news",
     url: "/",                                             // becomes https://goatwatch.app thanks to metadataBase
-    siteName: "GOAT",                                     // small site name on the card
-    type: "website",                                      // tells apps this is a website (not an article or video)
-    // the image itself comes from src/app/opengraph-image.png automatically
+    siteName: "GOAT",
+    type: "website",
+    // the image itself comes from src/app/opengraph-image.js automatically
   },
-  twitter: {                                              // NEW: the preview card on X
+  twitter: {                                              // the preview card on X
     card: "summary_large_image",                          // big image card, not the small square one
     title: "GOAT | Check any coin before you buy",
     description: "Rug checks · Live prices · Market news",
-    // the image comes from src/app/twitter-image.png automatically
+    // the image comes from src/app/twitter-image.js automatically
   },
   appleWebApp: {                                          // iPhone "Add to Home Screen" settings
     capable: true,                                        // open full screen, like an app
@@ -34,8 +34,8 @@ export const metadata = {
 
 export const viewport = {                                 // colours the phone's browser bar to match the theme
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" }, // light phones: white bar
-    { media: "(prefers-color-scheme: dark)", color: "#0B1210" },  // dark phones: GOAT night bar
+    { media: "(prefers-color-scheme: light)", color: "#F7F2E8" }, // CHANGED: light phones: warm sand bar
+    { media: "(prefers-color-scheme: dark)", color: "#0F1A18" },  // CHANGED: dark phones: lagoon night bar
   ],
   viewportFit: "cover",                                   // use the full screen on notched phones (safe-area padding needs this)
 };

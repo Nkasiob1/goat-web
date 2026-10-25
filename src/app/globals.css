@@ -16,7 +16,7 @@
   --color-moss: #2E7468;               /* links and small accents (day) */
   --color-forest: #1F4D40;             /* the main button (day): deep green */
   --color-clay: #C26F2E;               /* warm accent for small highlights */
-  --color-glow: rgba(201, 162, 74, 0.30); /* CHANGED: pure coin gold (no orange-on-green mud) */
+  --color-glow: rgba(201, 162, 74, 0.46); /* CHANGED: 0.30 -> 0.42, visible on sand but still soft */
 
   /* Data colours: numbers only, never decoration */
   --color-gain: #2E8B60;               /* profit */
@@ -37,10 +37,10 @@
   --color-ink: #F2EBDD;                /* main text: warm sand, never harsh white */
 
   --color-sage: #1C2A22;               /* soft tint, darkened */
-  --color-moss: #E3B566;               /* CHANGED: links and the pill are soft GOLD now (teal removed: one accent family) */
-  --color-forest: #D98E4A;             /* main button: the amber you liked, same gold family */
+  --color-moss: #E3B566;               /* links and the pill: soft gold (one accent family) */
+  --color-forest: #D98E4A;             /* main button: amber, the same gold family */
   --color-clay: #E0A15E;               /* warm accent */
-  --color-glow: rgba(201, 162, 74, 0.38); /* CHANGED: coin gold, a little stronger at night */
+  --color-glow: rgba(201, 162, 74, 0.38); /* coin gold, a little stronger at night */
 
   --color-gain: #3FBF84;               /* profit: brighter for dark backgrounds */
   --color-loss: #E2675D;               /* loss: brighter for dark backgrounds */
@@ -54,7 +54,7 @@ body {                                 /* default styles for the whole site */
   font-family: var(--font-sans), system-ui, sans-serif; /* use Geist, fall back to system fonts */
 }
 
-/* NEW: the glowing GOAT coin. A gold halo that breathes behind a coin that gently floats. */
+/* The glowing GOAT coin. A gold halo that breathes behind a coin that gently floats. */
 .coin-stage {
   position: relative;                  /* lets the halo sit exactly behind the coin */
   display: flex;

@@ -1,12 +1,15 @@
 // src/lib/i18n/home.js
-// Home page words (Hero, NewsPreview, Features), per language. Bot copy matches GOAT v11.
+// Home page words (Hero, NewsPreview, Features), per language.
+// CHANGED: the hero now leads with what's live today (Vet). The bot section is labelled "in testing".
 export const HOME = {
   en: {
-    "hero.pill": "Algorithmic trading, built calmly",
-    "hero.title": "Trade with patience. Let GOAT do the watching.",
-    "hero.sub": "A rules-driven bot that scores every setup before it trades forex, indices and gold, while you get on with your day.",
+    "hero.pill": "Free crypto safety checks",                                   // CHANGED
+    "hero.title": "Check any coin before you buy.",                             // CHANGED
+    "hero.sub": "GOAT scans new crypto coins for rug-pull red flags in seconds, and tracks the prices and news that move every market.", // CHANGED
+    "hero.vetBtn": "Check coin",                                                // NEW: button on the coin box
+    "hero.signup": "New here? Create a free account →",                         // NEW: link under the box for visitors
     "news.label": "News", "news.title": "What's moving markets", "news.all": "All news →",
-    "bot.label": "The Bot", "bot.title": "Disciplined by design, so you don't have to be.",
+    "bot.label": "The Bot · In testing", "bot.title": "Disciplined by design, so you don't have to be.", // CHANGED: label
     "f1.title": "Liquidity sweep + structure break",
     "f1.text": "GOAT waits for price to sweep a recent high or low, then trades only after a closed candle breaks structure. No chasing, no guessing.",
     "f2.title": "Confidence score",
@@ -17,11 +20,13 @@ export const HOME = {
     "f4.text": "EUR/USD, GBP/USD, gold, the Nasdaq, the Dow and the S&P 500. Fewer markets, studied deeply.",
   },
   fr: {
-    "hero.pill": "Trading algorithmique, conçu avec calme",
-    "hero.title": "Tradez avec patience. Laissez GOAT surveiller.",
-    "hero.sub": "Un bot fondé sur des règles qui note chaque configuration avant de trader le forex, les indices et l'or, pendant que vous vivez votre journée.",
+    "hero.pill": "Vérifications crypto gratuites",
+    "hero.title": "Vérifiez chaque crypto avant d'acheter.",
+    "hero.sub": "GOAT analyse les nouvelles cryptos en quelques secondes pour repérer les signaux d'arnaque (rug pull), et suit les prix et l'actualité qui font bouger tous les marchés.",
+    "hero.vetBtn": "Vérifier",
+    "hero.signup": "Nouveau ? Créez un compte gratuit →",
     "news.label": "Actualités", "news.title": "Ce qui fait bouger les marchés", "news.all": "Toutes les actualités →",
-    "bot.label": "Le Bot", "bot.title": "Discipliné par conception, pour que vous n'ayez pas à l'être.",
+    "bot.label": "Le Bot · En test", "bot.title": "Discipliné par conception, pour que vous n'ayez pas à l'être.",
     "f1.title": "Balayage de liquidité + cassure de structure",
     "f1.text": "GOAT attend que le prix balaie un sommet ou un creux récent, puis ne trade qu'après qu'une bougie clôturée a cassé la structure. Pas de poursuite, pas de devinettes.",
     "f2.title": "Score de confiance",
@@ -32,11 +37,13 @@ export const HOME = {
     "f4.text": "EUR/USD, GBP/USD, l'or, le Nasdaq, le Dow et le S&P 500. Moins de marchés, étudiés en profondeur.",
   },
   es: {
-    "hero.pill": "Trading algorítmico, con calma",
-    "hero.title": "Opera con paciencia. Deja que GOAT vigile.",
-    "hero.sub": "Un bot basado en reglas que puntúa cada oportunidad antes de operar forex, índices y oro, mientras tú sigues con tu día.",
+    "hero.pill": "Verificaciones cripto gratuitas",
+    "hero.title": "Revisa cualquier moneda antes de comprar.",
+    "hero.sub": "GOAT analiza nuevas criptomonedas en segundos en busca de señales de estafa (rug pull) y sigue los precios y noticias que mueven todos los mercados.",
+    "hero.vetBtn": "Revisar",
+    "hero.signup": "¿Eres nuevo? Crea una cuenta gratis →",
     "news.label": "Noticias", "news.title": "Lo que mueve los mercados", "news.all": "Todas las noticias →",
-    "bot.label": "El Bot", "bot.title": "Disciplinado por diseño, para que tú no tengas que serlo.",
+    "bot.label": "El Bot · En pruebas", "bot.title": "Disciplinado por diseño, para que tú no tengas que serlo.",
     "f1.title": "Barrido de liquidez + ruptura de estructura",
     "f1.text": "GOAT espera a que el precio barra un máximo o mínimo reciente y solo opera cuando una vela cerrada rompe la estructura. Sin perseguir, sin adivinar.",
     "f2.title": "Puntuación de confianza",
@@ -47,11 +54,13 @@ export const HOME = {
     "f4.text": "EUR/USD, GBP/USD, oro, Nasdaq, Dow y S&P 500. Menos mercados, estudiados a fondo.",
   },
   pt: {
-    "hero.pill": "Trading algorítmico, com calma",
-    "hero.title": "Negocie com paciência. Deixe a GOAT observar.",
-    "hero.sub": "Um bot baseado em regras que avalia cada oportunidade antes de operar forex, índices e ouro, enquanto você segue com o seu dia.",
+    "hero.pill": "Verificações cripto gratuitas",
+    "hero.title": "Verifique qualquer moeda antes de comprar.",
+    "hero.sub": "A GOAT analisa novas criptomoedas em segundos em busca de sinais de golpe (rug pull) e acompanha os preços e notícias que movem todos os mercados.",
+    "hero.vetBtn": "Verificar",
+    "hero.signup": "Novo por aqui? Crie uma conta grátis →",
     "news.label": "Notícias", "news.title": "O que move os mercados", "news.all": "Todas as notícias →",
-    "bot.label": "O Bot", "bot.title": "Disciplinado por design, para que você não precise ser.",
+    "bot.label": "O Bot · Em teste", "bot.title": "Disciplinado por design, para que você não precise ser.",
     "f1.title": "Varredura de liquidez + quebra de estrutura",
     "f1.text": "A GOAT espera o preço varrer uma máxima ou mínima recente e só opera depois que um candle fechado quebra a estrutura. Sem correr atrás, sem adivinhar.",
     "f2.title": "Pontuação de confiança",
@@ -62,11 +71,13 @@ export const HOME = {
     "f4.text": "EUR/USD, GBP/USD, ouro, Nasdaq, Dow e S&P 500. Menos mercados, estudados a fundo.",
   },
   ha: {
-    "hero.pill": "Ciniki ta na'ura, cikin natsuwa",
-    "hero.title": "Yi ciniki da haƙuri. Bari GOAT ta yi kallo.",
-    "hero.sub": "Bot mai bin ƙa'idoji wanda ke auna kowace dama kafin ya yi cinikin forex, indices da zinariya, yayin da kake ci gaba da harkokinka.",
+    "hero.pill": "Binciken crypto kyauta",
+    "hero.title": "Duba kowane coin kafin ka saya.",
+    "hero.sub": "GOAT na binciken sababbin coins na crypto don alamun zamba (rug pull) cikin dakiku, kuma tana bin farashi da labaran da ke motsa kowace kasuwa.",
+    "hero.vetBtn": "Duba coin",
+    "hero.signup": "Sabon shiga? Buɗe asusu kyauta →",
     "news.label": "Labarai", "news.title": "Abin da ke motsa kasuwanni", "news.all": "Duk labarai →",
-    "bot.label": "Bot ɗin", "bot.title": "An gina shi da ladabi, don kada ka damu da hakan.",
+    "bot.label": "Bot ɗin · Ana gwaji", "bot.title": "An gina shi da ladabi, don kada ka damu da hakan.",
     "f1.title": "Share liquidity + karya tsari",
     "f1.text": "GOAT na jira farashi ya share wani ƙoli ko ƙasa na kusa, sannan ta yi ciniki ne kawai bayan kyandir da ya rufe ya karya tsari. Babu bi, babu zato.",
     "f2.title": "Makin amincewa",
@@ -77,11 +88,13 @@ export const HOME = {
     "f4.text": "EUR/USD, GBP/USD, zinariya, Nasdaq, Dow da S&P 500. Ƙananan kasuwanni, an yi nazarinsu sosai.",
   },
   yo: {
-    "hero.pill": "Ìṣòwò aládàáṣe, tí a kọ́ pẹ̀lú ìfọ̀kànbalẹ̀",
-    "hero.title": "Ṣòwò pẹ̀lú sùúrù. Jẹ́ kí GOAT máa ṣọ́ ọjà.",
-    "hero.sub": "Bot tó ń tẹ̀lé òfin, tó ń wọn gbogbo àǹfààní kí ó tó ṣòwò forex, indices àti wúrà, nígbà tí o ń bá iṣẹ́ ọjọ́ rẹ lọ.",
+    "hero.pill": "Àyẹ̀wò crypto lọ́fẹ̀ẹ́",
+    "hero.title": "Ṣàyẹ̀wò coin kọ̀ọ̀kan kí o tó rà á.",
+    "hero.sub": "GOAT ń ṣàyẹ̀wò àwọn coin crypto tuntun fún àmì jìbìtì (rug pull) láàárín ìṣẹ́jú-àáyá, ó sì ń tọpinpin iye owó àti ìròyìn tó ń mì gbogbo ọjà.",
+    "hero.vetBtn": "Ṣàyẹ̀wò",
+    "hero.signup": "Ṣé o jẹ́ tuntun? Ṣí àkáǹtì ọ̀fẹ́ →",
     "news.label": "Ìròyìn", "news.title": "Ohun tó ń mì ọjà", "news.all": "Gbogbo ìròyìn →",
-    "bot.label": "Bot náà", "bot.title": "A kọ́ ọ pẹ̀lú ìbáwí, kí ìwọ má bàa ṣe é.",
+    "bot.label": "Bot náà · À ń dán an wò", "bot.title": "A kọ́ ọ pẹ̀lú ìbáwí, kí ìwọ má bàa ṣe é.",
     "f1.title": "Gbígbá liquidity + fífọ́ ètò ọjà",
     "f1.text": "GOAT ń dúró kí iye owó gbá góńgó tàbí ìsàlẹ̀ àìpẹ́ kan, lẹ́yìn náà ó ń ṣòwò nígbà tí àbẹ́là tó ti parí bá fọ́ ètò ọjà nìkan. Kò sí lílé, kò sí ìrò lásán.",
     "f2.title": "Àmì ìgbẹ́kẹ̀lé",
@@ -92,11 +105,13 @@ export const HOME = {
     "f4.text": "EUR/USD, GBP/USD, wúrà, Nasdaq, Dow àti S&P 500. Ọjà díẹ̀, tí a kẹ́kọ̀ọ́ jinlẹ̀.",
   },
   ig: {
-    "hero.pill": "Azụmahịa akpaaka, ewuru n'udo",
-    "hero.title": "Zụọ ahịa n'ndidi. Hapụ GOAT ka ọ na-ele anya.",
-    "hero.sub": "Bot na-agbaso iwu nke na-atụ ohere ọ bụla tupu ọ zụọ ahịa forex, indices na ọlaedo, ka ị na-aga n'ihu n'ọrụ ụbọchị gị.",
+    "hero.pill": "Nlele crypto n'efu",
+    "hero.title": "Lelee coin ọ bụla tupu ị zụọ ya.",
+    "hero.sub": "GOAT na-enyocha coin crypto ọhụrụ maka ihe ịrịba ama aghụghọ (rug pull) n'ime sekọnd ole na ole, ma na-eso ọnụahịa na akụkọ na-akpali ahịa niile.",
+    "hero.vetBtn": "Lelee coin",
+    "hero.signup": "Ị bụ onye ọhụrụ? Mepee akaụntụ n'efu →",
     "news.label": "Akụkọ", "news.title": "Ihe na-akpali ahịa", "news.all": "Akụkọ niile →",
-    "bot.label": "Bot ahụ", "bot.title": "Ewuru ya n'ịdọ aka ná ntị, ka ị ghara inwe nsogbu ya.",
+    "bot.label": "Bot ahụ · A na-anwale ya", "bot.title": "Ewuru ya n'ịdọ aka ná ntị, ka ị ghara inwe nsogbu ya.",
     "f1.title": "Nzacha liquidity + mgbaji usoro",
     "f1.text": "GOAT na-echere ka ọnụahịa zachaa elu ma ọ bụ ala nso nso a, wee zụọ ahịa naanị mgbe kandụl mechiri emechi gbajiri usoro. Enweghị ịchụ, enweghị ịkọ nkọ.",
     "f2.title": "Akara ntụkwasị obi",
