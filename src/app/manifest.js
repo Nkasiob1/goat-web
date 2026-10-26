@@ -3,7 +3,7 @@ export default function manifest() {
   return {
     name: "GOAT",                                         // shown on the system splash: short and clean
     short_name: "GOAT",                                   // shown under the home-screen icon
-    description: "Greatest Of All Trades: live markets, a new-coin radar and a free token safety checker.",
+    description: "Check any coin before you buy: free rug-pull checks, a new-coin radar, live markets and news.", // CHANGED: leads with Vet
     id: "/",                                              // the app's permanent identity
     start_url: "/",                                       // page the app opens on
     scope: "/",                                           // every page belongs to the app
@@ -13,15 +13,14 @@ export default function manifest() {
     theme_color: "#0B1210",                               // status bar colour
     categories: ["finance"],
     icons: [
-      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },        // round coin, transparent
-      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: "/icons/icon-maskable-dark-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" }, // NEW: coin on dark green
-      { src: "/icons/icon-maskable-dark-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" }, // phones crop this into their own shape
+      { src: "/app-icon/192", sizes: "192x192", type: "image/png", purpose: "any" },               // CHANGED: gold tile, drawn in code
+      { src: "/app-icon/512", sizes: "512x512", type: "image/png", purpose: "any" },               // CHANGED
+      { src: "/app-icon/maskable-512", sizes: "512x512", type: "image/png", purpose: "maskable" }, // CHANGED: goat inside the safe zone; phones crop to their own shape
     ],
     shortcuts: [                                          // long-press the app icon to see these
-      { name: "Radar", url: "/radar", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
-      { name: "Vet a coin", url: "/vet", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
-      { name: "Markets", url: "/markets", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+      { name: "Vet a coin", url: "/vet", icons: [{ src: "/app-icon/192", sizes: "192x192" }] },  // CHANGED: Vet first (our main feature) + new icon
+      { name: "Radar", url: "/radar", icons: [{ src: "/app-icon/192", sizes: "192x192" }] },
+      { name: "Markets", url: "/markets", icons: [{ src: "/app-icon/192", sizes: "192x192" }] },
     ],
   };
 }
