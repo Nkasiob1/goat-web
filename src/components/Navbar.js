@@ -7,10 +7,11 @@ import AdminLink from "./AdminLink";                     // shield, admins only 
 import ThemeToggle from "./ThemeToggle";                 // ☀️/🌙 switch
 import MobileTabBar from "./MobileTabBar";               // app-style bottom bar on phones
 import SplashScreen from "./SplashScreen";               // animated opening (installed app only)
-import LanguageSwitcher from "./LanguageSwitcher";       // NEW: 🌐 language menu
-import T from "./T";                                     // NEW: translated text
+import LanguageSwitcher from "./LanguageSwitcher";       // 🌐 language menu
+import GetAppButton from "./GetAppButton";               // NEW: 📲 "get the app" (hidden inside the installed app)
+import T from "./T";                                     // translated text
 
-const NAV_LINKS = [                                      // labels are now <T> so they follow the language
+const NAV_LINKS = [                                      // labels are <T> so they follow the language
   { href: "/markets", label: <T k="nav.markets" /> },
   { href: "/charts", label: <T k="nav.charts" /> },
   { href: "/radar", label: <T k="nav.radar" /> },
@@ -35,9 +36,10 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden md:block">              {/* NEW: 🌐 on laptops (phones get it in ☰ next) */}
+          <div className="hidden md:block">              {/* 🌐 on laptops (phones get it in ☰) */}
             <LanguageSwitcher />
           </div>
+          <GetAppButton />                               {/* NEW: phones AND laptops, in every language */}
           <ThemeToggle />
           <AdminLink />
           <NotificationBell />
