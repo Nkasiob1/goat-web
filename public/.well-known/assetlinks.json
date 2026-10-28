@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.goatwatch.twa",
+        "sha256_cert_fingerprints": ["81:F7:E7:EF:9B:77:D3:22:5A:41:B3:9E:DB:17:A7:FB:1D:13:88:4E:9E:3B:3F:85:E5:EF:29:2F:25:21:D7:3D"]
+      }
+    }]
