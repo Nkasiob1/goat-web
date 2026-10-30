@@ -6,10 +6,10 @@ import NotificationBell from "./NotificationBell";       // 🔔 with unread cou
 import AdminLink from "./AdminLink";                     // shield, admins only (laptop)
 import ThemeToggle from "./ThemeToggle";                 // ☀️/🌙 switch
 import MobileTabBar from "./MobileTabBar";               // app-style bottom bar on phones
-import SplashScreen from "./SplashScreen";               // animated opening (installed app only)
 import LanguageSwitcher from "./LanguageSwitcher";       // 🌐 language menu
-import GetAppButton from "./GetAppButton";               // NEW: 📲 "get the app" (hidden inside the installed app)
+import GetAppButton from "./GetAppButton";               // 📲 "get the app" (hidden inside the installed app)
 import T from "./T";                                     // translated text
+// REMOVED: SplashScreen. It now lives in layout.js, drawn once per launch.
 
 const NAV_LINKS = [                                      // labels are <T> so they follow the language
   { href: "/markets", label: <T k="nav.markets" /> },
@@ -24,7 +24,6 @@ const NAV_LINKS = [                                      // labels are <T> so th
 export default function Navbar() {
   return (
     <header className="relative border-b border-line bg-water">
-      <SplashScreen />                                   {/* covers the screen for ~2s on app launch, then fades */}
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Logo />
 
@@ -39,7 +38,7 @@ export default function Navbar() {
           <div className="hidden md:block">              {/* 🌐 on laptops (phones get it in ☰) */}
             <LanguageSwitcher />
           </div>
-          <GetAppButton />                               {/* NEW: phones AND laptops, in every language */}
+          <GetAppButton />                               {/* phones AND laptops, in every language */}
           <ThemeToggle />
           <AdminLink />
           <NotificationBell />

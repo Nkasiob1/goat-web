@@ -10,13 +10,11 @@ export default function GetAppButton() {
   const [show, setShow] = useState(false);              // hidden until we've checked (avoids a flash inside the app)
 
   useEffect(() => {
-    const installed =
-      window.matchMedia("(display-mode: standalone)").matches || // Android app / installed web app
-      window.navigator.standalone === true;               // iPhone "Add to Home Screen"
+    const installed = document.documentElement.classList.contains("is-app"); // CHANGED: the same "am I the app?" answer layout.js decided
     setShow(!installed);                                  // only show in a normal browser
   }, []);                                                 // [] = check once, when the page loads
 
-  if (!show) return null;                                 // installed (or still checking): show nothing
+  if (!show) return null;                                 // inside the app (or still checking): show nothing
 
   return (
     <Link
