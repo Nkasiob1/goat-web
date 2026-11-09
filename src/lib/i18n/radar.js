@@ -19,7 +19,7 @@ export const RADAR = {
     spot: "{source} spot listing",
     liquidity: "Liquidity", vol: "Vol 24h", launched: "Launched",
     spotted: "Spotted {ago}",
-    trade: "Trade on {source}", chart: "View chart",
+    trade: "Trade on {source}", chart: "View chart", check: "🔎 Check on GOAT", // NEW: button to the full Vet
     bybitNew: "New to Bybit? Sign up with GOAT", partnerLink: "Partner link",
     loadError: "Could not load the radar", scanning: "Scanning…",
     empty: "Nothing here yet. The radar checks again every 15 minutes.",
@@ -44,7 +44,7 @@ export const RADAR = {
     spot: "Nouveau sur {source} (spot)",
     liquidity: "Liquidité", vol: "Vol. 24 h", launched: "Lancé",
     spotted: "Repéré {ago}",
-    trade: "Trader sur {source}", chart: "Voir le graphique",
+    trade: "Trader sur {source}", chart: "Voir le graphique", check: "🔎 Vérifier sur GOAT", // NEW
     bybitNew: "Nouveau sur Bybit ? Inscrivez-vous avec GOAT", partnerLink: "Lien partenaire",
     loadError: "Impossible de charger le radar", scanning: "Analyse…",
     empty: "Rien pour le moment. Le radar vérifie à nouveau toutes les 15 minutes.",
@@ -69,7 +69,7 @@ export const RADAR = {
     spot: "Nuevo listado spot en {source}",
     liquidity: "Liquidez", vol: "Vol. 24 h", launched: "Lanzada",
     spotted: "Detectada {ago}",
-    trade: "Operar en {source}", chart: "Ver gráfico",
+    trade: "Operar en {source}", chart: "Ver gráfico", check: "🔎 Revisar en GOAT", // NEW
     bybitNew: "¿Nuevo en Bybit? Regístrate con GOAT", partnerLink: "Enlace de socio",
     loadError: "No se pudo cargar el radar", scanning: "Escaneando…",
     empty: "Aún no hay nada. El radar vuelve a revisar cada 15 minutos.",
@@ -94,7 +94,7 @@ export const RADAR = {
     spot: "Nova listagem spot na {source}",
     liquidity: "Liquidez", vol: "Vol. 24h", launched: "Lançada",
     spotted: "Detectada {ago}",
-    trade: "Negociar na {source}", chart: "Ver gráfico",
+    trade: "Negociar na {source}", chart: "Ver gráfico", check: "🔎 Verificar na GOAT", // NEW
     bybitNew: "Novo na Bybit? Cadastre-se com a GOAT", partnerLink: "Link de parceiro",
     loadError: "Não foi possível carregar o radar", scanning: "Escaneando…",
     empty: "Nada por aqui ainda. O radar verifica de novo a cada 15 minutos.",
@@ -119,7 +119,7 @@ export const RADAR = {
     spot: "Sabon jeri a {source}",
     liquidity: "Liquidity", vol: "Ciniki 24h", launched: "An ƙaddamar",
     spotted: "An gano {ago}",
-    trade: "Yi ciniki a {source}", chart: "Duba jadawali",
+    trade: "Yi ciniki a {source}", chart: "Duba jadawali", check: "🔎 Duba a GOAT", // NEW
     bybitNew: "Sabo ne a Bybit? Yi rajista da GOAT", partnerLink: "Hanyar abokin hulɗa",
     loadError: "An kasa loda radar", scanning: "Ana bincike…",
     empty: "Babu komai tukuna. Radar na sake dubawa duk minti 15.",
@@ -144,7 +144,7 @@ export const RADAR = {
     spot: "Tuntun lórí {source}",
     liquidity: "Liquidity", vol: "Ìṣòwò 24h", launched: "Ìfilọ́lẹ̀",
     spotted: "A rí i {ago}",
-    trade: "Ṣòwò lórí {source}", chart: "Wo àwòrán",
+    trade: "Ṣòwò lórí {source}", chart: "Wo àwòrán", check: "🔎 Ṣàyẹ̀wò lórí GOAT", // NEW
     bybitNew: "Ṣé o jẹ́ tuntun lórí Bybit? Forúkọsílẹ̀ pẹ̀lú GOAT", partnerLink: "Ìjápọ̀ alábàáṣiṣẹ́pọ̀",
     loadError: "Kò ṣeé ṣe láti ṣí radar", scanning: "À ń ṣàyẹ̀wò…",
     empty: "Kò sí nǹkan kan síbẹ̀. Radar máa tún ṣàyẹ̀wò ní gbogbo ìṣẹ́jú 15.",
@@ -169,7 +169,7 @@ export const RADAR = {
     spot: "Ndepụta ọhụrụ na {source}",
     liquidity: "Liquidity", vol: "Azụmahịa 24h", launched: "Malitere",
     spotted: "Achọpụtara {ago}",
-    trade: "Zụọ ahịa na {source}", chart: "Lee eserese",
+    trade: "Zụọ ahịa na {source}", chart: "Lee eserese", check: "🔎 Nyochaa na GOAT", // NEW
     bybitNew: "Ị bụ onye ọhụrụ na Bybit? Debanye aha na GOAT", partnerLink: "Njikọ onye mmekọ",
     loadError: "Enweghị ike ibunye radar", scanning: "Na-enyocha…",
     empty: "Ọ dịbeghị ihe ọ bụla ebe a. Radar na-enyocha ọzọ kwa nkeji 15.",

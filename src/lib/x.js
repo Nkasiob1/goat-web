@@ -104,52 +104,83 @@ function title(word) {
   return w.charAt(0).toUpperCase() + w.slice(1);
 }
 
+// ---------- length guard (NEW) ----------
+
+const MAX_LEN = 280; // free X accounts: 280, counted X's way (below)
+
+// xLength: count characters the way X does. Plain Latin letters, numbers and common
+// punctuation count 1; emoji, Chinese/Japanese/Korean and most other symbols count 2.
+function xLength(text) {
+  let n = 0;
+  for (const ch of text) {                                   // for...of walks whole characters (emoji included)
+    const c = ch.codePointAt(0);
+    const light =
+      c <= 0x10ff ||                                         // Latin, Greek, Cyrillic, Hebrew, Arabic, etc.
+      (c >= 0x2000 && c <= 0x200d) ||                        // spaces and joiners
+      (c >= 0x2010 && c <= 0x201f) ||                        // dashes and quotes
+      (c >= 0x2032 && c <= 0x2037);                          // primes
+    n += light ? 1 : 2;
+  }
+  return n;
+}
+
+// fit: drop optional lines (last in the list first) until the post fits in 280.
+// lines = [{ text, optional }]; required lines are never dropped.
+function fit(lines) {
+  const keep = lines.filter((l) => l.text !== null);         // lines with no data are already gone
+  const join = () => keep.map((l) => l.text).join("\n");
+  for (let i = keep.length - 1; xLength(join()) > MAX_LEN && i >= 0; i--) {
+    if (keep[i].optional) keep.splice(i, 1);                 // remove this optional line and re-measure
+  }
+  const text = join();
+  return xLength(text) <= MAX_LEN ? text : null;             // still too long (huge name?): don't post
+}
+
 // ---------- the post text ----------
 
 // formatTweet: turn a radar_tokens row into post text.
 // NO links on purpose: a post with a URL costs about 13x more on pay-per-use.
 export function formatTweet(t) {
-  const tag = cashtag(t.symbol); // e.g. $PEPE
-  const name = t.name && t.name !== t.symbol ? ` (${t.name})` : ""; // add the name if it's different
+  let tag = cashtag(t.symbol); // e.g. $PEPE
+  const isCashtag = tag.startsWith("$");                    // NEW: real cashtag, or a fallback?
+  if (!isCashtag && t.name) tag = String(t.name).slice(0, 30); // NEW: "牛逼" can't be a cashtag -> use the coin's name
+  const name = isCashtag && t.name && t.name !== t.symbol ? ` (${String(t.name).slice(0, 30)})` : ""; // CHANGED: names capped at 30
 
   // exchange listing (Binance / Bybit / OKX)
   if (t.safety === "listed") {
-    return [
-      `🚨 New listing on ${title(t.source)}`, // e.g. "New listing on Bybit"
-      ``,
-      `${tag}${name}`, // the coin
-      ``,
-      `Caught by the GOAT Radar as soon as it went live.`, // what we do
-      ``,
-      `Live radar + instant alerts: link in bio`, // the bio holds the link (free)
-      `Not financial advice.`,
-      `#crypto #${title(t.source)}`, // hashtags help discovery
-    ].join("\n");
+    return fit([                                             // CHANGED: length-checked
+      { text: `🚨 New listing on ${title(t.source)}` },      // e.g. "New listing on Bybit"
+      { text: `` },
+      { text: `${tag}${name}` },                             // the coin
+      { text: `` },
+      { text: `Caught by the GOAT Radar as soon as it went live.`, optional: true },
+      { text: `Live radar + instant alerts: link in bio` },  // the bio holds the link (free)
+      { text: `Not financial advice.` },
+      { text: `#crypto #${title(t.source)}`, optional: true }, // hashtags help discovery
+    ]);
   }
 
   // new DEX coin with no major red flags when GOAT checked it (wording never says "safe" or "passed")
   if (t.safety === "green") {
     const chain = CHAINS[String(t.chain || "").toLowerCase()] || title(t.chain); // pretty chain
-    const cap = money(t.market_cap_usd);                    // NEW: market cap first...
-    const fdv = cap ? null : money(t.fdv_usd);              // NEW: ...FDV only if market cap is missing
+    const cap = money(t.market_cap_usd);                    // market cap first...
+    const fdv = cap ? null : money(t.fdv_usd);              // ...FDV only if market cap is missing
     const liq = money(t.liquidity_usd); // liquidity
     const vol = money(t.volume_24h); // 24h volume
-    return [
-      `🟢 New coin: no major red flags at launch`,           // CHANGED: a finding at one moment, never an endorsement
-      ``,
-      `${tag}${name}${chain ? ` on ${chain}` : ""}`,
-      cap ? `🏦 Market cap: ${cap}` : null,                  // NEW
-      fdv ? `🏦 FDV: ${fdv}` : null,                         // NEW: honest label when it's FDV
-      liq ? `💧 Liquidity: ${liq}` : null, // only show lines we have data for
-      vol ? `📊 24h volume: ${vol}` : null,
-      `🛡 Contract scanned: no honeypot flags at time of check`, // CHANGED: "at time of check": rugs happen later
-      ``,
-      `Re-check before you buy + live radar: link in bio`,  // CHANGED: pushes people to re-check, not to buy
-      `Not a recommendation. Checks can change fast. DYOR.`, // CHANGED: the standard GOAT disclaimer
-      `#crypto #${chain ? chain.replace(/\s/g, "") : "altcoins"}`,
-    ]
-      .filter((line) => line !== null) // drop the missing-data lines
-      .join("\n");
+    const capText = cap ? `🏦 MCap ${cap}` : fdv ? `🏦 FDV ${fdv}` : null;               // CHANGED: shorter labels
+    const numbers = [capText, liq ? `💧 Liq ${liq}` : null].filter(Boolean).join(" · "); // CHANGED: one line, not two
+    return fit([                                             // CHANGED: never longer than 280 (X's way of counting)
+      { text: `🟢 New coin, no major red flags at launch` },  // a finding at one moment, never an endorsement
+      { text: `` },
+      { text: `${tag}${name}${chain ? ` on ${chain}` : ""}` },
+      { text: numbers || null },                             // MCap + liquidity on one line
+      { text: vol ? `📊 Vol 24h ${vol}` : null, optional: true },
+      { text: `🛡 No honeypot flags at check time`, optional: true },
+      { text: `` },
+      { text: `Re-check + live radar: link in bio` },        // pushes people to re-check, not to buy
+      { text: `Not a recommendation. DYOR.` },               // the GOAT disclaimer (always kept)
+      { text: `#crypto #${chain ? chain.replace(/\s/g, "") : "altcoins"}`, optional: true },
+    ]);
   }
 
   return null; // yellow / red / pending: never posted to X
@@ -230,7 +261,7 @@ export async function postRadarToX(supabase, token, imageUrl) {
   if (token.x_posted_at) return { skipped: true, reason: "already on X" }; // never double-post
 
   const text = formatTweet(token); // build the post
-  if (!text) return { skipped: true, reason: `safety ${token.safety}` }; // not postable
+  if (!text) return { skipped: true, reason: `not postable (safety ${token.safety} or too long)` }; // CHANGED: clearer reason
 
   // count how many coins went to X in the last 24 hours
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -242,6 +273,10 @@ export async function postRadarToX(supabase, token, imageUrl) {
   if ((count ?? 0) >= DAILY_LIMIT) return { skipped: true, reason: "daily X limit reached" };
 
   const result = await sendTweet(text, imageUrl); // post it
+
+  if (!result.ok && !result.skipped) {                     // NEW: never fail silently again
+    console.error("X post failed:", token.symbol, result.status ?? "", result.error); // shows in Vercel logs
+  }
 
   if (result.ok) {
     await supabase

@@ -106,6 +106,15 @@ function TokenCard({ t }) {
         </a>
       </div>
 
+      {t.kind === "dex" && t.address && (                              // NEW: one tap to the full check (no copy-paste)
+        <a
+          href={`/vet?q=${encodeURIComponent(t.address)}`}               // the Vet page runs the check straight away
+          className="mt-3 flex items-center justify-center rounded-2xl bg-forest px-3 py-2.5 text-sm font-medium text-water hover:opacity-90"
+        >
+          {r("check")}                                                  {/* "🔎 Check on GOAT" in the visitor's language */}
+        </a>
+      )}
+
       {isBybitListing && (                                             // referral line on Bybit listings
         <a
           href={goLink("bybit", "radar-card")}

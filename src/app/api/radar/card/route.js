@@ -1,4 +1,4 @@
-// app/api/radar/card/route.js: draws a 1200×630 alert card that Telegram downloads
+// app/api/radar/card/route.js: draws a 1200×630 alert card that Telegram and X download
 import { ImageResponse } from "next/og";   // turns JSX into a PNG
 import { connection } from "next/server";  // always draw fresh from the URL values
 import { SITE_URL } from "@/lib/site";     // our one public address
@@ -25,8 +25,8 @@ export async function GET(request) {
   const symbol = (p.get("s") || "NEW").slice(0, 12);      // ticker, kept short so it fits
   const isListing = p.get("k") === "cex";                 // exchange listing or DEX coin
   const where = p.get("c") || "";                         // chain name or exchange name
-  const cap = p.get("m");                                 // NEW: market cap (or FDV) in USD
-  const capLabel = p.get("mk") === "fdv" ? "FDV" : "Market cap"; // NEW: honest label
+  const cap = p.get("m");                                 // market cap (or FDV) in USD
+  const capLabel = p.get("mk") === "fdv" ? "FDV" : "Market cap"; // honest label
 
   return new ImageResponse(
     (
@@ -48,7 +48,7 @@ export async function GET(request) {
           GOAT · LAUNCH RADAR
         </div>
 
-        {/* Middle: verdict + symbol + subtitle */}
+        {/* Middle: finding + symbol + subtitle */}
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <div
@@ -58,11 +58,11 @@ export async function GET(request) {
                 height: 22,
                 borderRadius: 11,
                 marginRight: 14,
-                background: isListing ? "#7dd3fc" : "#4ade80", // blue = listing, green = passed checks
+                background: isListing ? "#7dd3fc" : "#4ade80", // blue = listing, green = no major red flags found
               }}
             />
             <div style={{ display: "flex", fontSize: 30, color: isListing ? "#bae6fd" : "#bbf7d0" }}>
-              {isListing ? "NEW EXCHANGE LISTING" : "PASSED SAFETY CHECKS"}
+              {isListing ? "NEW EXCHANGE LISTING" : "NO MAJOR RED FLAGS AT LAUNCH"} {/* CHANGED: a finding, never "passed" */}
             </div>
           </div>
           <div style={{ display: "flex", fontSize: 150, fontWeight: 800, lineHeight: 1.05, marginTop: 10 }}>
@@ -79,14 +79,14 @@ export async function GET(request) {
             <div style={{ display: "flex", fontSize: 30, color: "#a7d7bf" }}>{where} · Spot · USDT</div>
           ) : (
             <div style={{ display: "flex", gap: 16 }}>
-              {cap ? <Stat label={capLabel} value={money(cap)} /> : null}   {/* NEW: shown first, when known */}
+              {cap ? <Stat label={capLabel} value={money(cap)} /> : null}   {/* shown first, when known */}
               <Stat label="Liquidity" value={money(p.get("l"))} />
               <Stat label="Volume 24h" value={money(p.get("v"))} />
             </div>
           )}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", fontSize: 24, color: "#a7d7bf" }}>
             <div style={{ display: "flex" }}>{HOST}/radar</div>
-            <div style={{ display: "flex" }}>DYOR · not financial advice</div>
+            <div style={{ display: "flex" }}>{isListing ? "DYOR · not financial advice" : "At time of check · not a recommendation"}</div> {/* CHANGED */}
           </div>
         </div>
       </div>
