@@ -34,7 +34,26 @@ const ISSUER_POWERS = new Set([
   "Upgradeable",
   "Ownership",
 ]);
-const ESTABLISHED_RANK = 200;                              // NEW: CoinGecko top 200 = established coin with a known issuer
+const ESTABLISHED_RANK = 200;                              // CoinGecko top 200 = established coin with a known issuer
+
+// NEW (v2 rules): thresholds for the three upgrades, in one place so they're easy to tune
+const YOUNG_HOURS = 48;                                    // "young" coin: launched in the last 2 days
+const YOUNG_CRASH_WARN = -60;                              // young coin down 60%+ from its peak -> caution
+const YOUNG_CRASH_FAIL = -90;                              // young coin down 90%+ from its peak -> classic rug shape
+const OLD_CRASH_WARN = -90;                                // older coins: only flag 90%+ crashes (as before)
+const FAKE_MIN_CAP = 1_000_000;                            // only judge valuations of $1M+
+const FAKE_VOL_RATIO = 0.001;                              // under 0.1% of its value traded in 24h = suspicious
+const FAKE_LIQ_RATIO = 100;                                // value more than 100x its liquidity = suspicious
+const WHALE_WARN = 0.2;                                    // one wallet holds 20%+ of supply -> caution
+const WHALE_FAIL = 0.5;                                    // one wallet holds 50%+ -> it can crash the price alone
+const TOP10_WARN = 0.7;                                    // top 10 wallets hold 70%+ -> caution
+const BURN = /^0x(0{40}|0{36}dead)$/i;                     // burn addresses (0x000…000 and 0x000…dEaD) don't count
+const KEY_WARNS = new Set(["Price crash", "Valuation", "Holders"]); // any ONE of these warnings = no green
+
+// Age text that matches the radar: "45m" under an hour, "5h" under a day
+function ageLabel(hours) {
+  return hours < 1 ? `${Math.max(1, Math.round(hours * 60))}m` : `${Math.round(hours)}h`;
+}
 
 // Is the text an EVM address? (0x + 40 hex characters)
 export const isEvmAddress = (q) => /^0x[a-fA-F0-9]{40}$/.test(q);
@@ -231,16 +250,75 @@ function marketChecks(pair, history, listing, list) {
   else if (liq < 50000) add(list, "Liquidity", "warn", `${liqText}. Thin, so big orders will move the price.`);
   else add(list, "Liquidity", "pass", `${liqText} in the main pool.`);
 
-  if (pair.pairCreatedAt) {
-    const hours = (Date.now() - pair.pairCreatedAt) / 36e5; // age in hours
-    if (hours < 24) add(list, "Age", "warn", `Launched ${Math.max(1, Math.round(hours))}h ago. Most rugs happen early.`);
+  const hours = pair.pairCreatedAt ? (Date.now() - pair.pairCreatedAt) / 36e5 : null; // age in hours (null = unknown)
+  if (hours !== null) {
+    if (hours < 24) add(list, "Age", "warn", `Launched ${ageLabel(hours)} ago. Most rugs happen early.`); // CHANGED: minutes under 1h
     else add(list, "Age", "pass", `Trading for ${Math.round(hours / 24)} days.`);
   }
 
-  // a 90%+ crash from the peak is the classic dump / rug shape
-  if (history && history.fromAthPct <= -90) {
-    add(list, "Price crash", "warn", `Down ${Math.abs(history.fromAthPct).toFixed(0)}% from its peak. Early holders may have dumped.`);
+  // CHANGED: price crash. Young coins are judged much more strictly: a big early drop is the rug shape.
+  if (history) {
+    const drop = history.fromAthPct;                       // e.g. -78
+    const young = hours !== null && hours < YOUNG_HOURS;
+    const pct = Math.abs(drop).toFixed(0);
+    if (young && drop <= YOUNG_CRASH_FAIL) {
+      add(list, "Price crash", "fail", `Down ${pct}% from its peak within ${ageLabel(hours)} of launch. Classic rug shape.`);
+    } else if (young && drop <= YOUNG_CRASH_WARN) {
+      add(list, "Price crash", "warn", `Down ${pct}% from its peak within ${ageLabel(hours)} of launch. Early holders may be dumping.`);
+    } else if (!young && drop <= OLD_CRASH_WARN) {
+      add(list, "Price crash", "warn", `Down ${pct}% from its peak. Early holders may have dumped.`);
+    }
   }
+
+  // NEW: fake valuation. A huge "market cap" that almost nobody trades, or that dwarfs the money in the pool,
+  // is easy to fake with a tiny supply float. Established (top-200) coins are skipped.
+  const established = listing?.listed && listing.rank && listing.rank <= ESTABLISHED_RANK;
+  const cap = Number(pair.marketCap || pair.fdv) || 0;     // market cap, else FDV
+  const vol = Number(pair.volume?.h24) || 0;
+  if (!established && cap >= FAKE_MIN_CAP) {
+    const fmt = (n) => "$" + Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+    if (vol < cap * FAKE_VOL_RATIO) {
+      add(list, "Valuation", "warn", `Valued at ${fmt(cap)} but only ${fmt(vol)} traded in 24h. The value may be inflated.`);
+    } else if (liq > 0 && cap > liq * FAKE_LIQ_RATIO) {
+      add(list, "Valuation", "warn", `Valued at ${fmt(cap)} with only ${liqText} of liquidity. Most of that value can't actually be sold.`);
+    }
+  }
+}
+
+// ---------- NEW: holders (who owns the supply?) ----------
+// EVM: GoPlus lists the top holders. We ignore contracts (pools, lockers), locked wallets and burn addresses,
+// then flag a single whale or a top-10 that owns most of the supply.
+// Solana: GoPlus gives no reliable holder data for new tokens yet, so we say so honestly (doesn't change the verdict).
+function holderChecks(scan, isSolana, hours, listing, list) {
+  const established = listing?.listed && listing.rank && listing.rank <= ESTABLISHED_RANK;
+  if (established) return;                                 // big known coins: exchanges and issuers hold a lot, by design
+  const young = hours !== null && hours < YOUNG_HOURS;
+
+  if (isSolana) {
+    if (young) add(list, "Holders", "unknown", "Top-holder data isn't available yet for this Solana token. Check the holders on the chart before buying.");
+    return;
+  }
+
+  const raw = Array.isArray(scan?.holders) ? scan.holders : [];
+  if (!raw.length) {
+    if (young) add(list, "Holders", "warn", "GOAT couldn't see who holds the supply. Be extra careful with a new coin.");
+    return;
+  }
+
+  let rows = raw
+    .filter((h) => String(h.is_contract) !== "1" && String(h.is_locked) !== "1") // pools, lockers, vesting: not a dump risk
+    .filter((h) => !BURN.test(String(h.address || "")))                         // burned tokens can't be sold
+    .map((h) => Number(h.percent) || 0);
+  if (rows.some((p) => p > 1)) rows = rows.map((p) => p / 100);                 // accept "12.5" as well as "0.125"
+
+  const top = rows.length ? Math.max(...rows) : 0;
+  const top10 = rows.slice(0, 10).reduce((a, b) => a + b, 0);
+  const pct = (n) => `${(n * 100).toFixed(0)}%`;
+
+  if (top >= WHALE_FAIL) add(list, "Holders", "fail", `One wallet holds ${pct(top)} of the supply. It can crash the price alone.`);
+  else if (top >= WHALE_WARN) add(list, "Holders", "warn", `One wallet holds ${pct(top)} of the supply.`);
+  else if (top10 >= TOP10_WARN) add(list, "Holders", "warn", `The top 10 wallets hold ${pct(top10)} of the supply.`);
+  else add(list, "Holders", "pass", `Spread out: the biggest wallet holds ${pct(top)}.`);
 }
 
 // ---------- NEW: established coins (top 200) -> issuer powers become warnings, with context ----------
@@ -339,12 +417,16 @@ export async function vetToken(address) {
   if (scan) (chain.goplus === "solana" ? solChecks : evmChecks)(scan, checks);
   else add(checks, "Contract scan", "unknown", "The scanner had no data for this token. Treat it with caution.");
   marketChecks(pair, history, listing, checks);
-  const established = softenIssuerPowers(checks, listing);  // NEW: USDT-style coins get context, not a false alarm
+  const ageHours = pair.pairCreatedAt ? (Date.now() - pair.pairCreatedAt) / 36e5 : null; // NEW: shared with the holder check
+  holderChecks(scan, chain.goplus === "solana", ageHours, listing, checks); // NEW: whales and missing holder data
+  const established = softenIssuerPowers(checks, listing);  // USDT-style coins get context, not a false alarm
 
   // tally and decide the verdict
   const counts = { pass: 0, warn: 0, fail: 0, unknown: 0 };
   for (const c of checks) counts[c.status]++;
-  const verdict = counts.fail > 0 ? "red" : !scan || counts.warn >= 2 ? "yellow" : "green";
+  // NEW: some warnings are serious enough on their own to block a green (a crash, a fake valuation, a whale)
+  const keyWarn = checks.some((c) => c.status === "warn" && KEY_WARNS.has(c.label));
+  const verdict = counts.fail > 0 ? "red" : !scan || counts.warn >= 2 || keyWarn ? "yellow" : "green"; // CHANGED: + keyWarn
 
   return {
     token: {
