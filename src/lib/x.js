@@ -127,7 +127,7 @@ export function formatTweet(t) {
     ].join("\n");
   }
 
-  // new DEX coin that passed the safety checks
+  // new DEX coin with no major red flags when GOAT checked it (wording never says "safe" or "passed")
   if (t.safety === "green") {
     const chain = CHAINS[String(t.chain || "").toLowerCase()] || title(t.chain); // pretty chain
     const cap = money(t.market_cap_usd);                    // NEW: market cap first...
@@ -135,17 +135,17 @@ export function formatTweet(t) {
     const liq = money(t.liquidity_usd); // liquidity
     const vol = money(t.volume_24h); // 24h volume
     return [
-      `🟢 New coin passed GOAT safety checks`,
+      `🟢 New coin: no major red flags at launch`,           // CHANGED: a finding at one moment, never an endorsement
       ``,
       `${tag}${name}${chain ? ` on ${chain}` : ""}`,
       cap ? `🏦 Market cap: ${cap}` : null,                  // NEW
       fdv ? `🏦 FDV: ${fdv}` : null,                         // NEW: honest label when it's FDV
       liq ? `💧 Liquidity: ${liq}` : null, // only show lines we have data for
       vol ? `📊 24h volume: ${vol}` : null,
-      `🛡 Contract scanned: no honeypot flags`,
+      `🛡 Contract scanned: no honeypot flags at time of check`, // CHANGED: "at time of check": rugs happen later
       ``,
-      `Full safety check + live radar: link in bio`,       // CHANGED: mentions the checker too
-      `Not financial advice. DYOR.`,
+      `Re-check before you buy + live radar: link in bio`,  // CHANGED: pushes people to re-check, not to buy
+      `Not a recommendation. Checks can change fast. DYOR.`, // CHANGED: the standard GOAT disclaimer
       `#crypto #${chain ? chain.replace(/\s/g, "") : "altcoins"}`,
     ]
       .filter((line) => line !== null) // drop the missing-data lines

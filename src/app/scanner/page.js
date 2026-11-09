@@ -40,7 +40,7 @@ export default async function ScannerPage() {
         </h1>
         <p className="mt-4 max-w-xl text-stone">
           GOAT scans new and trending pools across every major blockchain each minute,
-          and only shows coins listed in the last day that pass every check.
+          and only shows coins listed in the last day that meet every filter below.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-2">        {/* flex-wrap lets the pills drop to a new line on phones */}
@@ -50,14 +50,14 @@ export default async function ScannerPage() {
         </div>
 
         <div className="mt-6 rounded-2xl border border-line bg-mist p-4 text-sm text-stone">
-          <span className="font-semibold text-loss">Still high risk.</span> Passing these checks
+          <span className="font-semibold text-loss">Still high risk.</span> Meeting these filters
           does not make a coin safe. New coins can lose most of their value in minutes. This list
           is information, not a recommendation.
         </div>
 
         {pools.length === 0 ? (
           <div className="mt-10 rounded-3xl border border-dashed border-line p-16 text-center">
-            <p className="font-semibold text-ink">No new coins passed GOAT's checks just now.</p>
+            <p className="font-semibold text-ink">No new coins met GOAT's filters just now.</p>
             <p className="mt-2 text-sm text-stone">That's normal. Most launches don't. The scanner checks again every minute.</p>
           </div>
         ) : (

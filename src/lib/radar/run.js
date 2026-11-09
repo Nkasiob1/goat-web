@@ -5,7 +5,7 @@ import { checkSafety } from "./safety";                                     // G
 import { vetToken } from "../vet";                                          // the full Vet (final gate)
 import { sendTelegram, escapeHtml } from "../telegram";                     // channel alerts
 import { sleep } from "./http";                                             // polite pauses
-import { PARTNERS, goLink } from "../partners";                             // partner (referral) links
+// REMOVED: partner (referral) links. Exchange affiliate links are paused (Nigeria SEC promotion rules).
 import { postRadarToX } from "../x";                                        // posts to @GOATSRADAR
 import { SITE_URL } from "../site";                                         // the one place our address lives
 
@@ -95,7 +95,7 @@ async function vetGate(supabase, t) {
     .filter((c) => c.status === "fail" || c.status === "warn")
     .map((c) => `${c.label}: ${c.detail}`);                                // e.g. "Liquidity: Only $0. Easy to manipulate..."
   const notes = report.verdict === "green"
-    ? [`Full Vet passed (${report.counts.pass} checks)`, ...problems]      // green: say so, plus any single warning
+    ? [`No major red flags (${report.counts.pass} checks clean)`, ...problems] // CHANGED: a finding, never "passed"
     : problems;                                                            // yellow/red: the reasons
   const measured = {                                                       // NEW: save what Vet MEASURED, not just its verdict
     liquidity_usd: report.market.liquidity ?? 0,                           // e.g. ADP: $1.06M (stale) → $2.2K (real)
@@ -138,11 +138,7 @@ function formatAlert(t) {
       `<b>${escapeHtml(t.symbol)}</b> / USDT is now trading.`,
       `<a href="${t.pair_url}">Trade on ${escapeHtml(t.source)}</a> · <a href="${SITE}/radar">GOAT Radar</a>`,
     ];
-    if (t.source === "Bybit" && PARTNERS.bybit) {                 // sign-up line on Bybit listings only
-      lines.push(
-        `New to Bybit? <a href="${SITE}${goLink("bybit", "telegram")}">Sign up with GOAT</a> (partner link)`
-      );
-    }
+    // REMOVED: the "Sign up with GOAT (partner link)" line on Bybit listings (paused for now)
     lines.push("", "<i>New listings move fast. Not financial advice.</i>");
     return lines.join("\n");
   }
@@ -156,15 +152,41 @@ function formatAlert(t) {
     `<code>${escapeHtml(t.address)}</code>`,
     `<a href="${t.pair_url}">Chart</a> · <a href="${SITE}/vet?q=${t.address}">Full safety check</a> · <a href="${SITE}/radar">GOAT Radar</a>`,
     "",
-    "<i>Passed GOAT's full Vet. Still high risk. DYOR, not financial advice.</i>",
+    "<i>No major red flags at launch. Checks can change fast. Not a recommendation. DYOR.</i>", // CHANGED
   ].join("\n");
+}
+
+// NEW: Rug watch follow-up. A coin GOAT already posted has turned yellow/red on re-check:
+// tell the channel, so followers see GOAT catching the rug instead of a stale green post.
+function formatRugAlert(before, after, reason) {
+  const chain = CHAIN_LABEL[after.chain] || after.chain;
+  const verdict = reason.startsWith("red") ? "🔴 High risk" : "🟡 Caution";              // what the re-check says now
+  const notTrading = reason.includes("not trading");                                      // pool gone entirely
+  const lines = [
+    `🚨 <b>Rug watch: ${escapeHtml(after.symbol)}</b> on ${escapeHtml(chain || "")}`,
+    `GOAT posted this coin earlier with no major red flags. A fresh check now says: <b>${verdict}</b>.`,
+  ];
+  if (notTrading) {
+    lines.push("It is no longer trading on any tracked DEX (liquidity may have been pulled).");
+  } else if (before.liquidity_usd || after.liquidity_usd) {
+    lines.push(`Liquidity: ${money(before.liquidity_usd)} → <b>${money(after.liquidity_usd)}</b>`);     // e.g. $40K → $0
+  }
+  const reasons = (after.safety_notes || []).slice(0, 3).join(" · ");                    // top 3 reasons from Vet
+  if (reasons && !notTrading) lines.push(`Why: ${escapeHtml(reasons)}`);
+  lines.push(
+    `<a href="${SITE}/vet?q=${after.address}">See the full check</a>`,
+    "",
+    "<i>If you hold it, check before you trade. Not financial advice.</i>"
+  );
+  return lines.join("\n");
 }
 
 export async function runRadar() {
   const supabase = db();
   const now = new Date().toISOString();
-  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, x: [], blocked: [], rechecked: [] };
-  const fresh = new Map();                                                   // enrich() results for this run
+  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, rugAlerts: 0, x: [], blocked: [], rechecked: [] };
+  const fresh = new Map();                                                   // enrich() results for this run (NOT vetted)
+  const vetted = new Map();                                                  // NEW: coins the full Vet called green THIS run
 
   // ---- 1. Exchanges: compare today's coin list with the saved one ----
   for (const [name, ex] of Object.entries(EXCHANGES)) {
@@ -256,12 +278,25 @@ export async function runRadar() {
     .from("radar_tokens")
     .select("*")
     .eq("kind", "dex")
-    .eq("safety", "green")                                                   // only coins we currently call safe
+    .eq("safety", "green")                                                   // only coins currently showing no major red flags
     .order("vetted_at", { ascending: true, nullsFirst: true })               // never-vetted first, then the oldest check
     .limit(RECHECK_PER_RUN);
   for (const row of watch || []) {
     const gate = await vetGate(supabase, row);                               // saves the new verdict + numbers either way
     report.rechecked.push(`${row.symbol}: ${gate.reason ?? "green"}`);       // e.g. "YOYO: red" when liquidity is pulled
+
+    // NEW: it was posted to the channel or X, and now it's yellow/red -> warn followers once.
+    // (Once it isn't green, the rug watch never picks it again, so this can't repeat.)
+    const turnedBad = !gate.ok && /^(red|yellow)/.test(gate.reason || "");   // "vet unavailable" (temporary) never alerts
+    const wasPosted = row.alerted || row.x_posted_at;                        // only coins our followers actually saw
+    if (turnedBad && wasPosted) {
+      try {
+        const sent = await sendTelegram(formatRugAlert(row, gate.t, gate.reason)); // text only, no card
+        if (!sent?.skipped) report.rugAlerts++;
+      } catch (err) {
+        report.telegram = `rug alert error: ${err.message}`;                 // shown in the JSON, run continues
+      }
+    }
   }
 
   // ---- 4. Telegram alerts: only coins that pass the FULL Vet, plus exchange listings ----
@@ -281,6 +316,7 @@ export async function runRadar() {
       continue;                                                              // never post a coin Vet doesn't call green
     }
     const t = gate.t;                                                        // the coin with Vet's notes and numbers
+    vetted.set(row.id, t);                                                   // NEW: step 5 can trust this one without re-vetting
     try {
       const sent = await sendTelegram(formatAlert(t), cardUrl(t));           // caption + picture card
       if (sent.skipped) {                                                    // keys missing: don't mark as sent
@@ -318,15 +354,15 @@ export async function runRadar() {
       .limit(X_PER_RUN);                                                     // 1 per run keeps costs tiny
     if (xErr) report.x.push({ error: xErr.message });                        // e.g. column missing: run the SQL
     for (const row of toPost || []) {
-      const cached = fresh.get(row.id);                                      // step 4 may have vetted it already this run
-      const gate = cached?.safety === "green"
+      const cached = vetted.get(row.id);                                     // FIXED: only coins the Vet called green this run
+      const gate = cached                                                    // (the old check trusted un-vetted enrich() data)
         ? { ok: true, t: cached }                                            // already passed this run: don't vet twice
         : await vetGate(supabase, await enrich(supabase, row, fresh));       // otherwise: fresh numbers + full Vet
       if (!gate.ok) {
         report.x.push({ symbol: row.symbol, skipped: true, reason: `vet: ${gate.reason}` });
         continue;                                                            // the next run picks another coin
       }
-      fresh.set(row.id, gate.t);                                             // remember the vetted version
+      vetted.set(row.id, gate.t);                                            // remember the vetted version
       const result = await postRadarToX(supabase, gate.t, cardUrl(gate.t));  // never throws
       report.x.push({ symbol: row.symbol, ...result });                      // shows ok / skipped / error in JSON
       if (!result.ok) break;                                                 // X refused: don't retry others this run

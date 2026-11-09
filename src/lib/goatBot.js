@@ -61,7 +61,7 @@ function radarCandidate(t, ctx) {
         `🟢 New on ${chain}: ${t.name || t.symbol}${coin ? ` $${coin}` : ""}`,
         `${cap ? `${cap.short} ${usd(cap.value)} · ` : ""}Liquidity ${usd(t.liquidity_usd)} · 24h volume ${usd(t.volume_24h)}`,
         `Launched ${ageText(t.pair_created_at)}`,
-        `Passed GOAT's full safety Vet. Still high risk. Always DYOR.`, // CHANGED: says which check it passed
+        `No major red flags at launch. Not a recommendation. Checks can change fast. DYOR.`, // CHANGED: a finding, never an endorsement
       ]
   ).join("\n").slice(0, 500);                            // no contract address in the text: posts_no_wallets would block it
 
@@ -75,8 +75,8 @@ function radarCandidate(t, ctx) {
       coin,
       network: isListing ? `${t.source} · Spot` : chain,
       host: ctx.host,
-      tag: isListing ? "EXCHANGE LISTING" : "FULL VET PASSED",   // CHANGED: matches what it now means
-      footer: isListing ? "Spotted by GOAT Radar · Not financial advice" : "Passed GOAT's full Vet · Still high risk · DYOR",
+      tag: isListing ? "EXCHANGE LISTING" : "NO MAJOR RED FLAGS",  // CHANGED: describes the check, doesn't approve the coin
+      footer: isListing ? "Spotted by GOAT Radar · Not financial advice" : "At time of check · Not a recommendation · DYOR", // CHANGED
       stats: isListing
         ? [
             { label: "Exchange", value: t.source },
@@ -86,7 +86,7 @@ function radarCandidate(t, ctx) {
         : [
             cap                                          // market cap box (Safety box if no number)
               ? { label: cap.label, value: usd(cap.value) }
-              : { label: "Safety", value: "Passed", color: CARD_COLORS.gain },
+              : { label: "Red flags", value: "None found", color: CARD_COLORS.gain }, // CHANGED: was "Safety: Passed"
             { label: "Liquidity", value: usd(t.liquidity_usd) },
             { label: "24h volume", value: usd(t.volume_24h) },
           ],
@@ -137,7 +137,7 @@ function newsCandidate(item, ctx) {
   };
 }
 
-// The radar's best recent finds, newest first. ONLY coins the full Vet approved (or exchange listings).
+// The radar's best recent finds, newest first. ONLY coins with a green full Vet (or exchange listings).
 async function getRadarPicks(db) {
   const since = new Date(Date.now() - RADAR_MAX_AGE_HOURS * 3600000).toISOString();
   const { data, error } = await db
