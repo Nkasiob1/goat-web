@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CHAIN_LABEL } from "@/lib/radar/sources"; // chain names
-import { goLink } from "@/lib/partners"; // partner links
+import { goLink, PARTNERS_ENABLED } from "@/lib/partners"; // partner links + CHANGED: the on/off switch
 import { useLang } from "@/lib/i18n/useLang"; // current language
 import { RADAR } from "@/lib/i18n/radar"; // this page's words
 import { translateNote } from "@/lib/i18n/notes"; // NEW: phrasebook for safety notes
@@ -49,7 +49,7 @@ function timeAgo(date, r) {
 function TokenCard({ t }) {
   const { r, lang } = useR();                                      // translations inside the card
   const verdict = BADGE[t.safety] ? t.safety : "yellow";           // unknown verdicts show as caution
-  const isBybitListing = t.kind === "cex" && t.source === "Bybit"; // show the sign-up line on these
+  const isBybitListing = PARTNERS_ENABLED && t.kind === "cex" && t.source === "Bybit"; // CHANGED: sign-up line only when partners are on
   return (
     <article className="flex min-w-0 flex-col rounded-3xl border border-line bg-water p-5"> {/* min-w-0: never wider than its grid cell */}
       <div className="flex min-w-0 items-center gap-3">
@@ -177,21 +177,23 @@ export default function RadarView() {
         <span className="shrink-0 rounded-full bg-water px-4 py-2 text-sm font-medium text-forest">{r("join")}</span>
       </a>
 
-      {/* partner banner (clearly labelled) */}
-      <a
-        href={goLink("bybit", "radar-banner")}
-        target="_blank"
-        rel="sponsored noopener"
-        className="mt-3 flex items-center justify-between gap-4 rounded-3xl border border-line bg-water p-5"
-      >
-        <span className="min-w-0">
-          <span className="block font-semibold text-ink">{r("pitch")}</span>
-          <span className="block text-sm text-stone">
-            {r("partnerSub")} <span className="whitespace-nowrap">{r("partnerTag")}</span>
+      {/* partner banner (clearly labelled). CHANGED: only shown when partner links are switched on */}
+      {PARTNERS_ENABLED && (
+        <a
+          href={goLink("bybit", "radar-banner")}
+          target="_blank"
+          rel="sponsored noopener"
+          className="mt-3 flex items-center justify-between gap-4 rounded-3xl border border-line bg-water p-5"
+        >
+          <span className="min-w-0">
+            <span className="block font-semibold text-ink">{r("pitch")}</span>
+            <span className="block text-sm text-stone">
+              {r("partnerSub")} <span className="whitespace-nowrap">{r("partnerTag")}</span>
+            </span>
           </span>
-        </span>
-        <span className="shrink-0 rounded-full bg-forest px-4 py-2 text-sm font-medium text-water">{r("signup")}</span>
-      </a>
+          <span className="shrink-0 rounded-full bg-forest px-4 py-2 text-sm font-medium text-water">{r("signup")}</span>
+        </a>
+      )}
 
       {/* -mx-4 px-4: chips scroll edge-to-edge on phones, but start aligned with the text */}
       <div className="-mx-4 mt-8 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">

@@ -3,7 +3,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { goLink } from "../lib/partners";                  // Bybit partner link
+import { goLink, PARTNERS_ENABLED } from "../lib/partners"; // Bybit partner link + CHANGED: the on/off switch
 import { useLang, useT } from "../lib/i18n/useLang";      // translations
 import { LOCALES } from "../lib/i18n/dictionaries";       // date format per language
 import { translateNote } from "../lib/i18n/notes";        // phrasebook for the check details
@@ -264,14 +264,16 @@ export default function VetView() {
             </a>
           </div>
 
-          {/* partner line (disclosed) */}
-          <p className="text-sm text-stone">
-            {t("vet.partnerPre")}{" "}
-            <a href={goLink("bybit", "vet")} className="font-medium text-forest underline">
-              {t("vet.partnerLink")}
-            </a>{" "}
-            {t("vet.partnerTag")}
-          </p>
+          {/* partner line (disclosed). CHANGED: only shown when partner links are switched on */}
+          {PARTNERS_ENABLED && (
+            <p className="text-sm text-stone">
+              {t("vet.partnerPre")}{" "}
+              <a href={goLink("bybit", "vet")} className="font-medium text-forest underline">
+                {t("vet.partnerLink")}
+              </a>{" "}
+              {t("vet.partnerTag")}
+            </p>
+          )}
 
           {/* NEW: Premium waitlist, shown right after someone has seen what a report gives them */}
           <WaitlistBox source="vet" />
