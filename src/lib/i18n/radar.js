@@ -1,19 +1,21 @@
 // src/lib/i18n/radar.js
 // Words used on the Launch Radar page, per language. {placeholders} are filled in by the page.
+// Nov 2026: green = "no red flags" (a finding), never "passed/safe". Partner keys kept for when links return.
 export const RADAR = {
   en: {
     eyebrow: "Launch Radar",
     title: "New coins, checked before you see them.",
     intro: "Fresh pools from GeckoTerminal, DexScreener and Birdeye, plus new Binance and Bybit listings. Every coin is scanned for traps like honeypots and hidden owners. Updated every 15 minutes.",
     tgTitle: "Get 🟢 alerts on Telegram",
-    tgSub: "Only coins that pass the checks, and new listings.",
+    tgSub: "Only coins with no major red flags at launch, plus new listings.", // CHANGED: no "pass"
     join: "Join",
     pitch: "Trade new listings on Bybit",
     partnerSub: "Sign up through GOAT to support the radar.",
     partnerTag: "Partner link.",
     signup: "Sign up",
-    "f.all": "All", "f.green": "🟢 Passed checks", "f.yellow": "🟡 Caution", "f.red": "🔴 Risky", "f.listed": "🏛 Listings",
-    "b.green": "Passed", "b.yellow": "Caution", "b.red": "Risky", "b.listed": "Listing",
+    "f.all": "All", "f.green": "🟢 No red flags", // CHANGED "f.yellow": "🟡 Caution", "f.red": "🔴 Risky", "f.listed": "🏛 Listings",
+    "b.green": "No red flags", // CHANGED: a finding, never "passed"
+    "b.yellow": "Caution", "b.red": "Risky", "b.listed": "Listing",
     spot: "{source} spot listing",
     liquidity: "Liquidity", vol: "Vol 24h", launched: "Launched",
     spotted: "Spotted {ago}",
@@ -21,7 +23,7 @@ export const RADAR = {
     bybitNew: "New to Bybit? Sign up with GOAT", partnerLink: "Partner link",
     loadError: "Could not load the radar", scanning: "Scanning…",
     empty: "Nothing here yet. The radar checks again every 15 minutes.",
-    disclaimer: "Automated checks reduce risk; they don't remove it. New coins are extremely volatile. Nothing here is financial advice. Some links are partner links: GOAT may earn a commission if you sign up, at no cost to you.",
+    disclaimer: "Automated checks reduce risk; they don't remove it. A coin can change fast after we check it. New coins are extremely volatile. Nothing here is a recommendation or financial advice.", // CHANGED: partner sentence removed (links paused)
     notesNote: "Check notes are shown in English for now.",
     agoM: "{n}m ago", agoH: "{n}h ago", agoD: "{n}d ago",
   },
@@ -30,14 +32,15 @@ export const RADAR = {
     title: "Les nouveaux coins, vérifiés avant que vous les voyiez.",
     intro: "Nouveaux pools de GeckoTerminal, DexScreener et Birdeye, plus les nouvelles listes de Binance et Bybit. Chaque coin est analysé pour repérer les pièges comme les honeypots et les propriétaires cachés. Mis à jour toutes les 15 minutes.",
     tgTitle: "Recevez les alertes 🟢 sur Telegram",
-    tgSub: "Uniquement les coins qui passent les contrôles, et les nouvelles listes.",
+    tgSub: "Uniquement les coins sans alerte majeure au lancement, et les nouvelles listes.", // CHANGED
     join: "Rejoindre",
     pitch: "Tradez les nouvelles listes sur Bybit",
     partnerSub: "Inscrivez-vous via GOAT pour soutenir le radar.",
     partnerTag: "Lien partenaire.",
     signup: "S'inscrire",
-    "f.all": "Tous", "f.green": "🟢 Contrôles réussis", "f.yellow": "🟡 Prudence", "f.red": "🔴 Risqué", "f.listed": "🏛 Nouvelles listes",
-    "b.green": "Réussi", "b.yellow": "Prudence", "b.red": "Risqué", "b.listed": "Listé",
+    "f.all": "Tous", "f.green": "🟢 Aucune alerte", // CHANGED "f.yellow": "🟡 Prudence", "f.red": "🔴 Risqué", "f.listed": "🏛 Nouvelles listes",
+    "b.green": "Aucune alerte", // CHANGED
+    "b.yellow": "Prudence", "b.red": "Risqué", "b.listed": "Listé",
     spot: "Nouveau sur {source} (spot)",
     liquidity: "Liquidité", vol: "Vol. 24 h", launched: "Lancé",
     spotted: "Repéré {ago}",
@@ -45,7 +48,7 @@ export const RADAR = {
     bybitNew: "Nouveau sur Bybit ? Inscrivez-vous avec GOAT", partnerLink: "Lien partenaire",
     loadError: "Impossible de charger le radar", scanning: "Analyse…",
     empty: "Rien pour le moment. Le radar vérifie à nouveau toutes les 15 minutes.",
-    disclaimer: "Les contrôles automatiques réduisent le risque, ils ne l'éliminent pas. Les nouveaux coins sont extrêmement volatils. Rien ici n'est un conseil financier. Certains liens sont des liens partenaires : GOAT peut toucher une commission si vous vous inscrivez, sans frais pour vous.",
+    disclaimer: "Les contrôles automatiques réduisent le risque, ils ne l'éliminent pas. Un coin peut changer vite après notre contrôle. Les nouveaux coins sont extrêmement volatils. Rien ici n'est une recommandation ni un conseil financier.", // CHANGED
     notesNote: "Les notes de contrôle sont pour l'instant en anglais.",
     agoM: "il y a {n} min", agoH: "il y a {n} h", agoD: "il y a {n} j",
   },
@@ -54,14 +57,15 @@ export const RADAR = {
     title: "Monedas nuevas, revisadas antes de que las veas.",
     intro: "Pools nuevos de GeckoTerminal, DexScreener y Birdeye, más los nuevos listados de Binance y Bybit. Cada moneda se analiza en busca de trampas como honeypots y propietarios ocultos. Se actualiza cada 15 minutos.",
     tgTitle: "Recibe alertas 🟢 en Telegram",
-    tgSub: "Solo monedas que pasan los controles, y nuevos listados.",
+    tgSub: "Solo monedas sin alertas graves al lanzarse, y nuevos listados.", // CHANGED
     join: "Unirse",
     pitch: "Opera los nuevos listados en Bybit",
     partnerSub: "Regístrate a través de GOAT para apoyar el radar.",
     partnerTag: "Enlace de socio.",
     signup: "Registrarse",
-    "f.all": "Todas", "f.green": "🟢 Pasaron los controles", "f.yellow": "🟡 Precaución", "f.red": "🔴 Riesgosas", "f.listed": "🏛 Listados",
-    "b.green": "Aprobada", "b.yellow": "Precaución", "b.red": "Riesgosa", "b.listed": "Listado",
+    "f.all": "Todas", "f.green": "🟢 Sin alertas", // CHANGED "f.yellow": "🟡 Precaución", "f.red": "🔴 Riesgosas", "f.listed": "🏛 Listados",
+    "b.green": "Sin alertas", // CHANGED
+    "b.yellow": "Precaución", "b.red": "Riesgosa", "b.listed": "Listado",
     spot: "Nuevo listado spot en {source}",
     liquidity: "Liquidez", vol: "Vol. 24 h", launched: "Lanzada",
     spotted: "Detectada {ago}",
@@ -69,7 +73,7 @@ export const RADAR = {
     bybitNew: "¿Nuevo en Bybit? Regístrate con GOAT", partnerLink: "Enlace de socio",
     loadError: "No se pudo cargar el radar", scanning: "Escaneando…",
     empty: "Aún no hay nada. El radar vuelve a revisar cada 15 minutos.",
-    disclaimer: "Los controles automáticos reducen el riesgo, no lo eliminan. Las monedas nuevas son extremadamente volátiles. Nada aquí es asesoramiento financiero. Algunos enlaces son de socios: GOAT puede ganar una comisión si te registras, sin costo para ti.",
+    disclaimer: "Los controles automáticos reducen el riesgo, no lo eliminan. Una moneda puede cambiar rápido después de nuestro control. Las monedas nuevas son extremadamente volátiles. Nada aquí es una recomendación ni asesoramiento financiero.", // CHANGED
     notesNote: "Por ahora, las notas de los controles están en inglés.",
     agoM: "hace {n} min", agoH: "hace {n} h", agoD: "hace {n} d",
   },
@@ -78,14 +82,15 @@ export const RADAR = {
     title: "Moedas novas, verificadas antes de você vê-las.",
     intro: "Pools novos do GeckoTerminal, DexScreener e Birdeye, além das novas listagens da Binance e da Bybit. Cada moeda é analisada em busca de armadilhas como honeypots e donos ocultos. Atualizado a cada 15 minutos.",
     tgTitle: "Receba alertas 🟢 no Telegram",
-    tgSub: "Só moedas que passam nas verificações, e novas listagens.",
+    tgSub: "Só moedas sem alertas graves no lançamento, e novas listagens.", // CHANGED
     join: "Entrar",
     pitch: "Negocie as novas listagens na Bybit",
     partnerSub: "Cadastre-se pela GOAT para apoiar o radar.",
     partnerTag: "Link de parceiro.",
     signup: "Cadastrar",
-    "f.all": "Todas", "f.green": "🟢 Aprovadas", "f.yellow": "🟡 Cuidado", "f.red": "🔴 Arriscadas", "f.listed": "🏛 Listagens",
-    "b.green": "Aprovada", "b.yellow": "Cuidado", "b.red": "Arriscada", "b.listed": "Listagem",
+    "f.all": "Todas", "f.green": "🟢 Sem alertas", // CHANGED "f.yellow": "🟡 Cuidado", "f.red": "🔴 Arriscadas", "f.listed": "🏛 Listagens",
+    "b.green": "Sem alertas", // CHANGED
+    "b.yellow": "Cuidado", "b.red": "Arriscada", "b.listed": "Listagem",
     spot: "Nova listagem spot na {source}",
     liquidity: "Liquidez", vol: "Vol. 24h", launched: "Lançada",
     spotted: "Detectada {ago}",
@@ -93,7 +98,7 @@ export const RADAR = {
     bybitNew: "Novo na Bybit? Cadastre-se com a GOAT", partnerLink: "Link de parceiro",
     loadError: "Não foi possível carregar o radar", scanning: "Escaneando…",
     empty: "Nada por aqui ainda. O radar verifica de novo a cada 15 minutos.",
-    disclaimer: "Verificações automáticas reduzem o risco, não o eliminam. Moedas novas são extremamente voláteis. Nada aqui é conselho financeiro. Alguns links são de parceiros: a GOAT pode ganhar uma comissão se você se cadastrar, sem custo para você.",
+    disclaimer: "Verificações automáticas reduzem o risco, não o eliminam. Uma moeda pode mudar rápido depois da nossa verificação. Moedas novas são extremamente voláteis. Nada aqui é recomendação nem conselho financeiro.", // CHANGED
     notesNote: "Por enquanto, as notas das verificações estão em inglês.",
     agoM: "há {n} min", agoH: "há {n} h", agoD: "há {n} d",
   },
@@ -102,14 +107,15 @@ export const RADAR = {
     title: "Sababbin coin, an duba su kafin ka gan su.",
     intro: "Sababbin pool daga GeckoTerminal, DexScreener da Birdeye, tare da sababbin coin da aka saka a Binance da Bybit. Ana duba kowane coin don tarko kamar honeypot da masu shi na ɓoye. Ana sabuntawa duk minti 15.",
     tgTitle: "Samu sanarwar 🟢 a Telegram",
-    tgSub: "Coin da suka wuce bincike kaɗai, da sababbin jerin kasuwa.",
+    tgSub: "Coin da ba su da babbar alamar haɗari a farko kaɗai, da sababbin jerin kasuwa.", // CHANGED
     join: "Shiga",
     pitch: "Yi cinikin sababbin coin a Bybit",
     partnerSub: "Yi rajista ta GOAT don tallafa wa radar.",
     partnerTag: "Hanyar abokin hulɗa.",
     signup: "Yi rajista",
-    "f.all": "Duka", "f.green": "🟢 Sun wuce bincike", "f.yellow": "🟡 Hattara", "f.red": "🔴 Masu haɗari", "f.listed": "🏛 Sababbin jeri",
-    "b.green": "Ya wuce", "b.yellow": "Hattara", "b.red": "Mai haɗari", "b.listed": "Sabon jeri",
+    "f.all": "Duka", "f.green": "🟢 Babu alamar haɗari", // CHANGED "f.yellow": "🟡 Hattara", "f.red": "🔴 Masu haɗari", "f.listed": "🏛 Sababbin jeri",
+    "b.green": "Babu alamar haɗari", // CHANGED
+    "b.yellow": "Hattara", "b.red": "Mai haɗari", "b.listed": "Sabon jeri",
     spot: "Sabon jeri a {source}",
     liquidity: "Liquidity", vol: "Ciniki 24h", launched: "An ƙaddamar",
     spotted: "An gano {ago}",
@@ -117,7 +123,7 @@ export const RADAR = {
     bybitNew: "Sabo ne a Bybit? Yi rajista da GOAT", partnerLink: "Hanyar abokin hulɗa",
     loadError: "An kasa loda radar", scanning: "Ana bincike…",
     empty: "Babu komai tukuna. Radar na sake dubawa duk minti 15.",
-    disclaimer: "Binciken atomatik yana rage haɗari, ba ya cire shi. Sababbin coin suna canzawa sosai. Babu wani abu a nan da yake shawarar kuɗi. Wasu hanyoyin haɗi na abokan hulɗa ne: GOAT na iya samun kwamiti idan ka yi rajista, ba tare da ƙarin kuɗi a gare ka ba.",
+    disclaimer: "Binciken atomatik yana rage haɗari, ba ya cire shi. Coin na iya canzawa da sauri bayan mun duba shi. Sababbin coin suna canzawa sosai. Babu wani abu a nan da yake shawara ko shawarar kuɗi.", // CHANGED
     notesNote: "Bayanan binciken suna cikin Turanci a yanzu.",
     agoM: "minti {n} da suka wuce", agoH: "awa {n} da suka wuce", agoD: "kwana {n} da suka wuce",
   },
@@ -126,14 +132,15 @@ export const RADAR = {
     title: "Àwọn coin tuntun, tí a ti ṣàyẹ̀wò kí o tó rí wọn.",
     intro: "Àwọn pool tuntun láti GeckoTerminal, DexScreener àti Birdeye, pẹ̀lú àwọn coin tuntun lórí Binance àti Bybit. A ń ṣàyẹ̀wò gbogbo coin fún ìdẹkùn bíi honeypot àti olùní tí ó farapamọ́. A ń ṣe àtúnṣe ní gbogbo ìṣẹ́jú 15.",
     tgTitle: "Gba ìkìlọ̀ 🟢 lórí Telegram",
-    tgSub: "Àwọn coin tó yege nínú àyẹ̀wò nìkan, àti àwọn tuntun lórí ọjà.",
+    tgSub: "Àwọn coin tí kò ní àmì ewu ńlá nígbà ìfilọ́lẹ̀ nìkan, àti àwọn tuntun lórí ọjà.", // CHANGED
     join: "Darapọ̀",
     pitch: "Ṣòwò àwọn coin tuntun lórí Bybit",
     partnerSub: "Forúkọsílẹ̀ nípasẹ̀ GOAT láti ṣàtìlẹ́yìn radar.",
     partnerTag: "Ìjápọ̀ alábàáṣiṣẹ́pọ̀.",
     signup: "Forúkọsílẹ̀",
-    "f.all": "Gbogbo", "f.green": "🟢 Ó yege", "f.yellow": "🟡 Ṣọ́ra", "f.red": "🔴 Eléwu", "f.listed": "🏛 Tuntun lórí ọjà",
-    "b.green": "Ó yege", "b.yellow": "Ṣọ́ra", "b.red": "Eléwu", "b.listed": "Tuntun",
+    "f.all": "Gbogbo", "f.green": "🟢 Kò sí àmì ewu", // CHANGED "f.yellow": "🟡 Ṣọ́ra", "f.red": "🔴 Eléwu", "f.listed": "🏛 Tuntun lórí ọjà",
+    "b.green": "Kò sí àmì ewu", // CHANGED
+    "b.yellow": "Ṣọ́ra", "b.red": "Eléwu", "b.listed": "Tuntun",
     spot: "Tuntun lórí {source}",
     liquidity: "Liquidity", vol: "Ìṣòwò 24h", launched: "Ìfilọ́lẹ̀",
     spotted: "A rí i {ago}",
@@ -141,7 +148,7 @@ export const RADAR = {
     bybitNew: "Ṣé o jẹ́ tuntun lórí Bybit? Forúkọsílẹ̀ pẹ̀lú GOAT", partnerLink: "Ìjápọ̀ alábàáṣiṣẹ́pọ̀",
     loadError: "Kò ṣeé ṣe láti ṣí radar", scanning: "À ń ṣàyẹ̀wò…",
     empty: "Kò sí nǹkan kan síbẹ̀. Radar máa tún ṣàyẹ̀wò ní gbogbo ìṣẹ́jú 15.",
-    disclaimer: "Àyẹ̀wò aládàáṣe ń dín ewu kù, kò mú un kúrò. Àwọn coin tuntun máa ń yí padà gidigidi. Kò sí nǹkan kan níbí tó jẹ́ ìmọ̀ràn owó. Àwọn ìjápọ̀ kan jẹ́ ti alábàáṣiṣẹ́pọ̀: GOAT lè gba owó-àjẹmọ́nú tí o bá forúkọsílẹ̀, láìsí owó kankan fún ọ.",
+    disclaimer: "Àyẹ̀wò aládàáṣe ń dín ewu kù, kò mú un kúrò. Coin lè yí padà kíákíá lẹ́yìn àyẹ̀wò wa. Àwọn coin tuntun máa ń yí padà gidigidi. Kò sí nǹkan kan níbí tó jẹ́ àbá tàbí ìmọ̀ràn owó.", // CHANGED
     notesNote: "Àwọn àkọsílẹ̀ àyẹ̀wò wà ní Gẹ̀ẹ́sì fún báyìí.",
     agoM: "ìṣẹ́jú {n} sẹ́yìn", agoH: "wákàtí {n} sẹ́yìn", agoD: "ọjọ́ {n} sẹ́yìn",
   },
@@ -150,14 +157,15 @@ export const RADAR = {
     title: "Coin ọhụrụ, enyochara tupu ị hụ ha.",
     intro: "Pool ọhụrụ sitere na GeckoTerminal, DexScreener na Birdeye, gbakwunyere coin ọhụrụ edepụtara na Binance na Bybit. A na-enyocha coin ọ bụla maka ọnyà dịka honeypot na ndị nwe zoro ezo. A na-emelite ya kwa nkeji 15.",
     tgTitle: "Nweta ọkwa 🟢 na Telegram",
-    tgSub: "Naanị coin gafere nyocha, na ndepụta ọhụrụ.",
+    tgSub: "Naanị coin enweghị akara ize ndụ dị ukwuu mgbe amalitere ha, na ndepụta ọhụrụ.", // CHANGED
     join: "Sonye",
     pitch: "Zụọ ahịa coin ọhụrụ na Bybit",
     partnerSub: "Debanye aha site na GOAT iji kwado radar.",
     partnerTag: "Njikọ onye mmekọ.",
     signup: "Debanye aha",
-    "f.all": "Ha niile", "f.green": "🟢 Gafere nyocha", "f.yellow": "🟡 Kpachara anya", "f.red": "🔴 Dị ize ndụ", "f.listed": "🏛 Ndepụta ọhụrụ",
-    "b.green": "Gafere", "b.yellow": "Kpachara anya", "b.red": "Dị ize ndụ", "b.listed": "Ndepụta",
+    "f.all": "Ha niile", "f.green": "🟢 Enweghị akara ize ndụ", // CHANGED "f.yellow": "🟡 Kpachara anya", "f.red": "🔴 Dị ize ndụ", "f.listed": "🏛 Ndepụta ọhụrụ",
+    "b.green": "Enweghị akara ize ndụ", // CHANGED
+    "b.yellow": "Kpachara anya", "b.red": "Dị ize ndụ", "b.listed": "Ndepụta",
     spot: "Ndepụta ọhụrụ na {source}",
     liquidity: "Liquidity", vol: "Azụmahịa 24h", launched: "Malitere",
     spotted: "Achọpụtara {ago}",
@@ -165,7 +173,7 @@ export const RADAR = {
     bybitNew: "Ị bụ onye ọhụrụ na Bybit? Debanye aha na GOAT", partnerLink: "Njikọ onye mmekọ",
     loadError: "Enweghị ike ibunye radar", scanning: "Na-enyocha…",
     empty: "Ọ dịbeghị ihe ọ bụla ebe a. Radar na-enyocha ọzọ kwa nkeji 15.",
-    disclaimer: "Nyocha akpaaka na-ebelata ihe ize ndụ, ọ naghị ewepụ ya. Coin ọhụrụ na-agbanwe nke ukwuu. Ọ dịghị ihe ebe a bụ ndụmọdụ ego. Ụfọdụ njikọ bụ nke ndị mmekọ: GOAT nwere ike nweta kọmịshọn ma ị debanye aha, n'enweghị ụgwọ ọ bụla n'aka gị.",
+    disclaimer: "Nyocha akpaaka na-ebelata ihe ize ndụ, ọ naghị ewepụ ya. Coin nwere ike ịgbanwe ngwa ngwa mgbe anyị nyochachara ya. Coin ọhụrụ na-agbanwe nke ukwuu. Ọ dịghị ihe ebe a bụ ntụnye aka ma ọ bụ ndụmọdụ ego.", // CHANGED
     notesNote: "Ndetu nyocha dị n'asụsụ Bekee ugbu a.",
     agoM: "nkeji {n} gara aga", agoH: "awa {n} gara aga", agoD: "ụbọchị {n} gara aga",
   },
