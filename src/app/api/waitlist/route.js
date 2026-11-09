@@ -1,7 +1,8 @@
 // src/app/api/waitlist/route.js
-// POST /api/waitlist  { email, lang, source, website }  -> saves one email to the Premium waitlist
+// POST /api/waitlist  { email, lang, source, website, ref }  -> saves one email to the Premium waitlist
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { cleanRef } from "../../../lib/ref";                         // NEW: the same safe-label check as /api/ref
 
 const LANGS = new Set(["en", "fr", "es", "pt", "ha", "yo", "ig"]);   // languages we accept
 const SOURCES = new Set(["home", "vet"]);                            // pages the box lives on
@@ -29,8 +30,9 @@ export async function POST(request) {
   }
   const lang = LANGS.has(body.lang) ? body.lang : "en";              // unknown values fall back safely
   const source = SOURCES.has(body.source) ? body.source : "home";
+  const ref = cleanRef(body.ref) || null;                            // NEW: channel label, or empty if none / unsafe
 
-  const { error } = await db().from("waitlist").insert({ email, lang, source });
+  const { error } = await db().from("waitlist").insert({ email, lang, source, ref }); // NEW: ref saved with the email
   if (error) {
     if (error.code === "23505") return NextResponse.json({ status: "already" }); // 23505 = email already on the list
     console.error("Waitlist insert failed:", error.message);         // visible in Vercel logs

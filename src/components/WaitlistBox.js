@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { useLang } from "../lib/i18n/useLang";               // the visitor's language
 import { WAITLIST } from "../lib/i18n/waitlist";             // this box's words in 7 languages
+import { getSavedRef } from "../lib/ref";                    // NEW: the channel that first brought this visitor ("" if none)
 
 export default function WaitlistBox({ source = "home" }) {   // source = which page it's on
   const lang = useLang();
@@ -25,7 +26,7 @@ export default function WaitlistBox({ source = "home" }) {   // source = which p
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: clean, lang, source, website }),
+        body: JSON.stringify({ email: clean, lang, source, website, ref: getSavedRef() }), // NEW: ref = credit the channel
       });
       const data = await res.json().catch(() => ({}));      // tolerate an empty reply
       if (!res.ok) throw new Error(data.error || "failed");

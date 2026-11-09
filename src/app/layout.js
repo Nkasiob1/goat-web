@@ -1,7 +1,8 @@
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import InstallPrompt from "@/components/InstallPrompt";   // "Get the GOAT app" banner + service worker
-import SplashScreen from "@/components/SplashScreen";     // MOVED HERE: drawn once per app launch (not on every page)
+import SplashScreen from "@/components/SplashScreen";     // drawn once per app launch (not on every page)
+import RefTracker from "@/components/RefTracker";         // NEW: remembers and counts ?ref= visits (invisible)
 import "./globals.css";
 
 export const metadata = {
@@ -38,7 +39,7 @@ export const viewport = {                                 // colours the phone's
 
 // Runs in <head>, BEFORE the page paints. Two jobs:
 // 1) Theme: a saved choice wins, otherwise follow the phone setting (no white flash for dark-mode users).
-// 2) NEW: App detection. Tag <html class="is-app"> when GOAT runs as the installed app, so the splash shows from the
+// 2) App detection. Tag <html class="is-app"> when GOAT runs as the installed app, so the splash shows from the
 //    very first paint. Signals: standalone mode, iPhone home screen, or opened by our Android app (referrer android-app://).
 //    Remembered for the session, because the referrer is gone after a reload. If the splash already played, skip it.
 const bootScript = `(function(){var h=document.documentElement;try{var t=localStorage.getItem('goat-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)h.classList.add('dark');}catch(e){}try{var s=window.sessionStorage;var app=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true||document.referrer.indexOf('android-app://')===0||s.getItem('goat-is-app')==='1';if(app){h.classList.add('is-app');s.setItem('goat-is-app','1');if(s.getItem('goat-splash-seen')==='1')h.classList.add('splash-done');}}catch(e){}})();`;
@@ -55,9 +56,10 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: bootScript }} />
       </head>
       <body className="min-h-full flex flex-col">
-        <SplashScreen />                                  {/* NEW POSITION: first thing in the page, covers it from the first paint */}
+        <SplashScreen />                                  {/* first thing in the page, covers it from the first paint */}
         {children}
         <InstallPrompt />
+        <RefTracker />                                    {/* NEW: invisible; runs on every page, so any ?ref= link is caught */}
       </body>
     </html>
   );
