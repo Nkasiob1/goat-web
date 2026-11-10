@@ -2,7 +2,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import InstallPrompt from "@/components/InstallPrompt";   // "Get the GOAT app" banner + service worker
 import SplashScreen from "@/components/SplashScreen";     // drawn once per app launch (not on every page)
-import RefTracker from "@/components/RefTracker";         // NEW: remembers and counts ?ref= visits (invisible)
+import RefTracker from "@/components/RefTracker";         // remembers and counts ?ref= visits (invisible)
 import "./globals.css";
 
 export const metadata = {
@@ -26,6 +26,9 @@ export const metadata = {
     capable: true,                                        // open full screen, like an app
     title: "GOAT",                                        // name under the iPhone icon
     statusBarStyle: "black-translucent",                  // content runs under the status bar (our safe-area padding handles it)
+  },
+  other: {                                                // NEW: extra <meta> tags Next.js has no special field for
+    "facebook-domain-verification": "m4m471z271hnuvj9gvs5i8ndzf200l", // proves to Meta that GOATWATCH TECHNOLOGIES owns goatwatch.app
   },
 };
 
@@ -59,7 +62,7 @@ export default function RootLayout({ children }) {
         <SplashScreen />                                  {/* first thing in the page, covers it from the first paint */}
         {children}
         <InstallPrompt />
-        <RefTracker />                                    {/* NEW: invisible; runs on every page, so any ?ref= link is caught */}
+        <RefTracker />                                    {/* invisible; runs on every page, so any ?ref= link is caught */}
       </body>
     </html>
   );
