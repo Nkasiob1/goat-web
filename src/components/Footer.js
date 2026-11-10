@@ -1,7 +1,13 @@
 import Link from "next/link";
 import Logo from "./Logo";
-import T from "./T";                                     // NEW: reuses navbar translations (Markets, Radar...)
-import S from "./S";                                     // NEW: footer translations (site.js)
+import T from "./T";                                     // reuses navbar translations (Markets, Radar...)
+import S from "./S";                                     // footer translations (site.js)
+
+const LEGAL = {                                          // NEW: the registered business behind GOAT (from the CAC certificate)
+  name: "GOATWATCH TECHNOLOGIES",                        // exact registered name
+  regNo: "9998471",                                      // Business Name Registration No.
+  place: "Oyigbo, Rivers State, Nigeria",                // town only: no street address on a public page
+};
 
 export default function Footer() {
   const columns = [                                      // each link has a real address; labels are translated
@@ -12,7 +18,7 @@ export default function Footer() {
         { href: "/markets", label: <T k="nav.markets" /> },
         { href: "/charts", label: <T k="nav.charts" /> },
         { href: "/radar", label: <T k="nav.radar" /> },
-        { href: "/vet", label: <T k="nav.vet" /> },      // NEW: Token Safety Checker
+        { href: "/vet", label: <T k="nav.vet" /> },      // Token Safety Checker
         { href: "/scanner", label: <T k="nav.scanner" /> },
         { href: "/news", label: <T k="nav.news" /> },
       ],
@@ -47,7 +53,7 @@ export default function Footer() {
           </div>
 
           {columns.map((col) => (
-            <div key={col.key}>                          {/* key is now a plain word (headings are components) */}
+            <div key={col.key}>                          {/* key is a plain word (headings are components) */}
               <p className="text-sm font-semibold text-ink">{col.heading}</p>
               <ul className="mt-4 space-y-3">
                 {col.links.map((link) => (
@@ -66,6 +72,9 @@ export default function Footer() {
             <Link href="/risk" className="underline hover:text-ink"><S k="footer.readRisk" /></Link>.
           </p>
           <p className="mt-4 text-xs text-stone"><S k="footer.rights" /></p>
+          <p className="mt-1 text-xs text-stone">        {/* NEW: shows Meta, app stores and partners who runs GOAT */}
+            GOAT is operated by {LEGAL.name} · Business Name Reg. No. {LEGAL.regNo} · {LEGAL.place}
+          </p>
         </div>
       </div>
     </footer>
