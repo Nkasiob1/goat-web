@@ -2,14 +2,16 @@
 // Meta's WhatsApp Cloud API calls this webhook for every message sent to GOAT's WhatsApp number.
 // 1) GET  = the one-time handshake: Meta checks this URL is ours (verify token -> echo the challenge).
 // 2) POST = a message arrived: check Meta's signature, find a contract address, run the SAME Vet
-//    as goatwatch.app/vet and the Telegram bot, and reply in the chat.
+//    as goatwatch.app/vet and the Telegram bot, and reply in the chat, IN THE PERSON'S LANGUAGE.
 // GOAT only ever REPLIES (inside WhatsApp's 24-hour window), so replies are free and never spam.
-// Privacy: phone numbers are never stored. The log keeps a one-way scrambled number instead.
+// Privacy: phone numbers are never stored. The log and language choice use a one-way scrambled id.
 import { NextResponse, after } from "next/server";          // after() = run work AFTER answering Meta
 import { createHmac, timingSafeEqual } from "node:crypto";   // signature check + scrambling phone numbers
 import { createClient } from "@supabase/supabase-js";
 import { vetToken, cleanQuery, isEvmAddress, isSolAddress } from "../../../../lib/vet"; // the one Vet engine
 import { SITE_URL } from "../../../../lib/site";                                      // https://goatwatch.app
+import { translateNote } from "../../../../lib/i18n/notes";                           // NEW: same phrasebook as the website
+import { WA_LANGS, LANG_NAMES, LANG_WORDS, guessLang, w } from "../../../../lib/i18n/wa"; // NEW: the bot's words, 7 languages
 
 export const maxDuration = 30;                             // the Vet calls several free APIs: give it time
 
@@ -28,7 +30,6 @@ const db = () =>
 // ------------------------------------------------------------
 
 // Is this POST really from Meta? Meta signs the exact raw body with our App Secret.
-// We sign it ourselves and compare. A stranger can't produce the right signature.
 function signatureIsValid(rawBody, header) {
   if (!header || !process.env.WHATSAPP_APP_SECRET) return false;          // no signature, or not configured
   const expected = "sha256=" + createHmac("sha256", process.env.WHATSAPP_APP_SECRET)
@@ -36,14 +37,31 @@ function signatureIsValid(rawBody, header) {
     .digest("hex");
   const a = Buffer.from(expected);
   const b = Buffer.from(header);
-  return a.length === b.length && timingSafeEqual(a, b);   // compare in constant time (no timing hints for attackers)
+  return a.length === b.length && timingSafeEqual(a, b);   // compare in constant time
 }
 
-// Turn a phone number into a number that identifies the person for cooldowns, but can't be turned back.
-// Keyed with our secret, so nobody can guess numbers and match them. Range is far from Telegram's chat ids.
+// Phone number -> a number that identifies the person but can't be turned back into the phone number
 function chatIdFor(phone) {
   const hex = createHmac("sha256", process.env.WHATSAPP_APP_SECRET).update(phone).digest("hex");
   return -(2 ** 52) + parseInt(hex.slice(0, 12), 16);      // 48 random bits, shifted into a range of its own
+}
+
+// ------------------------------------------------------------
+// LANGUAGE (NEW)
+// ------------------------------------------------------------
+
+// The person's saved language, or a first guess from their country code. { lang, saved }
+async function getLang(supabase, chatId, phone) {
+  const { data } = await supabase.from("wa_prefs").select("lang").eq("chat_id", chatId).maybeSingle();
+  if (data?.lang && WA_LANGS.includes(data.lang)) return { lang: data.lang, saved: true };
+  return { lang: guessLang(phone), saved: false };         // not chosen yet
+}
+
+// Remember their choice (one row per person, overwritten if they change it)
+async function saveLang(supabase, chatId, lang) {
+  await supabase
+    .from("wa_prefs")
+    .upsert({ chat_id: chatId, lang, updated_at: new Date().toISOString() }, { onConflict: "chat_id" });
 }
 
 // ------------------------------------------------------------
@@ -79,6 +97,29 @@ const reply = (to, messageId, text) =>
     text: { body: text.slice(0, 4000), preview_url: false }, // WhatsApp's limit is 4096 characters
   });
 
+// NEW: the tap-to-choose language menu (a WhatsApp "list" message)
+function sendLanguageMenu(to, lang) {
+  const t = w(lang);
+  return wa({
+    recipient_type: "individual",
+    to,
+    type: "interactive",
+    interactive: {
+      type: "list",
+      body: { text: t.menuBody },                          // "Choose your language 🌍"
+      action: {
+        button: t.menuButton,                              // the button that opens the list (max 20 characters)
+        sections: [
+          {
+            title: "GOAT",
+            rows: WA_LANGS.map((code) => ({ id: `lang:${code}`, title: LANG_NAMES[code] })), // "lang:ha" -> Hausa
+          },
+        ],
+      },
+    },
+  });
+}
+
 // ------------------------------------------------------------
 // FORMATTING (WhatsApp uses *bold* and _italic_, not HTML)
 // ------------------------------------------------------------
@@ -94,47 +135,48 @@ const money = (n) =>
 const pct = (n) =>
   n === null || n === undefined ? "n/a" : (n > 0 ? "+" : "") + Number(n).toLocaleString("en-US", { maximumFractionDigits: Math.abs(n) >= 100 ? 0 : 1 }) + "%";
 
-// verdict -> headline (careful wording: green is "no major red flags", never "safe")
-const HEAD = {
-  green: "🟢 *No major red flags*",
-  yellow: "🟡 *Caution*",
-  red: "🔴 *High risk*",
-};
 const ICON = { fail: "✕", warn: "!", pass: "✓", unknown: "?" };
 
 // Full report on the website (ref=wa-bot lets us count visits that came from WhatsApp)
 const reportUrl = (address) => `${SITE_URL}/vet?q=${encodeURIComponent(address)}&ref=wa-bot`;
 
-const HELP = [
-  "🐐 *GOAT Vet*: free rug-pull check",
-  "",
-  "Send me any contract address and I go check am for you:",
-  "0x6982508145454ce325ddbe47a25d4ec3d2311933",
-  "",
-  "You fit forward a coin from any group too. I go reply with the verdict.",
-  "Works on Ethereum, BSC, Solana, Base, Arbitrum, Polygon, Avalanche and Optimism.",
-  "",
-  `More tools: ${SITE_URL}/?ref=wa-bot`,
-].join("\n");
+// CHANGED: the help message, in the person's language
+function helpText(lang) {
+  const t = w(lang);
+  return [
+    t.helpTitle,
+    "",
+    t.helpSend,
+    "0x6982508145454ce325ddbe47a25d4ec3d2311933",
+    "",
+    t.helpForward,
+    t.helpChains,
+    "",
+    t.helpLang,                                            // "Type *language* to change language."
+    `${t.helpMore} ${SITE_URL}/?ref=wa-bot`,
+  ].join("\n");
+}
 
-// Build the short report from the same object the Vet page uses
-function formatReport(r) {
-  const t = r.token;
+// CHANGED: the short report, in the person's language (check names + details via the website's phrasebook)
+function formatReport(r, lang) {
+  const t = w(lang);
+  const tn = (s) => plain(translateNote(s, lang));         // translate a Vet note, then make it WhatsApp-safe
+  const tk = r.token;
   const fails = r.checks.filter((c) => c.status === "fail");          // worst first
   const warns = r.checks.filter((c) => c.status === "warn");
   const passes = r.checks.filter((c) => c.status === "pass");
   const lines = [
-    `${HEAD[r.verdict]}: *${plain(t.symbol || "?")}* on ${plain(t.chainLabel)}`,
-    `Liquidity ${money(r.market.liquidity)} · Vol 24h ${money(r.market.volume24h)}${r.market.fdv ? ` · FDV ${money(r.market.fdv)}` : ""}`,
+    `${t[r.verdict]}: *${plain(tk.symbol || "?")}* ${t.on} ${plain(tk.chainLabel)}`,
+    `${t.liquidity} ${money(r.market.liquidity)} · ${t.vol} ${money(r.market.volume24h)}${r.market.fdv ? ` · FDV ${money(r.market.fdv)}` : ""}`,
   ];
-  if (r.history) lines.push(`Since launch ${pct(r.history.sinceLaunchPct)} · From peak ${pct(r.history.fromAthPct)}`);
+  if (r.history) lines.push(`${t.sinceLaunch} ${pct(r.history.sinceLaunchPct)} · ${t.fromPeak} ${pct(r.history.fromAthPct)}`);
   lines.push("");
   for (const c of [...fails, ...warns].slice(0, 6)) {                 // up to 6 problems, with details
-    lines.push(`${ICON[c.status]} *${plain(c.label)}*: ${plain(c.detail)}`);
+    lines.push(`${ICON[c.status]} *${tn(c.label)}*: ${tn(c.detail)}`);
   }
-  if (passes.length) lines.push(`✓ Passed: ${plain(passes.map((c) => c.label).join(", "))}`); // passes as one short line
-  lines.push("", `📋 Full report: ${reportUrl(t.address)}`);
-  lines.push("", "_Automated check. Not financial advice. DYOR._");
+  if (passes.length) lines.push(`✓ ${t.clean}: ${passes.map((c) => tn(c.label)).join(", ")}`); // passes as one short line
+  lines.push("", `📋 ${t.fullReport}: ${reportUrl(tk.address)}`);
+  lines.push("", t.disclaimer);
   return lines.join("\n");
 }
 
@@ -151,17 +193,34 @@ function findAddress(text) {
 
 async function handleMessage(m) {
   const from = m.from;                                     // the sender's WhatsApp number (in memory only)
-  const words = m.text?.body || m.image?.caption || m.video?.caption || m.document?.caption || ""; // text, or a caption under media
-  if (!words) return;                                      // stickers, reactions, voice notes: stay quiet
+  const supabase = db();
+  const chatId = chatIdFor(from);                          // scrambled id, safe to store
+  const { lang, saved } = await getLang(supabase, chatId, from); // NEW: their language (saved, or guessed)
 
-  const address = findAddress(words);
-  if (!address) {                                          // no contract: show how to use GOAT
-    await reply(from, m.id, HELP);
+  // NEW: they tapped a language in the menu -> save it, confirm, and show help in that language
+  const picked = m.type === "interactive" ? m.interactive?.list_reply?.id || "" : "";
+  if (picked.startsWith("lang:")) {
+    const code = picked.slice(5);
+    if (!WA_LANGS.includes(code)) return;                  // not one of ours: ignore
+    await saveLang(supabase, chatId, code);
+    await reply(from, m.id, `${w(code).langSet}\n\n${helpText(code)}`);
     return;
   }
 
-  const supabase = db();
-  const chatId = chatIdFor(from);                          // scrambled id, safe to store
+  const words = m.text?.body || m.image?.caption || m.video?.caption || m.document?.caption || ""; // text, or a caption under media
+  if (!words) return;                                      // stickers, reactions, voice notes: stay quiet
+
+  if (LANG_WORDS.test(words.trim())) {                     // NEW: "language", "langue", "harshe"... -> the menu
+    await sendLanguageMenu(from, lang);
+    return;
+  }
+
+  const address = findAddress(words);
+  if (!address) {                                          // no contract: show how to use GOAT
+    await reply(from, m.id, helpText(lang));
+    if (!saved) await sendLanguageMenu(from, lang);        // NEW: first-time users also get the language menu
+    return;
+  }
 
   // Cooldown: one check per person every 15 seconds
   const { data: last } = await supabase
@@ -172,7 +231,7 @@ async function handleMessage(m) {
     .limit(1);
   const lastAt = last?.[0]?.at ? new Date(last[0].at).getTime() : 0;
   if (Date.now() - lastAt < COOLDOWN_SECONDS * 1000) {
-    await reply(from, m.id, `⏳ One check every ${COOLDOWN_SECONDS} seconds. Try again small time.`);
+    await reply(from, m.id, w(lang).cooldown.replace("{n}", COOLDOWN_SECONDS)); // CHANGED: translated
     return;
   }
 
@@ -182,9 +241,9 @@ async function handleMessage(m) {
   try {
     const report = await vetToken(address);                // the same engine as goatwatch.app/vet and Telegram
     verdict = report.verdict;
-    await reply(from, m.id, formatReport(report));
+    await reply(from, m.id, formatReport(report, lang));   // CHANGED: in their language
   } catch (err) {
-    await reply(from, m.id, `Couldn't check that coin: ${plain(err.message)}`);
+    await reply(from, m.id, `${w(lang).cantCheck} ${plain(translateNote(err.message, lang))}`); // CHANGED
   }
 
   // Log it (cooldown + growth data). No phone number, no name, no message text.
@@ -231,7 +290,7 @@ export async function POST(request) {
     .filter((c) => c.field === "messages")
     .flatMap((c) => c.value?.messages || []);              // delivery/read receipts have no "messages": skipped
 
-  // Answer Meta at once, then do the slow Vet afterwards. A slow reply makes Meta re-send the same message.
+  // Answer Meta at once, then do the slow work afterwards. A slow reply makes Meta re-send the same message.
   after(async () => {
     for (const m of messages) {
       try {
