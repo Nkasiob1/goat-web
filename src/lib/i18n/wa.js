@@ -1,8 +1,8 @@
 // src/lib/i18n/wa.js
-// Words for the GOAT WhatsApp bot, in all 7 languages. {n} is filled in by the bot.
+// Words for the GOAT WhatsApp bot, in all 10 languages. {n} is filled in by the bot.
 // Check names and details come from notes.js (the same phrasebook as the website).
 
-export const WA_LANGS = ["en", "fr", "es", "pt", "ha", "yo", "ig"];       // the order shown in the menu
+export const WA_LANGS = ["en", "fr", "es", "pt", "ar", "hi", "fa", "ha", "yo", "ig"]; // CHANGED: menu order. 10 = WhatsApp's max rows per list, so the next language needs a 2nd section
 
 // What each language is called, in that language (shown in the WhatsApp menu, max 24 characters)
 export const LANG_NAMES = {
@@ -10,13 +10,16 @@ export const LANG_NAMES = {
   fr: "Français",
   es: "Español",
   pt: "Português",
+  ar: "العربية",                                         // NEW: Arabic
+  hi: "हिन्दी",                                           // NEW: Hindi
+  fa: "فارسی",                                           // NEW: Persian
   ha: "Hausa",
   yo: "Yorùbá",
   ig: "Igbo",
 };
 
 // Words people type to open the language menu (any language)
-export const LANG_WORDS = /^(lang|language|languages|langue|langues|idioma|idiomas|harshe|ede|èdè|asusu|asụsụ|menu)$/i;
+export const LANG_WORDS = /^(lang|language|languages|langue|langues|idioma|idiomas|harshe|ede|èdè|asusu|asụsụ|menu|لغة|اللغة|اللغات|भाषा|bhasha|زبان|زبانها|زبان‌ها)$/i; // CHANGED: + Arabic, Hindi, Persian words
 
 export const WA = {
   en: {
@@ -115,6 +118,78 @@ export const WA = {
     fullReport: "Relatório completo",
     disclaimer: "_Verificação automática. Não é conselho financeiro. Faça sua pesquisa._",
   },
+  ar: {                                                    // NEW: Arabic (WhatsApp shows it right-to-left by itself)
+    helpTitle: "🐐 *GOAT Vet*: فحص مجاني للعملات الرقمية ضد الاحتيال",
+    helpSend: "أرسل لي عنوان عقد أي عملة وسأفحصها لك:",
+    helpForward: "يمكنك أيضًا إعادة توجيه عملة من أي مجموعة. سأرد عليك بالنتيجة.",
+    helpChains: "يعمل على Ethereum وBSC وSolana وBase وArbitrum وPolygon وAvalanche وOptimism.",
+    helpLang: "اكتب *لغة* لتغيير اللغة.",
+    helpMore: "أدوات أخرى:",
+    menuBody: "اختر لغتك 🌍",
+    menuButton: "اللغات",
+    langSet: "✅ تم ضبط اللغة على العربية.",
+    cooldown: "⏳ فحص واحد كل {n} ثانية. حاول مرة أخرى بعد قليل.",
+    cantCheck: "تعذر فحص هذه العملة:",
+    green: "🟢 *لا توجد إشارات تحذير كبرى*",
+    yellow: "🟡 *تحذير*",
+    red: "🔴 *خطر مرتفع*",
+    on: "على",
+    liquidity: "السيولة",
+    vol: "حجم 24 س",
+    sinceLaunch: "منذ الإطلاق",
+    fromPeak: "من الذروة",
+    clean: "سليم",
+    fullReport: "التقرير الكامل",
+    disclaimer: "_فحص آلي. ليس نصيحة مالية. ابحث بنفسك._",
+  },
+  hi: {                                                    // NEW: Hindi
+    helpTitle: "🐐 *GOAT Vet*: क्रिप्टो कॉइन के लिए मुफ़्त स्कैम जांच",
+    helpSend: "किसी भी कॉइन का कॉन्ट्रैक्ट एड्रेस भेजें, मैं आपके लिए जांच करूंगा:",
+    helpForward: "आप किसी भी ग्रुप से कॉइन फॉरवर्ड भी कर सकते हैं। मैं नतीजा भेजूंगा।",
+    helpChains: "Ethereum, BSC, Solana, Base, Arbitrum, Polygon, Avalanche और Optimism पर काम करता है।",
+    helpLang: "भाषा बदलने के लिए *भाषा* लिखें।",
+    helpMore: "और टूल्स:",
+    menuBody: "अपनी भाषा चुनें 🌍",
+    menuButton: "भाषाएं",
+    langSet: "✅ भाषा हिंदी पर सेट हो गई।",
+    cooldown: "⏳ हर {n} सेकंड में एक जांच। कृपया थोड़ी देर बाद फिर कोशिश करें।",
+    cantCheck: "इस कॉइन की जांच नहीं हो सकी:",
+    green: "🟢 *कोई बड़ा खतरे का संकेत नहीं*",
+    yellow: "🟡 *सावधान*",
+    red: "🔴 *ज़्यादा जोखिम*",
+    on: "·",
+    liquidity: "लिक्विडिटी",
+    vol: "24 घंटे वॉल्यूम",
+    sinceLaunch: "लॉन्च से",
+    fromPeak: "शिखर से",
+    clean: "ठीक",
+    fullReport: "पूरी रिपोर्ट",
+    disclaimer: "_स्वचालित जांच। वित्तीय सलाह नहीं। खुद रिसर्च करें।_",
+  },
+  fa: {                                                    // NEW: Persian (right-to-left, handled by WhatsApp)
+    helpTitle: "🐐 *GOAT Vet*: بررسی رایگان کوین‌ها برای جلوگیری از کلاهبرداری",
+    helpSend: "آدرس قرارداد هر کوینی را برایم بفرستید تا آن را بررسی کنم:",
+    helpForward: "می‌توانید کوین را از هر گروهی فوروارد کنید. با نتیجه پاسخ می‌دهم.",
+    helpChains: "روی Ethereum، BSC، Solana، Base، Arbitrum، Polygon، Avalanche و Optimism کار می‌کند.",
+    helpLang: "برای تغییر زبان *زبان* را بنویسید.",
+    helpMore: "ابزارهای بیشتر:",
+    menuBody: "زبان خود را انتخاب کنید 🌍",
+    menuButton: "زبان‌ها",
+    langSet: "✅ زبان روی فارسی تنظیم شد.",
+    cooldown: "⏳ هر {n} ثانیه یک بررسی. لطفاً کمی بعد دوباره امتحان کنید.",
+    cantCheck: "بررسی این کوین ممکن نشد:",
+    green: "🟢 *بدون نشانه هشدار جدی*",
+    yellow: "🟡 *احتیاط*",
+    red: "🔴 *ریسک بالا*",
+    on: "روی",
+    liquidity: "نقدینگی",
+    vol: "حجم ۲۴ساعته",
+    sinceLaunch: "از زمان راه‌اندازی",
+    fromPeak: "از اوج",
+    clean: "سالم",
+    fullReport: "گزارش کامل",
+    disclaimer: "_بررسی خودکار. توصیه مالی نیست. خودتان تحقیق کنید._",
+  },
   ha: {
     helpTitle: "🐐 *GOAT Vet*: binciken coin kyauta don guje wa zamba",
     helpSend: "Aiko min adireshin kwantiragin kowane coin, zan duba maka:",
@@ -201,6 +276,12 @@ const COUNTRY_LANG = [
   ["505", "es"], ["506", "es"], ["507", "es"], ["240", "es"],
   // Portuguese-speaking
   ["351", "pt"], ["55", "pt"], ["244", "pt"], ["258", "pt"], ["238", "pt"], ["245", "pt"], ["239", "pt"],
+  // NEW: Arabic-speaking (Egypt, Gulf, Levant, Iraq, Yemen, Palestine, North Africa, Sudan, Mauritania)
+  ["20", "ar"], ["966", "ar"], ["971", "ar"], ["974", "ar"], ["965", "ar"], ["973", "ar"], ["968", "ar"],
+  ["962", "ar"], ["961", "ar"], ["963", "ar"], ["964", "ar"], ["967", "ar"], ["970", "ar"], ["218", "ar"],
+  ["216", "ar"], ["213", "ar"], ["212", "ar"], ["249", "ar"], ["222", "ar"],
+  // NEW: Hindi (India) and Persian (Iran, Afghanistan)
+  ["91", "hi"], ["98", "fa"], ["93", "fa"],
 ].sort((a, b) => b[0].length - a[0].length);               // longest codes first, so "225" wins over "2"
 
 // "2250701234567" -> "fr". Only used until the person picks a language themselves.
