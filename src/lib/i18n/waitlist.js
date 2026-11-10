@@ -1,5 +1,5 @@
 // src/lib/i18n/waitlist.js
-// Words for the Premium waitlist box, in all 7 languages (ha/yo/ig: please have a native speaker review)
+// Words for the Premium waitlist box, in all 10 languages (ha/yo/ig/ar/hi/fa: please have a native speaker review)
 
 export const WAITLIST = {
   en: {
@@ -85,5 +85,41 @@ export const WAITLIST = {
     error: "Ihe adịghị mma mere. Biko nwaa ọzọ.",
     invalid: "Biko tinye email ziri ezi.",
     privacy: "Enweghị spam. Naanị akụkọ Premium. Ị nwere ike ịpụ mgbe ọ bụla.",
+  },
+  ar: {                                   // NEW: Arabic (right-to-left)
+    "title": "GOAT Premium قادم قريبًا",
+    "sub": "تنبيهات فورية قبل القناة المجانية، وتقارير أعمق عن العملات، وقناة VIP. انضم إلى قائمة الانتظار للوصول المبكر.",
+    "placeholder": "you@email.com",
+    "button": "انضم إلى قائمة الانتظار",
+    "sending": "جارٍ الانضمام...",
+    "done": "أنت في القائمة! سنراسلك أولًا.",
+    "already": "أنت في القائمة بالفعل 👍",
+    "error": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+    "invalid": "يرجى إدخال بريد إلكتروني صالح.",
+    "privacy": "بلا رسائل مزعجة. أخبار Premium فقط. يمكنك إلغاء الاشتراك في أي وقت.",
+  },
+  hi: {                                   // NEW: Hindi
+    "title": "GOAT Premium आ रहा है",
+    "sub": "फ़्री चैनल से पहले तुरंत अलर्ट, कॉइन की गहरी रिपोर्ट और VIP चैनल। जल्दी एक्सेस के लिए वेटलिस्ट से जुड़ें।",
+    "placeholder": "you@email.com",
+    "button": "वेटलिस्ट से जुड़ें",
+    "sending": "जुड़ रहे हैं...",
+    "done": "आप लिस्ट में हैं! हम सबसे पहले आपको ईमेल करेंगे।",
+    "already": "आप पहले से लिस्ट में हैं 👍",
+    "error": "कुछ गलत हो गया। कृपया फिर कोशिश करें।",
+    "invalid": "कृपया सही ईमेल डालें।",
+    "privacy": "कोई स्पैम नहीं। सिर्फ Premium की खबरें। कभी भी अनसब्सक्राइब करें।",
+  },
+  fa: {                                   // NEW: Persian (right-to-left)
+    "title": "GOAT Premium در راه است",
+    "sub": "هشدارهای فوری پیش از کانال رایگان، گزارش‌های عمیق‌تر کوین و کانال VIP. برای دسترسی زودهنگام به لیست انتظار بپیوندید.",
+    "placeholder": "you@email.com",
+    "button": "پیوستن به لیست انتظار",
+    "sending": "در حال پیوستن...",
+    "done": "در لیست هستید! اول به شما ایمیل می‌زنیم.",
+    "already": "شما از قبل در لیست هستید 👍",
+    "error": "مشکلی پیش آمد. لطفاً دوباره امتحان کنید.",
+    "invalid": "لطفاً یک ایمیل معتبر وارد کنید.",
+    "privacy": "بدون اسپم. فقط اخبار Premium. هر زمان می‌توانید لغو اشتراک کنید.",
   },
 };

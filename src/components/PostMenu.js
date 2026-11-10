@@ -33,7 +33,7 @@ export default function PostMenu({ postId, own, user, onDelete }) {
       </button>
 
       {open && (
-        <div role="menu" className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-2xl border border-line bg-water py-1 shadow-lg">
+        <div role="menu" className="absolute end-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-2xl border border-line bg-water py-1 shadow-lg">
           {own ? (
             <button
               type="button"

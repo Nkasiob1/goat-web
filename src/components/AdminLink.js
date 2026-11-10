@@ -18,7 +18,7 @@ export default function AdminLink() {
         <path d="M9 12l2 2 4-4" />                                       {/* tick */}
       </svg>
       {pending > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-forest px-1 text-[10px] font-semibold text-water">
+        <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-forest px-1 text-[10px] font-semibold text-water">
           {pending > 9 ? "9+" : pending} {/* green, so it doesn't look like the red notification badge */}
         </span>
       )}

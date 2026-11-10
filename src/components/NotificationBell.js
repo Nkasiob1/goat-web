@@ -56,7 +56,7 @@ export default function NotificationBell() {
         <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />            {/* clapper */}
       </svg>
       {count > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-loss px-1 text-[10px] font-semibold text-water">
+        <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-loss px-1 text-[10px] font-semibold text-water">
           {count > 9 ? "9+" : count} {/* keep the badge small */}
         </span>
       )}

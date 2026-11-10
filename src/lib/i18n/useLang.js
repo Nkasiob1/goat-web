@@ -2,7 +2,7 @@
 // One shared "current language" that every component can read and change.
 
 import { useCallback, useSyncExternalStore } from "react";
-import { DICTS } from "./dictionaries";
+import { DICTS, RTL_LANGS } from "./dictionaries";       // CHANGED: + the right-to-left list
 
 const KEY = "goat-lang";                                  // localStorage key for the saved choice
 const listeners = new Set();                              // components waiting to hear about changes
@@ -17,12 +17,18 @@ function read() {
   return DICTS[phone] ? phone : "en";                     // we support it? use it. Otherwise English.
 }
 
-// Change language: save it, update <html lang>, tell every listening component
+// NEW: put <html lang="ar" dir="rtl"> (or ltr) on the page, so Arabic/Persian read right-to-left
+export function applyDir(lang) {
+  document.documentElement.lang = lang;                   // screen readers + Google know the page language
+  document.documentElement.dir = RTL_LANGS.has(lang) ? "rtl" : "ltr"; // the browser flips the layout for rtl
+}
+
+// Change language: save it, update <html lang dir>, tell every listening component
 export function setLang(lang) {
   try {
     localStorage.setItem(KEY, lang);
   } catch {}
-  document.documentElement.lang = lang;                   // screen readers + Google know the page language
+  applyDir(lang);                                         // CHANGED: sets lang AND direction
   listeners.forEach((notify) => notify());                // re-render everything that uses useLang()
 }
 

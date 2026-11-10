@@ -8,4 +8,7 @@ export const MENU = {
   ha: { profile: "Duba bayananka", notifications: "Sanarwa", dashboard: "Dashboard", moderation: "Kulawa", logout: "Fita", login: "Shiga", open: "Buɗe menu", close: "Rufe menu" },
   yo: { profile: "Wo profaili rẹ", notifications: "Ìfitónilétí", dashboard: "Dashboard", moderation: "Àbójútó", logout: "Jáde", login: "Wọlé", open: "Ṣí àkójọ", close: "Pa àkójọ dé" },
   ig: { profile: "Lee profaịlụ gị", notifications: "Ọkwa", dashboard: "Dashboard", moderation: "Nlekọta", logout: "Pụọ", login: "Banye", open: "Mepee menu", close: "Mechie menu" },
+  ar: { profile: "عرض ملفك الشخصي", notifications: "الإشعارات", dashboard: "لوحة التحكم", moderation: "الإشراف", logout: "تسجيل الخروج", login: "تسجيل الدخول", open: "فتح القائمة", close: "إغلاق القائمة" }, // NEW: Arabic (right-to-left)
+  hi: { profile: "अपनी प्रोफ़ाइल देखें", notifications: "सूचनाएं", dashboard: "डैशबोर्ड", moderation: "मॉडरेशन", logout: "लॉग आउट", login: "लॉग इन", open: "मेनू खोलें", close: "मेनू बंद करें" }, // NEW: Hindi
+  fa: { profile: "مشاهده پروفایل", notifications: "اعلان‌ها", dashboard: "داشبورد", moderation: "نظارت", logout: "خروج", login: "ورود", open: "باز کردن منو", close: "بستن منو" }, // NEW: Persian (right-to-left)
 };

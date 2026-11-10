@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { cleanRef } from "../../../lib/ref";                         // NEW: the same safe-label check as /api/ref
 
-const LANGS = new Set(["en", "fr", "es", "pt", "ha", "yo", "ig"]);   // languages we accept
+const LANGS = new Set(["en", "fr", "es", "pt", "ha", "yo", "ig", "ar", "hi", "fa"]); // languages we accept (CHANGED: + ar, hi, fa)
 const SOURCES = new Set(["home", "vet"]);                            // pages the box lives on
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;                          // something@something.something
 

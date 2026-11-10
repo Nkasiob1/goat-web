@@ -1,5 +1,5 @@
 // src/lib/i18n/authHeading.js
-// Headings above the sign-up and login forms, in 7 languages (ha/yo/ig: please have a native speaker review)
+// Headings above the sign-up and login forms, in 10 languages (ha/yo/ig/ar/hi/fa: please have a native speaker review)
 
 export const AUTH_HEAD = {
   en: {
@@ -29,5 +29,17 @@ export const AUTH_HEAD = {
   ig: {
     signup: { title: "Mepụta akaụntụ GOAT gị", sub: "Soro ahịa, chekwaa mkpụrụ ego crypto ma sonye n'obodo." },
     login: { title: "Nnọọ ọzọ", sub: "Banye n'akaụntụ GOAT gị." },
+  },
+  ar: {                                   // NEW: Arabic (right-to-left)
+    signup: { title: "أنشئ حسابك في GOAT", sub: "تابع الأسواق واحفظ العملات وانضم إلى المجتمع." },
+    login: { title: "مرحبًا بعودتك", sub: "سجّل الدخول إلى حسابك في GOAT." },
+  },
+  hi: {                                   // NEW: Hindi
+    signup: { title: "अपना GOAT अकाउंट बनाएं", sub: "बाज़ार ट्रैक करें, कॉइन सेव करें और कम्युनिटी से जुड़ें।" },
+    login: { title: "फिर से स्वागत है", sub: "अपने GOAT अकाउंट में लॉग इन करें।" },
+  },
+  fa: {                                   // NEW: Persian (right-to-left)
+    signup: { title: "حساب GOAT خود را بسازید", sub: "بازارها را دنبال کنید، کوین‌ها را ذخیره کنید و به انجمن بپیوندید." },
+    login: { title: "خوش برگشتید", sub: "وارد حساب GOAT خود شوید." },
   },
 };

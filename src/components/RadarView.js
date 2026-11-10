@@ -89,7 +89,10 @@ function TokenCard({ t }) {
       )}
 
       <ul className="mt-4 space-y-1 text-sm text-stone">
-        {(t.safety_notes || []).slice(0, 3).map((note) => (
+        {(t.safety_notes || [])
+          .filter((note) => !(t.kind === "dex" && note.startsWith("Age:"))) // NEW: the live "Launched" above already shows the age (this note is frozen)
+          .slice(0, 3)
+          .map((note) => (
           <li key={note} className="break-words">• {translateNote(note, lang)}</li> // NEW: translated by the phrasebook
         ))}
       </ul>

@@ -81,7 +81,7 @@ export default async function Image() {
             {checks.join("  ·  ")}
           </div>
           <div style={{ display: "flex", fontSize: 24, color: "#C9A24A", marginTop: 10 }}>
-            Free · No sign-up · 7 languages
+            Free · No sign-up · 10 languages
           </div>
         </div>
       </div>

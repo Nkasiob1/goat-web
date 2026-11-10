@@ -1,11 +1,11 @@
 // src/components/LanguageSwitcher.js
-// 🌐 menu: our 7 languages, plus "More languages (Google)" as a fallback.
+// 🌐 menu: our 10 languages, plus "More languages (Google)" as a fallback.
 // Can appear more than once (navbar + phone menu): each copy gets its own id.
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
 import { LANGS } from "../lib/i18n/dictionaries";
-import { useLang, setLang, useT } from "../lib/i18n/useLang";
+import { useLang, setLang, useT, applyDir } from "../lib/i18n/useLang"; // CHANGED: + applyDir
 
 // Is Google currently translating? (it stores its choice in a "googtrans" cookie, e.g. /en/de)
 function googleActive() {
@@ -66,7 +66,7 @@ export default function LanguageSwitcher() {
   const box = useRef(null);                               // the whole switcher (for outside taps)
 
   useEffect(() => {
-    document.documentElement.lang = lang;                 // keep <html lang> in sync
+    applyDir(lang);                                       // CHANGED: keep <html lang dir> in sync (rtl for ar/fa)
   }, [lang]);
 
   useEffect(() => {
@@ -125,13 +125,13 @@ export default function LanguageSwitcher() {
       </button>
 
       {/* the menu stays in the page (just hidden) so Google's picker isn't destroyed */}
-      <div className={`absolute right-0 top-12 z-50 w-60 rounded-2xl border border-line bg-water p-2 shadow-xl ${open ? "" : "hidden"}`}>
+      <div className={`absolute end-0 top-12 z-50 w-60 rounded-2xl border border-line bg-water p-2 shadow-xl ${open ? "" : "hidden"}`}>
         <p className="px-3 py-1 text-xs text-stone">{t("lang.label")}</p>
         {LANGS.map((l) => (
           <button
             key={l.code}
             onClick={() => pick(l.code)}
-            className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm hover:bg-sage ${l.code === lang ? "font-semibold text-forest" : "text-ink"}`}
+            className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-start text-sm hover:bg-sage ${l.code === lang ? "font-semibold text-forest" : "text-ink"}`}
           >
             <span className="notranslate" translate="no">{l.name}</span> {/* Google must not translate these */}
             {l.code === lang && <span>✓</span>}
@@ -139,7 +139,7 @@ export default function LanguageSwitcher() {
         ))}
         <div className="mt-1 border-t border-line pt-2">
           {!showGoogle && (
-            <button onClick={more} className="w-full rounded-xl px-3 py-2 text-left text-sm text-stone hover:bg-sage">
+            <button onClick={more} className="w-full rounded-xl px-3 py-2 text-start text-sm text-stone hover:bg-sage">
               🌐 {t("lang.more")}
             </button>
           )}
