@@ -8,10 +8,10 @@
 import { NextResponse, after } from "next/server";          // after() = run work AFTER answering Meta
 import { createHmac, timingSafeEqual } from "node:crypto";   // signature check + scrambling phone numbers
 import { createClient } from "@supabase/supabase-js";
-import { vetToken, cleanQuery, isEvmAddress, isSolAddress } from "../../../../lib/vet"; // the one Vet engine
+import { vetToken, searchTokens, cleanQuery, isEvmAddress, isSolAddress } from "../../../../lib/vet"; // the one Vet engine (CHANGED: + name search)
 import { SITE_URL } from "../../../../lib/site";                                      // https://goatwatch.app
 import { translateNote } from "../../../../lib/i18n/notes";                           // NEW: same phrasebook as the website
-import { WA_LANGS, LANG_NAMES, LANG_WORDS, guessLang, w } from "../../../../lib/i18n/wa"; // NEW: the bot's words, 7 languages
+import { WA_LANGS, LANG_NAMES, LANG_WORDS, guessLang, w } from "../../../../lib/i18n/wa"; // the bot's words, 10 languages
 
 export const maxDuration = 30;                             // the Vet calls several free APIs: give it time
 
@@ -148,6 +148,7 @@ function helpText(lang) {
     "",
     t.helpSend,
     "0x6982508145454ce325ddbe47a25d4ec3d2311933",
+    t.helpName,                                            // NEW: "Or just type the coin's name, e.g. pepe"
     "",
     t.helpForward,
     t.helpChains,
@@ -180,6 +181,43 @@ function formatReport(r, lang) {
   return lines.join("\n");
 }
 
+// NEW: greetings (incl. the ad's pre-filled "नमस्ते" / "مرحبا") get the welcome message, not a coin search
+const GREETINGS = /^(hi|hii+|hello|hey|yo|start|\/start|help|good (morning|afternoon|evening)|bonjour|salut|hola|olá|ola|oi|salam|salaam|marhaba|مرحبا|السلام عليكم|سلام|namaste|नमस्ते|sannu|ina kwana|bawo|ẹ n lẹ|e kaaro|ndewo|kedu|how far)[\s!.?]*$/i;
+
+// NEW: could this text be a coin name? (short, a few words, has letters, not a link)
+function looksLikeCoinName(text) {
+  const t = text.trim().replace(/^\$/, "");               // "$PEPE" -> "PEPE"
+  if (t.length < 2 || t.length > 30) return false;         // too short or a whole sentence
+  if (t.split(/\s+/).length > 3) return false;             // more than 3 words = probably a question, not a name
+  if (/https?:|www\./i.test(t)) return false;              // links are not coin names
+  return /[a-z0-9]/i.test(t);                              // needs at least one letter or digit
+}
+
+// NEW: list the matching coins as a tap-to-choose menu (max 10 rows, WhatsApp's limit)
+function sendCoinChoices(to, messageId, coins, lang) {
+  const t = w(lang);
+  const rows = coins.slice(0, 10).map((c) => {
+    const tag = c.official ? t.official : c.copycat ? `⚠ ${t.copycat}` : "";      // official / possible copycat
+    const liq = c.liquidity ? `Liq ${money(c.liquidity)}` : "";
+    return {
+      id: `vet:${c.address}`,                              // what comes back when they tap (max 200 characters)
+      title: `${c.official ? "✓ " : ""}${plain(c.symbol)}`.slice(0, 24),          // WhatsApp's limit: 24 characters
+      description: [c.chainLabel, tag, liq].filter(Boolean).join(" · ").slice(0, 72), // limit: 72 characters
+    };
+  });
+  return wa({
+    recipient_type: "individual",
+    to,
+    context: { message_id: messageId },
+    type: "interactive",
+    interactive: {
+      type: "list",
+      body: { text: t.pickBody },                          // "Which coin do you mean? ✓ = official..."
+      action: { button: t.pickButton, sections: [{ title: "GOAT Vet", rows }] },
+    },
+  });
+}
+
 // Find a contract address inside any text ("" if there isn't one)
 function findAddress(text) {
   if (!text) return "";
@@ -207,6 +245,13 @@ async function handleMessage(m) {
     return;
   }
 
+  // NEW: they tapped a coin in the "Which coin do you mean?" list -> check that exact contract
+  if (picked.startsWith("vet:")) {
+    const tapped = picked.slice(4);
+    if (isEvmAddress(tapped) || isSolAddress(tapped)) return runVet(supabase, from, m.id, chatId, lang, tapped);
+    return;                                                // not a real address: ignore
+  }
+
   const words = m.text?.body || m.image?.caption || m.video?.caption || m.document?.caption || ""; // text, or a caption under media
   if (!words) return;                                      // stickers, reactions, voice notes: stay quiet
 
@@ -216,12 +261,29 @@ async function handleMessage(m) {
   }
 
   const address = findAddress(words);
-  if (!address) {                                          // no contract: show how to use GOAT
+  if (address) return runVet(supabase, from, m.id, chatId, lang, address); // a contract address: check it
+
+  if (GREETINGS.test(words.trim()) || !looksLikeCoinName(words)) {         // "hi", or a long sentence: show how to use GOAT
     await reply(from, m.id, helpText(lang));
-    if (!saved) await sendLanguageMenu(from, lang);        // NEW: first-time users also get the language menu
+    if (!saved) await sendLanguageMenu(from, lang);        // first-time users also get the language menu
     return;
   }
 
+  // NEW: a coin NAME ("pepe", "$PEPE", "shiba inu") -> search it like goatwatch.app/vet does
+  const name = words.trim().replace(/^\$/, "");
+  await markReadAndTyping(m.id);
+  const coins = await searchTokens(name).catch(() => []);  // official coins first, then others with real liquidity
+  const unique = [...new Map(coins.map((c) => [c.address.toLowerCase(), c])).values()]; // one row per contract
+  if (unique.length === 0) {
+    await reply(from, m.id, w(lang).noCoins.replace("{q}", plain(name)));         // "No coin found for ..."
+    return;
+  }
+  if (unique.length === 1) return runVet(supabase, from, m.id, chatId, lang, unique[0].address); // only one: check it straight away
+  await sendCoinChoices(from, m.id, unique, lang);         // several: let them pick (copycats are labelled)
+}
+
+// The full Vet for one contract address (cooldown -> check -> reply -> log). Used for typed, forwarded and tapped coins.
+async function runVet(supabase, from, messageId, chatId, lang, address) {
   // Cooldown: one check per person every 15 seconds
   const { data: last } = await supabase
     .from("vet_bot_log")
@@ -231,19 +293,19 @@ async function handleMessage(m) {
     .limit(1);
   const lastAt = last?.[0]?.at ? new Date(last[0].at).getTime() : 0;
   if (Date.now() - lastAt < COOLDOWN_SECONDS * 1000) {
-    await reply(from, m.id, w(lang).cooldown.replace("{n}", COOLDOWN_SECONDS)); // CHANGED: translated
+    await reply(from, messageId, w(lang).cooldown.replace("{n}", COOLDOWN_SECONDS)); // translated
     return;
   }
 
-  await markReadAndTyping(m.id);                           // blue ticks + "typing..." while we work
+  await markReadAndTyping(messageId);                      // blue ticks + "typing..." while we work
 
   let verdict = "error";
   try {
     const report = await vetToken(address);                // the same engine as goatwatch.app/vet and Telegram
     verdict = report.verdict;
-    await reply(from, m.id, formatReport(report, lang));   // CHANGED: in their language
+    await reply(from, messageId, formatReport(report, lang)); // in their language
   } catch (err) {
-    await reply(from, m.id, `${w(lang).cantCheck} ${plain(translateNote(err.message, lang))}`); // CHANGED
+    await reply(from, messageId, `${w(lang).cantCheck} ${plain(translateNote(err.message, lang))}`);
   }
 
   // Log it (cooldown + growth data). No phone number, no name, no message text.

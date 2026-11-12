@@ -1,5 +1,5 @@
 // src/lib/i18n/wa.js
-// Words for the GOAT WhatsApp bot, in all 10 languages. {n} is filled in by the bot.
+// Words for the GOAT WhatsApp bot, in all 10 languages. (CHANGED: + coin-name search words) {n} is filled in by the bot.
 // Check names and details come from notes.js (the same phrasebook as the website).
 
 export const WA_LANGS = ["en", "fr", "es", "pt", "ar", "hi", "fa", "ha", "yo", "ig"]; // CHANGED: menu order. 10 = WhatsApp's max rows per list, so the next language needs a 2nd section
@@ -45,6 +45,12 @@ export const WA = {
     clean: "Clean",
     fullReport: "Full report",
     disclaimer: "_Automated check. Not financial advice. DYOR._",
+    helpName: "Or just type the coin's name, e.g. *pepe*",                // NEW: coin-name search
+    pickBody: "Which coin do you mean? ✓ = official contract. Copycats often use the same name.",
+    pickButton: "Choose coin",
+    official: "Official",
+    copycat: "Possible copycat",
+    noCoins: "No coin found for \"{q}\". Send the contract address instead.",
   },
   fr: {
     helpTitle: "🐐 *GOAT Vet* : vérification gratuite des cryptos contre les arnaques",
@@ -69,6 +75,12 @@ export const WA = {
     clean: "OK",
     fullReport: "Rapport complet",
     disclaimer: "_Vérification automatique. Pas un conseil financier. Faites vos recherches._",
+    helpName: "Ou tapez simplement son nom, ex. *pepe*",                // NEW: coin-name search
+    pickBody: "De quelle crypto parlez-vous ? ✓ = contrat officiel. Les copies utilisent souvent le même nom.",
+    pickButton: "Choisir",
+    official: "Officiel",
+    copycat: "Copie possible",
+    noCoins: "Aucune crypto trouvée pour « {q} ». Envoyez plutôt l'adresse du contrat.",
   },
   es: {
     helpTitle: "🐐 *GOAT Vet*: revisión gratuita de criptomonedas contra estafas",
@@ -93,6 +105,12 @@ export const WA = {
     clean: "Sin problemas",
     fullReport: "Informe completo",
     disclaimer: "_Revisión automática. No es asesoramiento financiero. Investiga por tu cuenta._",
+    helpName: "O escribe su nombre, p. ej. *pepe*",                // NEW: coin-name search
+    pickBody: "¿Qué moneda quieres decir? ✓ = contrato oficial. Las copias suelen usar el mismo nombre.",
+    pickButton: "Elegir moneda",
+    official: "Oficial",
+    copycat: "Posible copia",
+    noCoins: "No encontré ninguna moneda para «{q}». Envía mejor la dirección del contrato.",
   },
   pt: {
     helpTitle: "🐐 *GOAT Vet*: verificação gratuita de criptomoedas contra golpes",
@@ -117,6 +135,12 @@ export const WA = {
     clean: "Sem problemas",
     fullReport: "Relatório completo",
     disclaimer: "_Verificação automática. Não é conselho financeiro. Faça sua pesquisa._",
+    helpName: "Ou digite o nome, ex.: *pepe*",                // NEW: coin-name search
+    pickBody: "Qual moeda você quer dizer? ✓ = contrato oficial. Cópias costumam usar o mesmo nome.",
+    pickButton: "Escolher moeda",
+    official: "Oficial",
+    copycat: "Possível cópia",
+    noCoins: "Nenhuma moeda encontrada para \"{q}\". Envie o endereço do contrato.",
   },
   ar: {                                                    // NEW: Arabic (WhatsApp shows it right-to-left by itself)
     helpTitle: "🐐 *GOAT Vet*: فحص مجاني للعملات الرقمية ضد الاحتيال",
@@ -141,6 +165,12 @@ export const WA = {
     clean: "سليم",
     fullReport: "التقرير الكامل",
     disclaimer: "_فحص آلي. ليس نصيحة مالية. ابحث بنفسك._",
+    helpName: "أو اكتب اسم العملة فقط، مثل *pepe*",                // NEW: coin-name search
+    pickBody: "أي عملة تقصد؟ ✓ = العقد الرسمي. العملات المقلّدة تستخدم غالبًا الاسم نفسه.",
+    pickButton: "اختر العملة",
+    official: "رسمي",
+    copycat: "قد تكون مقلّدة",
+    noCoins: "لم أجد عملة باسم «{q}». أرسل عنوان العقد بدلًا من ذلك.",
   },
   hi: {                                                    // NEW: Hindi
     helpTitle: "🐐 *GOAT Vet*: क्रिप्टो कॉइन के लिए मुफ़्त स्कैम जांच",
@@ -165,6 +195,12 @@ export const WA = {
     clean: "ठीक",
     fullReport: "पूरी रिपोर्ट",
     disclaimer: "_स्वचालित जांच। वित्तीय सलाह नहीं। खुद रिसर्च करें।_",
+    helpName: "या बस कॉइन का नाम लिखें, जैसे *pepe*",                // NEW: coin-name search
+    pickBody: "आपका मतलब कौन सा कॉइन है? ✓ = आधिकारिक कॉन्ट्रैक्ट। नकली कॉइन अक्सर वही नाम रखते हैं।",
+    pickButton: "कॉइन चुनें",
+    official: "आधिकारिक",
+    copycat: "संभावित नकल",
+    noCoins: "\"{q}\" नाम का कोई कॉइन नहीं मिला। इसकी जगह कॉन्ट्रैक्ट एड्रेस भेजें।",
   },
   fa: {                                                    // NEW: Persian (right-to-left, handled by WhatsApp)
     helpTitle: "🐐 *GOAT Vet*: بررسی رایگان کوین‌ها برای جلوگیری از کلاهبرداری",
@@ -189,6 +225,12 @@ export const WA = {
     clean: "سالم",
     fullReport: "گزارش کامل",
     disclaimer: "_بررسی خودکار. توصیه مالی نیست. خودتان تحقیق کنید._",
+    helpName: "یا فقط نام کوین را بنویسید، مثلاً *pepe*",                // NEW: coin-name search
+    pickBody: "منظورتان کدام کوین است؟ ✓ = قرارداد رسمی. کوین‌های تقلبی اغلب همان نام را دارند.",
+    pickButton: "انتخاب کوین",
+    official: "رسمی",
+    copycat: "احتمالاً تقلبی",
+    noCoins: "کوینی با نام «{q}» پیدا نشد. به‌جای آن آدرس قرارداد را بفرستید.",
   },
   ha: {
     helpTitle: "🐐 *GOAT Vet*: binciken coin kyauta don guje wa zamba",
@@ -213,6 +255,12 @@ export const WA = {
     clean: "Babu matsala",
     fullReport: "Cikakken rahoto",
     disclaimer: "_Bincike na atomatik. Ba shawarar kuɗi ba ne. Ka yi naka binciken._",
+    helpName: "Ko ka rubuta sunan coin kawai, misali *pepe*",                // NEW: coin-name search
+    pickBody: "Wanne coin kake nufi? ✓ = kwantiragi na asali. Masu kwaikwayo sukan yi amfani da suna ɗaya.",
+    pickButton: "Zaɓi coin",
+    official: "Na asali",
+    copycat: "Mai yiwuwa kwaikwayo ne",
+    noCoins: "Ban sami coin mai suna \"{q}\" ba. Aika adireshin kwantiraginsa maimakon haka.",
   },
   yo: {
     helpTitle: "🐐 *GOAT Vet*: àyẹ̀wò coin ọ̀fẹ́ láti yẹra fún jìbìtì",
@@ -237,6 +285,12 @@ export const WA = {
     clean: "Kò sí ìṣòro",
     fullReport: "Ìròyìn kíkún",
     disclaimer: "_Àyẹ̀wò aládàáṣe. Kì í ṣe ìmọ̀ràn owó. Ṣe ìwádìí tìrẹ._",
+    helpName: "Tàbí kàn kọ orúkọ coin náà, bí *pepe*",                // NEW: coin-name search
+    pickBody: "Coin wo ni o ní lọ́kàn? ✓ = contract ojúlówó. Àwọn ayédèrú sábà máa ń lo orúkọ kan náà.",
+    pickButton: "Yan coin",
+    official: "Ojúlówó",
+    copycat: "Ó lè jẹ́ ayédèrú",
+    noCoins: "Mi ò rí coin tó ń jẹ́ \"{q}\". Fi àdírẹ́sì contract rẹ̀ ránṣẹ́ dípò rẹ̀.",
   },
   ig: {
     helpTitle: "🐐 *GOAT Vet*: nyocha coin n'efu iji zere aghụghọ",
@@ -261,6 +315,12 @@ export const WA = {
     clean: "Enweghị nsogbu",
     fullReport: "Akụkọ zuru ezu",
     disclaimer: "_Nyocha akpaaka. Ọ bụghị ndụmọdụ ego. Mee nyocha nke gị._",
+    helpName: "Ma ọ bụ dee aha coin ahụ, dịka *pepe*",                // NEW: coin-name search
+    pickBody: "Kedu coin ị na-ekwu maka ya? ✓ = contract nke ezi. Oyiri na-ejikarị otu aha.",
+    pickButton: "Họrọ coin",
+    official: "Nke ezi",
+    copycat: "Enwere ike ịbụ oyiri",
+    noCoins: "Ahụghị coin aha ya bụ \"{q}\". Zitere m adreesị contract ya kama.",
   },
 };
 
