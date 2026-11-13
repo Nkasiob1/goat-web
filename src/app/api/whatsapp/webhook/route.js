@@ -11,7 +11,9 @@ import { createClient } from "@supabase/supabase-js";
 import { vetToken, searchTokens, cleanQuery, isEvmAddress, isSolAddress } from "../../../../lib/vet"; // the one Vet engine (CHANGED: + name search)
 import { SITE_URL } from "../../../../lib/site";                                      // https://goatwatch.app
 import { translateNote } from "../../../../lib/i18n/notes";                           // NEW: same phrasebook as the website
-import { WA_LANGS, LANG_NAMES, LANG_WORDS, guessLang, w } from "../../../../lib/i18n/wa"; // the bot's words, 10 languages
+import { WA_LANGS, LANG_NAMES, LANG_WORDS, SUB_WORDS, guessLang, w } from "../../../../lib/i18n/wa"; // the bot's words, 10 languages
+import { askGoat } from "../../../../lib/goatAgent";                                  // NEW: GOAT AI (paid chat)
+import { getAccess, gate as aiGate, webAllowed, bumpUsage, loadHistory, saveTurn, saveNickname, today, FREE_AI_CHATS } from "../../../../lib/aiAccess"; // NEW: shared with the website
 
 export const maxDuration = 30;                             // the Vet calls several free APIs: give it time
 
@@ -226,6 +228,43 @@ function findAddress(text) {
 }
 
 // ------------------------------------------------------------
+// GOAT AI (NEW). Access, memory and payments live in lib/aiAccess.js, shared with the website.
+// ------------------------------------------------------------
+
+// Run GOAT AI for one message. Returns true if it replied, false if the normal bot should answer instead.
+async function runAi(supabase, from, messageId, chatId, lang, words, row) {
+  await markReadAndTyping(messageId);
+  const history = await loadHistory(row.code, "whatsapp");
+  const last = history[history.length - 1];
+  if (last?.role === "user") last.content += "\n" + words; // two messages in a row from them: join them
+  else history.push({ role: "user", content: words });
+
+  let ans;
+  try {
+    ans = await askGoat({ history, lang, nickname: row.nickname, allowWeb: webAllowed(row), channel: "whatsapp" });
+  } catch (err) {
+    console.error("GOAT AI error:", err.message);          // visible in Vercel logs
+    return false;                                          // fall back to the normal bot
+  }
+  if (!ans.text && !ans.coins && !ans.report) return false;
+
+  if (ans.text) await reply(from, messageId, ans.text);   // the AI's words first
+  if (ans.coins?.length) await sendCoinChoices(from, messageId, ans.coins, lang);   // then the tap-to-pick list
+  if (ans.report) {
+    await reply(from, messageId, formatReport(ans.report, lang));                   // or the full coin report
+    await supabase.from("vet_bot_log").insert({ chat_id: chatId, chat_type: "whatsapp", chat_title: null, address: ans.report.token.address, verdict: ans.report.verdict, auto: false });
+  }
+  if (ans.nickname) await saveNickname(row, ans.nickname);
+
+  await saveTurn(row.code, "whatsapp", words, [ans.text, ans.memo].filter(Boolean).join("\n")); // memo = what the tools did
+  await bumpUsage(row, ans.searches || 0);
+  return true;
+}
+
+// The subscription link for this person (their GOAT ID is filled in on the pay page)
+const payLink = (code) => `${SITE_URL}/pay?id=${code}&ref=wa-bot`;
+
+// ------------------------------------------------------------
 // HANDLE ONE MESSAGE
 // ------------------------------------------------------------
 
@@ -261,7 +300,32 @@ async function handleMessage(m) {
   }
 
   const address = findAddress(words);
-  if (address) return runVet(supabase, from, m.id, chatId, lang, address); // a contract address: check it
+  if (address) return runVet(supabase, from, m.id, chatId, lang, address); // a contract address: check it (always free)
+
+  // NEW: GOAT AI access (one GOAT ID per person, shared with the website)
+  const row = await getAccess({ chatId });
+
+  // "subscribe" -> their GOAT ID and the payment link on goatwatch.app (Paystack)
+  if (SUB_WORDS.test(words.trim())) {
+    await reply(from, m.id, w(lang).aiSubscribe.replace("{id}", row.code).replace("{link}", payLink(row.code)));
+    return;
+  }
+
+  // GOAT AI answers everything else (free trial, then paid)
+  const access = aiGate(row);
+  if (access.ok) {
+    const answered = await runAi(supabase, from, m.id, chatId, lang, words, row);
+    if (answered) {
+      if (!saved && (row.free_used || 0) === 0) await sendLanguageMenu(from, lang); // very first chat: offer languages too
+      return;
+    }
+  } else if ((access.reason === "trial_over" || access.reason === "cap") && row.last_upsell !== today()) {
+    const t = w(lang);                                     // tell them once a day, not on every message
+    await reply(from, m.id, access.reason === "cap" ? t.aiCap : t.aiUpsell.replace("{n}", FREE_AI_CHATS).replace("{link}", payLink(row.code)));
+    await supabase.from("ai_access").update({ last_upsell: today() }).eq("code", row.code);
+  }
+
+  // Normal (free) bot: greetings get help, coin names get the list
 
   if (GREETINGS.test(words.trim()) || !looksLikeCoinName(words)) {         // "hi", or a long sentence: show how to use GOAT
     await reply(from, m.id, helpText(lang));

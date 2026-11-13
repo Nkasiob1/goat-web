@@ -21,6 +21,9 @@ export const LANG_NAMES = {
 // Words people type to open the language menu (any language)
 export const LANG_WORDS = /^(lang|language|languages|langue|langues|idioma|idiomas|harshe|ede|èdè|asusu|asụsụ|menu|لغة|اللغة|اللغات|भाषा|bhasha|زبان|زبانها|زبان‌ها)$/i; // CHANGED: + Arabic, Hindi, Persian words
 
+// NEW: words that ask for the GOAT AI subscription details
+export const SUB_WORDS = /^(subscribe|subscription|premium|goat ai|my id|goat id|abonner|s'abonner|abonnement|suscribir|suscribirse|assinar|assinatura|اشتراك|सब्सक्राइब|सदस्यता|اشتراک)$/i;
+
 export const WA = {
   en: {
     helpTitle: "🐐 *GOAT Vet*: free scam check for crypto coins",
@@ -51,6 +54,9 @@ export const WA = {
     official: "Official",
     copycat: "Possible copycat",
     noCoins: "No coin found for \"{q}\". Send the contract address instead.",
+    aiUpsell: "🔒 You've used your {n} free *GOAT AI* chats.\nKeep chatting with GOAT AI from ₦500 a week:\n{link}\nChecking coins by address or name stays free.",                // NEW: GOAT AI (paid)
+    aiSubscribe: "⭐ *GOAT AI*\nYour GOAT ID: *{id}*\n\nPay securely on goatwatch.app (card, bank transfer or USSD):\n{link}\n\nIt switches on automatically after payment. One subscription works here and on the website.",
+    aiCap: "⏳ You've reached today's GOAT AI limit. It resets tomorrow. Coin checks by address still work.",
   },
   fr: {
     helpTitle: "🐐 *GOAT Vet* : vérification gratuite des cryptos contre les arnaques",
@@ -81,6 +87,9 @@ export const WA = {
     official: "Officiel",
     copycat: "Copie possible",
     noCoins: "Aucune crypto trouvée pour « {q} ». Envoyez plutôt l'adresse du contrat.",
+    aiUpsell: "🔒 Vous avez utilisé vos {n} discussions *GOAT AI* gratuites.\nContinuez avec GOAT AI à partir de 500 ₦ par semaine :\n{link}\nLa vérification des cryptos par adresse ou par nom reste gratuite.",                // NEW: GOAT AI (paid)
+    aiSubscribe: "⭐ *GOAT AI*\nVotre ID GOAT : *{id}*\n\nPayez en toute sécurité sur goatwatch.app (carte, virement ou USSD) :\n{link}\n\nL'accès s'active automatiquement après le paiement. Un seul abonnement fonctionne ici et sur le site.",
+    aiCap: "⏳ Vous avez atteint la limite GOAT AI du jour. Elle se réinitialise demain. La vérification par adresse fonctionne toujours.",
   },
   es: {
     helpTitle: "🐐 *GOAT Vet*: revisión gratuita de criptomonedas contra estafas",
@@ -111,6 +120,9 @@ export const WA = {
     official: "Oficial",
     copycat: "Posible copia",
     noCoins: "No encontré ninguna moneda para «{q}». Envía mejor la dirección del contrato.",
+    aiUpsell: "🔒 Has usado tus {n} chats gratis de *GOAT AI*.\nSigue con GOAT AI desde ₦500 a la semana:\n{link}\nRevisar monedas por dirección o nombre sigue siendo gratis.",                // NEW: GOAT AI (paid)
+    aiSubscribe: "⭐ *GOAT AI*\nTu ID de GOAT: *{id}*\n\nPaga de forma segura en goatwatch.app (tarjeta, transferencia o USSD):\n{link}\n\nSe activa automáticamente tras el pago. Una sola suscripción sirve aquí y en la web.",
+    aiCap: "⏳ Llegaste al límite de GOAT AI de hoy. Se reinicia mañana. La revisión por dirección sigue funcionando.",
   },
   pt: {
     helpTitle: "🐐 *GOAT Vet*: verificação gratuita de criptomoedas contra golpes",
@@ -141,6 +153,9 @@ export const WA = {
     official: "Oficial",
     copycat: "Possível cópia",
     noCoins: "Nenhuma moeda encontrada para \"{q}\". Envie o endereço do contrato.",
+    aiUpsell: "🔒 Você usou suas {n} conversas grátis do *GOAT AI*.\nContinue com o GOAT AI a partir de ₦500 por semana:\n{link}\nVerificar moedas por endereço ou nome continua grátis.",                // NEW: GOAT AI (paid)
+    aiSubscribe: "⭐ *GOAT AI*\nSeu ID GOAT: *{id}*\n\nPague com segurança em goatwatch.app (cartão, transferência ou USSD):\n{link}\n\nAtiva automaticamente após o pagamento. Uma assinatura vale aqui e no site.",
+    aiCap: "⏳ Você atingiu o limite do GOAT AI de hoje. Ele reinicia amanhã. A verificação por endereço continua funcionando.",
   },
   ar: {                                                    // NEW: Arabic (WhatsApp shows it right-to-left by itself)
     helpTitle: "🐐 *GOAT Vet*: فحص مجاني للعملات الرقمية ضد الاحتيال",
@@ -171,6 +186,9 @@ export const WA = {
     official: "رسمي",
     copycat: "قد تكون مقلّدة",
     noCoins: "لم أجد عملة باسم «{q}». أرسل عنوان العقد بدلًا من ذلك.",
+    aiUpsell: "🔒 لقد استخدمت محادثاتك المجانية الـ {n} مع *GOAT AI*.\nتابع مع GOAT AI ابتداءً من 500 نيرة أسبوعيًا:\n{link}\nفحص العملات بالعنوان أو الاسم يبقى مجانيًا.",                // NEW: GOAT AI (paid)
+    aiSubscribe: "⭐ *GOAT AI*\nمعرّف GOAT الخاص بك: *{id}*\n\nادفع بأمان على goatwatch.app (بطاقة أو تحويل بنكي أو USSD):\n{link}\n\nيتفعّل تلقائيًا بعد الدفع. اشتراك واحد يعمل هنا وعلى الموقع.",
+    aiCap: "⏳ لقد وصلت إلى حد GOAT AI لهذا اليوم. يتجدد غدًا. فحص العملات بالعنوان ما زال يعمل.",
   },
   hi: {                                                    // NEW: Hindi
     helpTitle: "🐐 *GOAT Vet*: क्रिप्टो कॉइन के लिए मुफ़्त स्कैम जांच",
@@ -201,6 +219,9 @@ export const WA = {
     official: "आधिकारिक",
     copycat: "संभावित नकल",
     noCoins: "\"{q}\" नाम का कोई कॉइन नहीं मिला। इसकी जगह कॉन्ट्रैक्ट एड्रेस भेजें।",
+    aiUpsell: "🔒 आपने अपनी {n} मुफ़्त *GOAT AI* चैट इस्तेमाल कर लीं।\n₦500 प्रति सप्ताह से GOAT AI जारी रखें:\n{link}\nएड्रेस या नाम से कॉइन जांच मुफ़्त रहेगी।",                // NEW: GOAT AI (paid)
+    aiSubscribe: "⭐ *GOAT AI*\nआपकी GOAT ID: *{id}*\n\ngoatwatch.app पर सुरक्षित भुगतान करें (कार्ड, बैंक ट्रांसफर या USSD):\n{link}\n\nभुगतान के बाद यह अपने आप चालू हो जाएगा। एक ही सदस्यता यहां और वेबसाइट दोनों पर चलती है।",
+    aiCap: "⏳ आज की GOAT AI सीमा पूरी हो गई है। यह कल फिर शुरू होगी। एड्रेस से कॉइन जांच अभी भी काम करती है।",
   },
   fa: {                                                    // NEW: Persian (right-to-left, handled by WhatsApp)
     helpTitle: "🐐 *GOAT Vet*: بررسی رایگان کوین‌ها برای جلوگیری از کلاهبرداری",
@@ -231,6 +252,9 @@ export const WA = {
     official: "رسمی",
     copycat: "احتمالاً تقلبی",
     noCoins: "کوینی با نام «{q}» پیدا نشد. به‌جای آن آدرس قرارداد را بفرستید.",
+    aiUpsell: "🔒 شما {n} گفتگوی رایگان *GOAT AI* خود را استفاده کرده‌اید.\nادامه با GOAT AI از ۵۰۰ نایرا در هفته:\n{link}\nبررسی کوین با آدرس یا نام رایگان می‌ماند.",                // NEW: GOAT AI (paid)
+    aiSubscribe: "⭐ *GOAT AI*\nشناسه GOAT شما: *{id}*\n\nبا امنیت در goatwatch.app پرداخت کنید (کارت، انتقال بانکی یا USSD):\n{link}\n\nپس از پرداخت خودکار فعال می‌شود. یک اشتراک هم اینجا و هم در سایت کار می‌کند.",
+    aiCap: "⏳ به سقف امروز GOAT AI رسیده‌اید. فردا دوباره فعال می‌شود. بررسی کوین با آدرس همچنان کار می‌کند.",
   },
   ha: {
     helpTitle: "🐐 *GOAT Vet*: binciken coin kyauta don guje wa zamba",
@@ -261,6 +285,9 @@ export const WA = {
     official: "Na asali",
     copycat: "Mai yiwuwa kwaikwayo ne",
     noCoins: "Ban sami coin mai suna \"{q}\" ba. Aika adireshin kwantiraginsa maimakon haka.",
+    aiUpsell: "🔒 Ka yi amfani da hirarrakin *GOAT AI* kyauta guda {n}.\nCi gaba da GOAT AI daga ₦500 a mako:\n{link}\nBinciken coin da adireshi ko suna zai ci gaba da zama kyauta.",                // NEW: GOAT AI (paid)
+    aiSubscribe: "⭐ *GOAT AI*\nGOAT ID ɗinka: *{id}*\n\nBiya cikin aminci a goatwatch.app (kati, tura kuɗi a banki ko USSD):\n{link}\n\nZai kunna kai tsaye bayan biya. Biyan kuɗi ɗaya yana aiki a nan da kuma a shafin yanar gizo.",
+    aiCap: "⏳ Ka kai iyakar GOAT AI ta yau. Za ta sake farawa gobe. Binciken coin da adireshi yana aiki har yanzu.",
   },
   yo: {
     helpTitle: "🐐 *GOAT Vet*: àyẹ̀wò coin ọ̀fẹ́ láti yẹra fún jìbìtì",
@@ -291,6 +318,9 @@ export const WA = {
     official: "Ojúlówó",
     copycat: "Ó lè jẹ́ ayédèrú",
     noCoins: "Mi ò rí coin tó ń jẹ́ \"{q}\". Fi àdírẹ́sì contract rẹ̀ ránṣẹ́ dípò rẹ̀.",
+    aiUpsell: "🔒 O ti lo ìjíròrò *GOAT AI* ọ̀fẹ́ {n} rẹ.\nMáa bá GOAT AI lọ láti ₦500 lọ́sẹ̀:\n{link}\nÀyẹ̀wò coin pẹ̀lú àdírẹ́sì tàbí orúkọ ṣì jẹ́ ọ̀fẹ́.",                // NEW: GOAT AI (paid)
+    aiSubscribe: "⭐ *GOAT AI*\nGOAT ID rẹ: *{id}*\n\nSanwó láìléwu lórí goatwatch.app (káàdì, bank transfer tàbí USSD):\n{link}\n\nYóò tàn fúnra rẹ̀ lẹ́yìn ìsanwó. Ìforúkọsílẹ̀ kan ń ṣiṣẹ́ níbí àti lórí ojú-òpó wẹ́ẹ̀bù.",
+    aiCap: "⏳ O ti dé òpin GOAT AI tòní. Yóò tún bẹ̀rẹ̀ lọ́la. Àyẹ̀wò coin pẹ̀lú àdírẹ́sì ṣì ń ṣiṣẹ́.",
   },
   ig: {
     helpTitle: "🐐 *GOAT Vet*: nyocha coin n'efu iji zere aghụghọ",
@@ -321,6 +351,9 @@ export const WA = {
     official: "Nke ezi",
     copycat: "Enwere ike ịbụ oyiri",
     noCoins: "Ahụghị coin aha ya bụ \"{q}\". Zitere m adreesị contract ya kama.",
+    aiUpsell: "🔒 Ị jirila mkparịta ụka *GOAT AI* n'efu {n} gị.\nGa n'ihu na GOAT AI site na ₦500 kwa izu:\n{link}\nNyocha coin site na adreesị ma ọ bụ aha ka bụ n'efu.",                // NEW: GOAT AI (paid)
+    aiSubscribe: "⭐ *GOAT AI*\nGOAT ID gị: *{id}*\n\nKwụọ ụgwọ n'enweghị nsogbu na goatwatch.app (kaadị, bank transfer ma ọ bụ USSD):\n{link}\n\nỌ ga-agbanye onwe ya mgbe ịkwụchara. Otu ndenye aha na-arụ ọrụ ebe a na na weebụsaịtị.",
+    aiCap: "⏳ Ị ruola oke GOAT AI nke taa. Ọ ga-amalite ọzọ echi. Nyocha coin site na adreesị ka na-arụ ọrụ.",
   },
 };
 

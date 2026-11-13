@@ -3,6 +3,8 @@ import { GeistMono } from "geist/font/mono";
 import InstallPrompt from "@/components/InstallPrompt";   // "Get the GOAT app" banner + service worker
 import SplashScreen from "@/components/SplashScreen";     // drawn once per app launch (not on every page)
 import RefTracker from "@/components/RefTracker";         // remembers and counts ?ref= visits (invisible)
+import AiChat from "@/components/AiChat";                 // NEW: the floating "Ask GOAT AI" chat
+import { Suspense } from "react";                         // NEW: lets AiChat read the page address without blocking prerendering
 import "./globals.css";
 
 export const metadata = {
@@ -63,6 +65,9 @@ export default function RootLayout({ children }) {
         {children}
         <InstallPrompt />
         <RefTracker />                                    {/* invisible; runs on every page, so any ?ref= link is caught */}
+        <Suspense fallback={null}>                        {/* NEW: AiChat reads the URL (usePathname), so it must stream in */}
+          <AiChat />                                      {/* GOAT AI on every page */}
+        </Suspense>
       </body>
     </html>
   );
