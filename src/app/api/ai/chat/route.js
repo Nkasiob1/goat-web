@@ -4,6 +4,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
 import { askGoat } from "../../../../lib/goatAgent";
+import { a } from "../../../../lib/i18n/ai";                   // NEW: the "ask more" hint in their language
 import { getAccess, gate, webAllowed, bumpUsage, loadHistory, saveTurn, saveNickname, isPaid, FREE_AI_CHATS } from "../../../../lib/aiAccess";
 
 export const maxDuration = 60;                              // expert answers + tools can take a while
@@ -66,7 +67,7 @@ export async function POST(request) {
 
   const after = { ...row, free_used: isPaid(row) ? row.free_used : (row.free_used || 0) + 1 };
   return NextResponse.json({
-    text: ans.text,
+    text: ans.truncated ? `${ans.text}\n\n${a("more", lang)}` : ans.text, // NEW: say so when it was cut short
     coins: (ans.coins || []).slice(0, 8).map((c) => ({ symbol: c.symbol, chain: c.chainLabel, official: c.official, copycat: c.copycat, address: c.address })),
     report: ans.report ? { symbol: ans.report.token.symbol, chain: ans.report.token.chainLabel, verdict: ans.report.verdict, address: ans.report.token.address } : null,
     ...status(after),

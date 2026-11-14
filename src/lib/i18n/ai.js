@@ -19,6 +19,7 @@ export const AI = {
     perks: "Expert answers on coins, DeFi and scams · Company Check for platforms like CBEX · Live prices and news · Works on WhatsApp and the website",
     doneOk: "Payment received ✓ GOAT AI is active until {date}.", donePending: "Confirming your payment…",
     doneFail: "We couldn't confirm this payment yet. If you were charged, email support@goatwatch.app with your GOAT ID.",
+    more: "Ask \"more\" for the rest.",          // NEW: shown when a long answer was cut short
     back: "Back to GOAT", badInput: "Check your GOAT ID and email.",
   },
   fr: {
@@ -38,6 +39,7 @@ export const AI = {
     perks: "Réponses d'expert sur les cryptos, la DeFi et les arnaques · Vérification d'entreprises comme CBEX · Prix et actualités en direct · Sur WhatsApp et le site",
     doneOk: "Paiement reçu ✓ GOAT AI est actif jusqu'au {date}.", donePending: "Confirmation du paiement…",
     doneFail: "Nous n'avons pas encore pu confirmer ce paiement. Si vous avez été débité, écrivez à support@goatwatch.app avec votre ID GOAT.",
+    more: "Demandez « plus » pour la suite.",          // NEW: shown when a long answer was cut short
     back: "Retour à GOAT", badInput: "Vérifiez votre ID GOAT et votre e-mail.",
   },
   es: {
@@ -57,6 +59,7 @@ export const AI = {
     perks: "Respuestas expertas sobre monedas, DeFi y estafas · Revisión de empresas como CBEX · Precios y noticias en vivo · En WhatsApp y en la web",
     doneOk: "Pago recibido ✓ GOAT AI está activo hasta el {date}.", donePending: "Confirmando tu pago…",
     doneFail: "Aún no pudimos confirmar este pago. Si te cobraron, escribe a support@goatwatch.app con tu ID de GOAT.",
+    more: "Pide «más» para el resto.",          // NEW: shown when a long answer was cut short
     back: "Volver a GOAT", badInput: "Revisa tu ID de GOAT y tu correo.",
   },
   pt: {
@@ -76,6 +79,7 @@ export const AI = {
     perks: "Respostas especializadas sobre moedas, DeFi e golpes · Verificação de empresas como a CBEX · Preços e notícias ao vivo · No WhatsApp e no site",
     doneOk: "Pagamento recebido ✓ O GOAT AI está ativo até {date}.", donePending: "Confirmando seu pagamento…",
     doneFail: "Ainda não conseguimos confirmar este pagamento. Se você foi cobrado, envie um e-mail para support@goatwatch.app com seu ID GOAT.",
+    more: "Peça \"mais\" para o restante.",          // NEW: shown when a long answer was cut short
     back: "Voltar ao GOAT", badInput: "Verifique seu ID GOAT e o e-mail.",
   },
   ar: {
@@ -95,6 +99,7 @@ export const AI = {
     perks: "إجابات خبيرة عن العملات وDeFi والاحتيال · فحص الشركات مثل CBEX · أسعار وأخبار مباشرة · على واتساب والموقع",
     doneOk: "تم استلام الدفع ✓ GOAT AI مفعّل حتى {date}.", donePending: "جارٍ تأكيد الدفع…",
     doneFail: "لم نتمكن من تأكيد هذا الدفع بعد. إذا خُصم المبلغ، راسل support@goatwatch.app مع معرّف GOAT.",
+    more: "اطلب «المزيد» لبقية الإجابة.",          // NEW: shown when a long answer was cut short
     back: "العودة إلى GOAT", badInput: "تحقّق من معرّف GOAT والبريد الإلكتروني.",
   },
   hi: {
@@ -114,6 +119,7 @@ export const AI = {
     perks: "कॉइन, DeFi और स्कैम पर विशेषज्ञ जवाब · CBEX जैसे प्लेटफ़ॉर्म की कंपनी जांच · लाइव कीमतें और खबरें · WhatsApp और वेबसाइट दोनों पर",
     doneOk: "भुगतान मिल गया ✓ GOAT AI {date} तक सक्रिय है।", donePending: "आपका भुगतान कन्फ़र्म हो रहा है…",
     doneFail: "हम अभी यह भुगतान कन्फ़र्म नहीं कर सके। अगर पैसे कटे हैं, तो अपनी GOAT ID के साथ support@goatwatch.app पर ईमेल करें।",
+    more: "बाकी के लिए \"more\" पूछें।",          // NEW: shown when a long answer was cut short
     back: "GOAT पर वापस जाएं", badInput: "अपनी GOAT ID और ईमेल जांचें।",
   },
   fa: {
@@ -133,6 +139,7 @@ export const AI = {
     perks: "پاسخ‌های تخصصی درباره کوین‌ها، DeFi و کلاهبرداری · بررسی شرکت‌هایی مثل CBEX · قیمت و اخبار زنده · در واتساپ و سایت",
     doneOk: "پرداخت دریافت شد ✓ GOAT AI تا {date} فعال است.", donePending: "در حال تأیید پرداخت…",
     doneFail: "هنوز نتوانستیم این پرداخت را تأیید کنیم. اگر مبلغ کسر شده، با شناسه GOAT به support@goatwatch.app ایمیل بزنید.",
+    more: "برای ادامه «بیشتر» را بپرسید.",          // NEW: shown when a long answer was cut short
     back: "بازگشت به GOAT", badInput: "شناسه GOAT و ایمیل را بررسی کنید.",
   },
   ha: {
@@ -152,6 +159,7 @@ export const AI = {
     perks: "Amsoshin ƙwararru kan coins, DeFi da zamba · Binciken kamfanoni kamar CBEX · Farashi da labarai kai tsaye · A WhatsApp da shafin yanar gizo",
     doneOk: "An karɓi kuɗi ✓ GOAT AI yana aiki har zuwa {date}.", donePending: "Ana tabbatar da biyanka…",
     doneFail: "Ba mu iya tabbatar da wannan biyan ba tukuna. Idan an cire kuɗi, aika imel zuwa support@goatwatch.app tare da GOAT ID ɗinka.",
+    more: "Tambayi \"more\" don sauran.",          // NEW: shown when a long answer was cut short
     back: "Koma GOAT", badInput: "Duba GOAT ID da imel ɗinka.",
   },
   yo: {
@@ -171,6 +179,7 @@ export const AI = {
     perks: "Ìdáhùn amòye lórí coin, DeFi àti jìbìtì · Àyẹ̀wò ilé-iṣẹ́ bí CBEX · Iye owó àti ìròyìn lójú ẹsẹ̀ · Lórí WhatsApp àti ojú-òpó wẹ́ẹ̀bù",
     doneOk: "A ti gba ìsanwó ✓ GOAT AI ń ṣiṣẹ́ títí di {date}.", donePending: "À ń jẹ́rìí ìsanwó rẹ…",
     doneFail: "A kò tíì lè jẹ́rìí ìsanwó yìí. Bí wọ́n bá ti yọ owó, kọ ímeèlì sí support@goatwatch.app pẹ̀lú GOAT ID rẹ.",
+    more: "Béèrè \"more\" fún ìyókù.",          // NEW: shown when a long answer was cut short
     back: "Padà sí GOAT", badInput: "Ṣàyẹ̀wò GOAT ID àti ímeèlì rẹ.",
   },
   ig: {
@@ -190,6 +199,7 @@ export const AI = {
     perks: "Azịza ọkachamara gbasara coin, DeFi na aghụghọ · Nyocha ụlọ ọrụ dịka CBEX · Ọnụ ahịa na akụkọ ozugbo · Na WhatsApp na weebụsaịtị",
     doneOk: "Anatala ụgwọ ✓ GOAT AI na-arụ ọrụ ruo {date}.", donePending: "Anyị na-akwado ịkwụ ụgwọ gị…",
     doneFail: "Anyị enwebeghị ike ịkwado ịkwụ ụgwọ a. Ọ bụrụ na ewepụrụ ego, zitere support@goatwatch.app email na GOAT ID gị.",
+    more: "Jụọ \"more\" maka nke fọdụrụ.",          // NEW: shown when a long answer was cut short
     back: "Laghachi na GOAT", badInput: "Lelee GOAT ID na email gị.",
   },
 };

@@ -24,7 +24,8 @@ LANGUAGE: Reply in ${LANG_FULL[lang] || "English"}. Keep crypto terms people kno
 ${nickname ? `NAME: The person asked to be called "${nickname}". Use it naturally, not in every message.` : `NAME: If it feels natural early on, ask what they'd like to be called; when they tell you, call save_name.`}
 
 HOW TO ANSWER
-- Simple questions or small talk: 1-4 short lines, friendly.
+- Simple questions or small talk: 1-4 short lines, friendly. If they just greet you ("hi", "hello"), greet them back and ask how you can help. Do NOT repeat or redo an earlier answer unless they ask.
+- LENGTH: ${onSite ? "keep answers under about 3,500 characters." : "keep every WhatsApp reply under about 2,500 characters (roughly 350 words)."} For big topics, give the most useful part first and end with an offer like "Want the rest? Reply *more*." Never start a list you can't finish.
 - Complex questions: a real expert answer. Explain the mechanism (how it actually works), the specific risks, and what the person can check themselves. Use short paragraphs or numbered points, up to about 20 lines. Offer to go deeper on one part.
 - Give concrete numbers and examples when you have them from tools. Say plainly when something is uncertain or when you don't know.
 - ${onSite ? "Formatting: plain text with line breaks and numbered lines; **bold** sparingly. No tables, no markdown links (paste plain URLs or site paths like /vet)." : "WhatsApp formatting only: *bold* with single asterisks, _italic_, numbered lines. No headings, no tables, no markdown links (paste plain URLs)."}
@@ -167,12 +168,12 @@ async function runTool(name, input, out) {
   }
 }
 
-async function callClaude(body) {
+async function callClaude(body, timeoutMs = 25000) {
   const res = await fetch(API_URL, {
     method: "POST",
     headers: { "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(25000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) throw new Error(`Claude API ${res.status}: ${(await res.text()).slice(0, 200)}`);
   return res.json();
@@ -182,7 +183,8 @@ async function callClaude(body) {
 // MAIN: history = [{ role, content }] ending with the new user message
 // Returns { text, coins, report, nickname, memo, searches }
 // ------------------------------------------------------------
-export async function askGoat({ history, lang, nickname, allowWeb, channel = "whatsapp" }) {
+export async function askGoat({ history, lang, nickname, allowWeb, channel = "whatsapp", budgetMs = 45000 }) {
+  const started = Date.now();                               // NEW: a time budget, so we always answer before the server limit
   const out = {};
   const memo = [];                                          // what tools did, saved in memory for follow-ups
   const sources = new Map();                                // web citations -> shown to the user
@@ -191,15 +193,18 @@ export async function askGoat({ history, lang, nickname, allowWeb, channel = "wh
   const messages = history.map((m) => ({ role: m.role, content: m.content }));
   let finalText = "";
 
+  let truncated = false;                                     // NEW: did the answer hit the length limit?
   for (let round = 0; round <= MAX_ROUNDS; round++) {
+    const left = budgetMs - (Date.now() - started);          // time left in our budget
+    const lastChance = round === MAX_ROUNDS || left < 15000; // little time left: answer now, no more tools or searches
     const res = await callClaude({
       model: MODEL,
-      max_tokens: 1500,                                     // room for a full expert answer
+      max_tokens: 3000,                                     // room for a full expert answer (the prompt keeps it shorter)
       system: [{ type: "text", text: systemPrompt(lang, nickname, allowWeb, channel), cache_control: { type: "ephemeral" } }],
       tools,
-      tool_choice: round < MAX_ROUNDS ? { type: "auto" } : { type: "none" }, // last round: must answer
+      tool_choice: lastChance ? { type: "none" } : { type: "auto" }, // last chance: must answer now
       messages,
-    });
+    }, Math.max(8000, Math.min(30000, left - 2000)));       // never wait past our budget
 
     searches += res.usage?.server_tool_use?.web_search_requests || 0;
     if (res.stop_reason === "refusal") break;
@@ -215,7 +220,15 @@ export async function askGoat({ history, lang, nickname, allowWeb, channel = "wh
       continue;
     }
     const calls = blocks.filter((b) => b.type === "tool_use"); // OUR tools only (web search runs on Anthropic's side)
-    if (!calls.length) { finalText = text; break; }
+    if (!calls.length) {
+      finalText = text;
+      if (res.stop_reason === "max_tokens") {               // NEW: cut off mid-sentence -> end at the last full sentence
+        truncated = true;
+        const cut = Math.max(finalText.lastIndexOf(". "), finalText.lastIndexOf(".\n"), finalText.lastIndexOf("\n\n"), finalText.lastIndexOf("? "), finalText.lastIndexOf("! "));
+        if (cut > finalText.length * 0.5) finalText = finalText.slice(0, cut + 1).trim();
+      }
+      break;
+    }
 
     messages.push({ role: "assistant", content: blocks });  // send back EVERY block unchanged (web results must stay intact)
     const results = [];
@@ -233,5 +246,5 @@ export async function askGoat({ history, lang, nickname, allowWeb, channel = "wh
   if (finalText && sources.size) {                          // web answers always show where they came from
     finalText += "\n\n" + [...sources.keys()].map((u) => `🔗 ${u}`).join("\n");
   }
-  return { text: finalText, ...out, memo: memo.join(" "), searches };
+  return { text: finalText, ...out, memo: memo.join(" "), searches, truncated };
 }

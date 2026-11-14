@@ -15,7 +15,7 @@ import { WA_LANGS, LANG_NAMES, LANG_WORDS, SUB_WORDS, guessLang, w } from "../..
 import { askGoat } from "../../../../lib/goatAgent";                                  // NEW: GOAT AI (paid chat)
 import { getAccess, gate as aiGate, webAllowed, bumpUsage, loadHistory, saveTurn, saveNickname, today, FREE_AI_CHATS } from "../../../../lib/aiAccess"; // NEW: shared with the website
 
-export const maxDuration = 30;                             // the Vet calls several free APIs: give it time
+export const maxDuration = 60;                             // CHANGED: GOAT AI with web search needs up to ~50s (was 30: answers got killed)
 
 const COOLDOWN_SECONDS = 15;                               // one check per person every 15s (protects free API limits)
 const API_VERSION = process.env.WHATSAPP_API_VERSION || "v23.0"; // Meta Graph API version
@@ -98,6 +98,21 @@ const reply = (to, messageId, text) =>
     type: "text",
     text: { body: text.slice(0, 4000), preview_url: false }, // WhatsApp's limit is 4096 characters
   });
+
+// NEW: long answers are split into parts at paragraph breaks (WhatsApp allows ~4,096 characters per message)
+async function replyLong(to, messageId, text) {
+  const parts = [];
+  let rest = text.trim();
+  while (rest.length > 3800) {
+    let cut = rest.lastIndexOf("\n\n", 3800);            // best: between paragraphs
+    if (cut < 1500) cut = rest.lastIndexOf("\n", 3800);   // else: between lines
+    if (cut < 1500) cut = rest.lastIndexOf(" ", 3800);     // else: between words
+    parts.push(rest.slice(0, cut).trim());
+    rest = rest.slice(cut).trim();
+  }
+  parts.push(rest);
+  for (const part of parts) await reply(to, messageId, part); // in order, one after another
+}
 
 // NEW: the tap-to-choose language menu (a WhatsApp "list" message)
 function sendLanguageMenu(to, lang) {
@@ -234,6 +249,10 @@ function findAddress(text) {
 // Run GOAT AI for one message. Returns true if it replied, false if the normal bot should answer instead.
 async function runAi(supabase, from, messageId, chatId, lang, words, row) {
   await markReadAndTyping(messageId);
+  const t = w(lang);
+  // NEW: if the answer takes more than 10 seconds (web search), say so, so they know we're on it
+  let working = false;
+  const timer = setTimeout(() => { working = true; reply(from, messageId, t.aiWorking).catch(() => {}); }, 10000);
   const history = await loadHistory(row.code, "whatsapp");
   const last = history[history.length - 1];
   if (last?.role === "user") last.content += "\n" + words; // two messages in a row from them: join them
@@ -241,14 +260,20 @@ async function runAi(supabase, from, messageId, chatId, lang, words, row) {
 
   let ans;
   try {
-    ans = await askGoat({ history, lang, nickname: row.nickname, allowWeb: webAllowed(row), channel: "whatsapp" });
+    ans = await askGoat({ history, lang, nickname: row.nickname, allowWeb: webAllowed(row), channel: "whatsapp", budgetMs: 45000 });
   } catch (err) {
     console.error("GOAT AI error:", err.message);          // visible in Vercel logs
-    return false;                                          // fall back to the normal bot
+    ans = null;
+  } finally {
+    clearTimeout(timer);                                   // answered (or failed) in time: no "one moment" needed
   }
-  if (!ans.text && !ans.coins && !ans.report) return false;
+  if (!ans || (!ans.text && !ans.coins && !ans.report)) {
+    if (looksLikeCoinName(words) && !working) return false; // a coin name: the normal bot's search can still help
+    await reply(from, messageId, t.aiBusy);                // CHANGED: say sorry instead of sending the help menu
+    return true;
+  }
 
-  if (ans.text) await reply(from, messageId, ans.text);   // the AI's words first
+  if (ans.text) await replyLong(from, messageId, ans.truncated ? `${ans.text}\n\n${t.aiMore}` : ans.text); // CHANGED: never cut off
   if (ans.coins?.length) await sendCoinChoices(from, messageId, ans.coins, lang);   // then the tap-to-pick list
   if (ans.report) {
     await reply(from, messageId, formatReport(ans.report, lang));                   // or the full coin report
@@ -269,6 +294,11 @@ const payLink = (code) => `${SITE_URL}/pay?id=${code}&ref=wa-bot`;
 // ------------------------------------------------------------
 
 async function handleMessage(m) {
+  // NEW: Meta sometimes delivers the same message again (e.g. after a slow reply). Handle each message ONCE.
+  if (m.id) {
+    const { error } = await db().from("wa_seen").insert({ id: m.id });
+    if (error?.code === "23505") return;                   // 23505 = already in the table = already handled
+  }
   const from = m.from;                                     // the sender's WhatsApp number (in memory only)
   const supabase = db();
   const chatId = chatIdFor(from);                          // scrambled id, safe to store
