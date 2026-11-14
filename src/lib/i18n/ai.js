@@ -20,6 +20,7 @@ export const AI = {
     doneOk: "Payment received ✓ GOAT AI is active until {date}.", donePending: "Confirming your payment…",
     doneFail: "We couldn't confirm this payment yet. If you were charged, email support@goatwatch.app with your GOAT ID.",
     more: "Ask \"more\" for the rest.",          // NEW: shown when a long answer was cut short
+    agreePre: "By paying, you agree to our", agreeTerms: "Terms of Use (including refunds)", agreeAnd: "and", agreePrivacy: "Privacy Policy", // NEW: pay-page consent line
     back: "Back to GOAT", badInput: "Check your GOAT ID and email.",
   },
   fr: {
@@ -40,6 +41,7 @@ export const AI = {
     doneOk: "Paiement reçu ✓ GOAT AI est actif jusqu'au {date}.", donePending: "Confirmation du paiement…",
     doneFail: "Nous n'avons pas encore pu confirmer ce paiement. Si vous avez été débité, écrivez à support@goatwatch.app avec votre ID GOAT.",
     more: "Demandez « plus » pour la suite.",          // NEW: shown when a long answer was cut short
+    agreePre: "En payant, vous acceptez nos", agreeTerms: "Conditions d'utilisation (y compris les remboursements)", agreeAnd: "et notre", agreePrivacy: "Politique de confidentialité", // NEW: pay-page consent line
     back: "Retour à GOAT", badInput: "Vérifiez votre ID GOAT et votre e-mail.",
   },
   es: {
@@ -60,6 +62,7 @@ export const AI = {
     doneOk: "Pago recibido ✓ GOAT AI está activo hasta el {date}.", donePending: "Confirmando tu pago…",
     doneFail: "Aún no pudimos confirmar este pago. Si te cobraron, escribe a support@goatwatch.app con tu ID de GOAT.",
     more: "Pide «más» para el resto.",          // NEW: shown when a long answer was cut short
+    agreePre: "Al pagar, aceptas nuestros", agreeTerms: "Términos de uso (incluidos los reembolsos)", agreeAnd: "y nuestra", agreePrivacy: "Política de privacidad", // NEW: pay-page consent line
     back: "Volver a GOAT", badInput: "Revisa tu ID de GOAT y tu correo.",
   },
   pt: {
@@ -80,6 +83,7 @@ export const AI = {
     doneOk: "Pagamento recebido ✓ O GOAT AI está ativo até {date}.", donePending: "Confirmando seu pagamento…",
     doneFail: "Ainda não conseguimos confirmar este pagamento. Se você foi cobrado, envie um e-mail para support@goatwatch.app com seu ID GOAT.",
     more: "Peça \"mais\" para o restante.",          // NEW: shown when a long answer was cut short
+    agreePre: "Ao pagar, você concorda com nossos", agreeTerms: "Termos de Uso (incluindo reembolsos)", agreeAnd: "e nossa", agreePrivacy: "Política de Privacidade", // NEW: pay-page consent line
     back: "Voltar ao GOAT", badInput: "Verifique seu ID GOAT e o e-mail.",
   },
   ar: {
@@ -100,6 +104,7 @@ export const AI = {
     doneOk: "تم استلام الدفع ✓ GOAT AI مفعّل حتى {date}.", donePending: "جارٍ تأكيد الدفع…",
     doneFail: "لم نتمكن من تأكيد هذا الدفع بعد. إذا خُصم المبلغ، راسل support@goatwatch.app مع معرّف GOAT.",
     more: "اطلب «المزيد» لبقية الإجابة.",          // NEW: shown when a long answer was cut short
+    agreePre: "بالدفع، فإنك توافق على", agreeTerms: "شروط الاستخدام (بما فيها الاسترداد)", agreeAnd: "و", agreePrivacy: "سياسة الخصوصية", // NEW: pay-page consent line
     back: "العودة إلى GOAT", badInput: "تحقّق من معرّف GOAT والبريد الإلكتروني.",
   },
   hi: {
@@ -120,6 +125,7 @@ export const AI = {
     doneOk: "भुगतान मिल गया ✓ GOAT AI {date} तक सक्रिय है।", donePending: "आपका भुगतान कन्फ़र्म हो रहा है…",
     doneFail: "हम अभी यह भुगतान कन्फ़र्म नहीं कर सके। अगर पैसे कटे हैं, तो अपनी GOAT ID के साथ support@goatwatch.app पर ईमेल करें।",
     more: "बाकी के लिए \"more\" पूछें।",          // NEW: shown when a long answer was cut short
+    agreePre: "भुगतान करके आप हमारी", agreeTerms: "उपयोग की शर्तों (रिफ़ंड सहित)", agreeAnd: "और", agreePrivacy: "गोपनीयता नीति से सहमत होते हैं", // NEW: pay-page consent line
     back: "GOAT पर वापस जाएं", badInput: "अपनी GOAT ID और ईमेल जांचें।",
   },
   fa: {
@@ -140,6 +146,7 @@ export const AI = {
     doneOk: "پرداخت دریافت شد ✓ GOAT AI تا {date} فعال است.", donePending: "در حال تأیید پرداخت…",
     doneFail: "هنوز نتوانستیم این پرداخت را تأیید کنیم. اگر مبلغ کسر شده، با شناسه GOAT به support@goatwatch.app ایمیل بزنید.",
     more: "برای ادامه «بیشتر» را بپرسید.",          // NEW: shown when a long answer was cut short
+    agreePre: "با پرداخت، با", agreeTerms: "شرایط استفاده (شامل بازپرداخت)", agreeAnd: "و", agreePrivacy: "سیاست حریم خصوصی ما موافقت می‌کنید", // NEW: pay-page consent line
     back: "بازگشت به GOAT", badInput: "شناسه GOAT و ایمیل را بررسی کنید.",
   },
   ha: {
@@ -160,6 +167,7 @@ export const AI = {
     doneOk: "An karɓi kuɗi ✓ GOAT AI yana aiki har zuwa {date}.", donePending: "Ana tabbatar da biyanka…",
     doneFail: "Ba mu iya tabbatar da wannan biyan ba tukuna. Idan an cire kuɗi, aika imel zuwa support@goatwatch.app tare da GOAT ID ɗinka.",
     more: "Tambayi \"more\" don sauran.",          // NEW: shown when a long answer was cut short
+    agreePre: "Ta biya, ka amince da", agreeTerms: "Sharuɗɗan Amfani (har da mayar da kuɗi)", agreeAnd: "da", agreePrivacy: "Manufar Sirri", // NEW: pay-page consent line
     back: "Koma GOAT", badInput: "Duba GOAT ID da imel ɗinka.",
   },
   yo: {
@@ -180,6 +188,7 @@ export const AI = {
     doneOk: "A ti gba ìsanwó ✓ GOAT AI ń ṣiṣẹ́ títí di {date}.", donePending: "À ń jẹ́rìí ìsanwó rẹ…",
     doneFail: "A kò tíì lè jẹ́rìí ìsanwó yìí. Bí wọ́n bá ti yọ owó, kọ ímeèlì sí support@goatwatch.app pẹ̀lú GOAT ID rẹ.",
     more: "Béèrè \"more\" fún ìyókù.",          // NEW: shown when a long answer was cut short
+    agreePre: "Nípa sísanwó, o gbà sí", agreeTerms: "Àwọn Òfin Lílò (pẹ̀lú ìdápadà owó)", agreeAnd: "àti", agreePrivacy: "Ìlànà Àṣírí wa", // NEW: pay-page consent line
     back: "Padà sí GOAT", badInput: "Ṣàyẹ̀wò GOAT ID àti ímeèlì rẹ.",
   },
   ig: {
@@ -200,6 +209,7 @@ export const AI = {
     doneOk: "Anatala ụgwọ ✓ GOAT AI na-arụ ọrụ ruo {date}.", donePending: "Anyị na-akwado ịkwụ ụgwọ gị…",
     doneFail: "Anyị enwebeghị ike ịkwado ịkwụ ụgwọ a. Ọ bụrụ na ewepụrụ ego, zitere support@goatwatch.app email na GOAT ID gị.",
     more: "Jụọ \"more\" maka nke fọdụrụ.",          // NEW: shown when a long answer was cut short
+    agreePre: "Site n'ịkwụ ụgwọ, ị kwenyere na", agreeTerms: "Usoro Ojiji (gụnyere nkwụghachi)", agreeAnd: "na", agreePrivacy: "Iwu Nzuzo anyị", // NEW: pay-page consent line
     back: "Laghachi na GOAT", badInput: "Lelee GOAT ID na email gị.",
   },
 };

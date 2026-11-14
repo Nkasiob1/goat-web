@@ -34,6 +34,7 @@ export async function getAccess({ chatId, userId }) {
     const fresh = chatId ? { code: codeForChat(chatId), chat_id: chatId } : { code: codeForUser(userId), user_id: userId };
     const { data } = await db.from("ai_access").upsert(fresh, { onConflict: "code" }).select().single();
     row = data || { ...fresh, free_used: 0, day_count: 0, day_searches: 0 };
+    row = { ...row, isNew: true };                         // NEW: first contact ever (used for the one-time terms notice)
   }
   return row;
 }

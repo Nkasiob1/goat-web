@@ -26,6 +26,7 @@ export const SUB_WORDS = /^(subscribe|subscription|premium|goat ai|my id|goat id
 
 export const WA = {
   en: {
+    legalNotice: "👋 Welcome to *GOAT Watch*.\nBy using GOAT you agree to our Terms (goatwatch.app/terms) and Privacy Policy (goatwatch.app/privacy). GOAT is for people aged 18 and over, and nothing it says is financial advice.",          // NEW: one-time notice for new people
     helpTitle: "🐐 *GOAT Vet*: free scam check for crypto coins",
     helpSend: "Send me any coin's contract address and I'll check it for you:",
     helpForward: "You can also forward a coin from any group. I'll reply with the verdict.",
@@ -62,6 +63,7 @@ export const WA = {
     aiMore: "_Reply *more* for the rest._",
   },
   fr: {
+    legalNotice: "👋 Bienvenue sur *GOAT Watch*.\nEn utilisant GOAT, vous acceptez nos Conditions (goatwatch.app/terms) et notre Politique de confidentialité (goatwatch.app/privacy). GOAT est réservé aux personnes de 18 ans et plus, et rien de ce qu'il dit n'est un conseil financier.",          // NEW: one-time notice for new people
     helpTitle: "🐐 *GOAT Vet* : vérification gratuite des cryptos contre les arnaques",
     helpSend: "Envoyez-moi l'adresse du contrat de n'importe quel coin et je la vérifie pour vous :",
     helpForward: "Vous pouvez aussi transférer un coin depuis un groupe. Je réponds avec le verdict.",
@@ -98,6 +100,7 @@ export const WA = {
     aiMore: "_Répondez *plus* pour la suite._",
   },
   es: {
+    legalNotice: "👋 Bienvenido a *GOAT Watch*.\nAl usar GOAT aceptas nuestros Términos (goatwatch.app/terms) y nuestra Política de privacidad (goatwatch.app/privacy). GOAT es para mayores de 18 años y nada de lo que dice es asesoramiento financiero.",          // NEW: one-time notice for new people
     helpTitle: "🐐 *GOAT Vet*: revisión gratuita de criptomonedas contra estafas",
     helpSend: "Envíame la dirección del contrato de cualquier moneda y la reviso por ti:",
     helpForward: "También puedes reenviar una moneda desde cualquier grupo. Te respondo con el veredicto.",
@@ -134,6 +137,7 @@ export const WA = {
     aiMore: "_Responde *más* para el resto._",
   },
   pt: {
+    legalNotice: "👋 Bem-vindo ao *GOAT Watch*.\nAo usar o GOAT, você concorda com nossos Termos (goatwatch.app/terms) e nossa Política de Privacidade (goatwatch.app/privacy). O GOAT é para maiores de 18 anos, e nada do que ele diz é conselho financeiro.",          // NEW: one-time notice for new people
     helpTitle: "🐐 *GOAT Vet*: verificação gratuita de criptomoedas contra golpes",
     helpSend: "Envie o endereço do contrato de qualquer moeda e eu verifico para você:",
     helpForward: "Você também pode encaminhar uma moeda de qualquer grupo. Eu respondo com o veredito.",
@@ -170,6 +174,7 @@ export const WA = {
     aiMore: "_Responda *mais* para o restante._",
   },
   ar: {                                                    // NEW: Arabic (WhatsApp shows it right-to-left by itself)
+    legalNotice: "👋 مرحبًا بك في *GOAT Watch*.\nباستخدامك GOAT فإنك توافق على شروط الاستخدام (goatwatch.app/terms) وسياسة الخصوصية (goatwatch.app/privacy). GOAT مخصص لمن بلغوا 18 عامًا فأكثر، ولا شيء مما يقوله نصيحة مالية.",          // NEW: one-time notice for new people
     helpTitle: "🐐 *GOAT Vet*: فحص مجاني للعملات الرقمية ضد الاحتيال",
     helpSend: "أرسل لي عنوان عقد أي عملة وسأفحصها لك:",
     helpForward: "يمكنك أيضًا إعادة توجيه عملة من أي مجموعة. سأرد عليك بالنتيجة.",
@@ -206,6 +211,7 @@ export const WA = {
     aiMore: "_أرسل *المزيد* لبقية الإجابة._",
   },
   hi: {                                                    // NEW: Hindi
+    legalNotice: "👋 *GOAT Watch* में आपका स्वागत है।\nGOAT इस्तेमाल करके आप हमारी शर्तों (goatwatch.app/terms) और गोपनीयता नीति (goatwatch.app/privacy) से सहमत होते हैं। GOAT 18 साल और उससे ज़्यादा उम्र के लोगों के लिए है, और इसकी कोई भी बात वित्तीय सलाह नहीं है।",          // NEW: one-time notice for new people
     helpTitle: "🐐 *GOAT Vet*: क्रिप्टो कॉइन के लिए मुफ़्त स्कैम जांच",
     helpSend: "किसी भी कॉइन का कॉन्ट्रैक्ट एड्रेस भेजें, मैं आपके लिए जांच करूंगा:",
     helpForward: "आप किसी भी ग्रुप से कॉइन फॉरवर्ड भी कर सकते हैं। मैं नतीजा भेजूंगा।",
@@ -242,6 +248,7 @@ export const WA = {
     aiMore: "_बाकी के लिए *more* लिखें।_",
   },
   fa: {                                                    // NEW: Persian (right-to-left, handled by WhatsApp)
+    legalNotice: "👋 به *GOAT Watch* خوش آمدید.\nبا استفاده از GOAT با شرایط استفاده (goatwatch.app/terms) و سیاست حریم خصوصی (goatwatch.app/privacy) ما موافقت می‌کنید. GOAT برای افراد ۱۸ سال و بالاتر است و هیچ‌چیز آن توصیه مالی نیست.",          // NEW: one-time notice for new people
     helpTitle: "🐐 *GOAT Vet*: بررسی رایگان کوین‌ها برای جلوگیری از کلاهبرداری",
     helpSend: "آدرس قرارداد هر کوینی را برایم بفرستید تا آن را بررسی کنم:",
     helpForward: "می‌توانید کوین را از هر گروهی فوروارد کنید. با نتیجه پاسخ می‌دهم.",
@@ -278,6 +285,7 @@ export const WA = {
     aiMore: "_برای ادامه *بیشتر* را بفرستید._",
   },
   ha: {
+    legalNotice: "👋 Barka da zuwa *GOAT Watch*.\nTa amfani da GOAT ka amince da Sharuɗɗanmu (goatwatch.app/terms) da Manufar Sirri (goatwatch.app/privacy). GOAT na mutane masu shekaru 18 zuwa sama ne, kuma babu abin da yake faɗa da ke shawarar kuɗi.",          // NEW: one-time notice for new people
     helpTitle: "🐐 *GOAT Vet*: binciken coin kyauta don guje wa zamba",
     helpSend: "Aiko min adireshin kwantiragin kowane coin, zan duba maka:",
     helpForward: "Kana iya tura coin daga kowane rukuni. Zan ba ka amsa da sakamakon.",
@@ -314,6 +322,7 @@ export const WA = {
     aiMore: "_Amsa da *more* don sauran._",
   },
   yo: {
+    legalNotice: "👋 Ẹ káàbọ̀ sí *GOAT Watch*.\nNípa lílo GOAT, o gbà sí Àwọn Òfin wa (goatwatch.app/terms) àti Ìlànà Àṣírí wa (goatwatch.app/privacy). GOAT wà fún àwọn tó ti pé ọmọ ọdún 18 sókè, kò sì sí ohun tó sọ tó jẹ́ ìmọ̀ràn owó.",          // NEW: one-time notice for new people
     helpTitle: "🐐 *GOAT Vet*: àyẹ̀wò coin ọ̀fẹ́ láti yẹra fún jìbìtì",
     helpSend: "Fi àdírẹ́sì contract coin èyíkéyìí ránṣẹ́ sí mi, màá ṣàyẹ̀wò rẹ̀ fún ọ:",
     helpForward: "O tún lè fi coin ránṣẹ́ láti inú ẹgbẹ́ èyíkéyìí. Màá dá ọ lóhùn pẹ̀lú àbájáde.",
@@ -350,6 +359,7 @@ export const WA = {
     aiMore: "_Fèsì *more* fún ìyókù._",
   },
   ig: {
+    legalNotice: "👋 Nnọọ na *GOAT Watch*.\nSite n'iji GOAT, ị kwenyere na Usoro anyị (goatwatch.app/terms) na Iwu Nzuzo anyị (goatwatch.app/privacy). GOAT bụ maka ndị gbara afọ 18 gaa n'ihu, ọ dịghịkwa ihe ọ na-ekwu bụ ndụmọdụ ego.",          // NEW: one-time notice for new people
     helpTitle: "🐐 *GOAT Vet*: nyocha coin n'efu iji zere aghụghọ",
     helpSend: "Zitere m adreesị contract nke coin ọ bụla, m ga-enyocha ya maka gị:",
     helpForward: "Ị nwekwara ike ibuga coin site n'otu ọ bụla. M ga-aza gị na nsonaazụ.",

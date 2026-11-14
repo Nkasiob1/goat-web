@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";                              // NEW: links to the Terms and Privacy pages
 import { supabase } from "@/lib/supabase";
 import { useLang } from "@/lib/i18n/useLang";
 import { a } from "@/lib/i18n/ai";
@@ -97,6 +98,13 @@ function PayForm() {
           {a("pay", lang, { price })}
         </button>
         <p className="text-center text-xs text-stone">{a("secure", lang)}</p>
+        {/* NEW: consent line, so buyers see the terms and refund rules before paying */}
+        <p className="text-center text-xs text-stone">
+          {a("agreePre", lang)}{" "}
+          <Link href="/terms#payments" target="_blank" className="font-medium text-forest underline">{a("agreeTerms", lang)}</Link>{" "}
+          {a("agreeAnd", lang)}{" "}
+          <Link href="/privacy" target="_blank" className="font-medium text-forest underline">{a("agreePrivacy", lang)}</Link>.
+        </p>
       </form>
     </main>
   );

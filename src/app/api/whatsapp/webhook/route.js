@@ -304,6 +304,10 @@ async function handleMessage(m) {
   const chatId = chatIdFor(from);                          // scrambled id, safe to store
   const { lang, saved } = await getLang(supabase, chatId, from); // NEW: their language (saved, or guessed)
 
+  // NEW: their GOAT ID row. A brand-new person first gets a one-time notice: terms, privacy, 18+, not advice.
+  const row = await getAccess({ chatId });
+  if (row.isNew) await reply(from, m.id, w(lang).legalNotice);
+
   // NEW: they tapped a language in the menu -> save it, confirm, and show help in that language
   const picked = m.type === "interactive" ? m.interactive?.list_reply?.id || "" : "";
   if (picked.startsWith("lang:")) {
@@ -333,7 +337,6 @@ async function handleMessage(m) {
   if (address) return runVet(supabase, from, m.id, chatId, lang, address); // a contract address: check it (always free)
 
   // NEW: GOAT AI access (one GOAT ID per person, shared with the website)
-  const row = await getAccess({ chatId });
 
   // "subscribe" -> their GOAT ID and the payment link on goatwatch.app (Paystack)
   if (SUB_WORDS.test(words.trim())) {
