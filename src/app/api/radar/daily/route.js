@@ -81,11 +81,13 @@ export async function GET(request) {
   lines.push(
     "",
     posted
-      ? `${posted} coin${posted === 1 ? "" : "s"} passed every check and ${posted === 1 ? "was" : "were"} posted here.`
-      : "None passed every check, so GOAT posted none. Most new coins don't.",
-    `Check any coin yourself: <a href="${SITE_URL}/vet">goatwatch.app/vet</a>`,
+      ? `${posted} coin${posted === 1 ? "" : "s"} showed no major red flags at check time and ${posted === 1 ? "was" : "were"} posted here.` // CHANGED: never "passed"
+      : "None showed a clean result, so GOAT posted none. Most new coins don't.",
     "",
-    "<i>Results describe each coin at check time. Not financial advice.</i>"
+    `📡 Experienced traders: see every coin GOAT checked, with its verdict, on the <a href="${SITE_URL}/radar">GOAT Radar</a>.`, // NEW
+    `🔍 Check any coin yourself: <a href="${SITE_URL}/vet">goatwatch.app/vet</a>`,
+    "",
+    "<i>Results describe each coin at check time. Not financial advice (NFA). DYOR.</i>"            // CHANGED: NFA + DYOR
   );
 
   // 5. Post it to the channel (text only, no picture)
