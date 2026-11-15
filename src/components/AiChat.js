@@ -9,11 +9,11 @@ import { useLang } from "@/lib/i18n/useLang";              // current site langu
 import { a } from "@/lib/i18n/ai";                         // this window's words, 10 languages
 
 // Turn plain text into text + safe links (full https links, and site paths like /vet or /pay)
-function Linkify({ text }) {
+function Linkify({ text, onNavigate }) {
   const parts = String(text).split(/(https?:\/\/[^\s)]+|(?<![\w/])\/(?:vet|radar|scanner|markets|charts|news|community|dashboard|download|signup|login|pay|terms|privacy|risk|advertise|notifications)(?:[/?][^\s)]*)?)/g);
   return parts.map((p, i) => {
     if (/^https?:\/\//.test(p)) return <a key={i} href={p} target="_blank" rel="noopener noreferrer" className="break-all text-forest underline">{p}</a>;
-    if (p.startsWith("/")) return <Link key={i} href={p} className="text-forest underline">{p}</Link>;
+    if (p.startsWith("/")) return <Link key={i} href={p} onClick={onNavigate} className="text-forest underline">{p}</Link>; // CHANGED: closes the chat
     return <span key={i}>{p}</span>;
   });
 }
@@ -56,7 +56,18 @@ export default function AiChat() {
   const [shot, setShot] = useState(null);                  // NEW: the screenshot waiting to be sent { data, mediaType, preview }
   const listRef = useRef(null);
   const fileRef = useRef(null);                            // NEW: the hidden file picker
-  const onPayPage = usePathname()?.startsWith("/pay");    // the floating button would cover the Pay button there
+  const pathname = usePathname();                          // CHANGED: kept, to know when we're already on /vet
+  const onPayPage = pathname?.startsWith("/pay");          // the floating button would cover the Pay button there
+
+  // NEW: "View full check" / a coin in the list. The chat covers the page on phones, so close it first.
+  // Already on /vet? The page doesn't reload for a new ?q=, so update the address and tell the page to check.
+  function openCheck(e, address) {
+    setOpen(false);
+    if (pathname !== "/vet") return;                       // anywhere else: the normal link loads /vet?q=...
+    e.preventDefault();
+    window.history.pushState(null, "", `/vet?q=${encodeURIComponent(address)}`); // the address bar shows the coin
+    window.dispatchEvent(new CustomEvent("goat:vet", { detail: address }));      // VetView runs the check
+  }
 
   // When opened by a logged-in visitor: load their GOAT ID and free chats left
   useEffect(() => {
@@ -157,12 +168,12 @@ export default function AiChat() {
                     // eslint-disable-next-line @next/next/no-img-element -- a local preview, not a hosted image
                     <img src={m.preview} alt={a("shot", lang)} className="mb-1 max-h-48 rounded-xl" />
                   )}
-                  {m.role === "user" ? m.text : <Linkify text={m.text} />}
+                  {m.role === "user" ? m.text : <Linkify text={m.text} onNavigate={() => setOpen(false)} />}
                   {m.coins?.length > 0 && (                                     // coin matches: each opens its full check
                     <ul className="mt-2 space-y-1">
                       {m.coins.map((c) => (
                         <li key={c.address}>
-                          <Link href={`/vet?q=${encodeURIComponent(c.address)}`} className="flex justify-between gap-2 rounded-xl border border-line bg-water px-3 py-2 hover:border-forest">
+                          <Link href={`/vet?q=${encodeURIComponent(c.address)}`} onClick={(e) => openCheck(e, c.address)} className="flex justify-between gap-2 rounded-xl border border-line bg-water px-3 py-2 hover:border-forest">
                             <span className="font-medium">{c.official ? "✓ " : ""}{c.symbol} <span className="text-stone">· {c.chain}</span></span>
                             <span className={`text-xs ${c.copycat ? "text-clay" : "text-stone"}`}>{c.official ? a("official", lang) : c.copycat ? `⚠ ${a("copycat", lang)}` : ""}</span>
                           </Link>
@@ -171,7 +182,7 @@ export default function AiChat() {
                     </ul>
                   )}
                   {m.report && (                                                // a coin check: link to the full report
-                    <Link href={`/vet?q=${encodeURIComponent(m.report.address)}`} className="mt-2 block rounded-xl border border-line bg-water px-3 py-2 font-medium hover:border-forest">
+                    <Link href={`/vet?q=${encodeURIComponent(m.report.address)}`} onClick={(e) => openCheck(e, m.report.address)} className="mt-2 block rounded-xl border border-line bg-water px-3 py-2 font-medium hover:border-forest">
                       {VERDICT[m.report.verdict] || "•"} {m.report.symbol} · {m.report.chain} → {a("viewCheck", lang)}
                     </Link>
                   )}

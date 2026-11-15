@@ -95,6 +95,21 @@ export default function VetView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // NEW: GOAT AI's chat asked for a check while this page is already open ("View full check").
+  // Moving to /vet?q=... from /vet doesn't reload the page, so the chat tells us directly.
+  useEffect(() => {
+    const onAsk = (e) => {
+      const q = String(e.detail || "");
+      if (!q) return;
+      setQuery(q);                                         // show the address in the box
+      run(q);                                              // run the full check
+      window.scrollTo({ top: 0, behavior: "smooth" });     // bring the report into view
+    };
+    window.addEventListener("goat:vet", onAsk);
+    return () => window.removeEventListener("goat:vet", onAsk); // tidy up when leaving the page
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // share the report link (phone share sheet, or copy on desktop)
   async function share() {
     const url = window.location.href;
