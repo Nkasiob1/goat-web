@@ -170,7 +170,9 @@ export function formatTweet(t) {
     const capText = cap ? `🏦 MCap ${cap}` : fdv ? `🏦 FDV ${fdv}` : null;               // CHANGED: shorter labels
     const numbers = [capText, liq ? `💧 Liq ${liq}` : null].filter(Boolean).join(" · "); // CHANGED: one line, not two
     return fit([                                             // CHANGED: never longer than 280 (X's way of counting)
-      { text: `🟢 New coin, no major red flags at launch` },  // a finding at one moment, never an endorsement
+      { text: t.secondLookHours                               // CHANGED: second-look coins say how long they've traded
+          ? `🟢 No major red flags after ${t.secondLookHours}h of trading`
+          : `🟢 New coin, no major red flags at launch` },    // a finding at one moment, never an endorsement
       { text: `` },
       { text: `${tag}${name}${chain ? ` on ${chain}` : ""}` },
       { text: numbers || null },                             // MCap + liquidity on one line

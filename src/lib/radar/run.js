@@ -17,6 +17,13 @@ const X_MIN_GAP_HOURS = 2;                        // at least 2h between X posts
 const RECHECK_PER_RUN = 2;                        // rug watch: re-vet this many green coins every run
 const ALERT_WINDOW_HOURS = 6;                     // only alert coins spotted recently
 const KEEP_DAYS = 7;                              // delete radar entries older than this
+// NEW: Second look. A coin checked 1-2 minutes after launch is almost always 🟡 ("launched 2m ago" + thin
+// liquidity). Without this, a yellow coin was never checked again. Now yellows get re-vetted as they mature.
+const SECOND_LOOK_PER_RUN = 2;                    // yellows re-vetted per run (Vet calls are free but take time)
+const SECOND_LOOK_MIN_HOURS = 6;                  // give a coin 6h to build liquidity before looking again
+const SECOND_LOOK_MAX_HOURS = 120;                // stop after 5 days (entries are deleted at 7)
+const SECOND_LOOK_GAP_HOURS = 6;                  // the same coin is looked at again at most every 6h
+const SECOND_LOOK_POSTS = 1;                      // at most 1 second-look Telegram post per run (no spam)
 
 // Server-side client with the secret key (never runs in the browser)
 const db = () =>
@@ -130,6 +137,9 @@ function cardUrl(t) {
   return `${SITE}/api/radar/card?${params}`;
 }
 
+// NEW: how old a coin is, in whole hours, from when the radar first saw it
+const hoursSince = (iso) => Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 36e5));
+
 // Build the Telegram caption for one coin
 function formatAlert(t) {
   if (t.kind === "cex") {
@@ -144,6 +154,19 @@ function formatAlert(t) {
   }
   const cap = capOf(t);
   const capText = cap ? ` · ${cap.kind === "mc" ? "MCap" : "FDV"} ${money(cap.value)}` : "";
+  if (t.secondLookHours) {                                        // NEW: a coin that matured from 🟡 to 🟢
+    return [
+      `🟢 <b>${escapeHtml(t.symbol)}</b> on ${CHAIN_LABEL[t.chain]} · second look`,
+      escapeHtml(t.name || ""),
+      `🟡 at launch. Checked again after ${t.secondLookHours}h of trading: no major red flags now.`,
+      `Liquidity ${money(t.liquidity_usd)} · Vol 24h ${money(t.volume_24h)}${capText}`,
+      `Checks: ${escapeHtml((t.safety_notes || []).join(" · "))}`,
+      `<code>${escapeHtml(t.address)}</code>`,
+      `<a href="${t.pair_url}">Chart</a> · <a href="${SITE}/vet?q=${t.address}">Full safety check</a> · <a href="${SITE}/radar">GOAT Radar</a>`,
+      "",
+      "<i>No major red flags at this check. Checks can change fast. Not a recommendation. DYOR.</i>",
+    ].join("\n");
+  }
   return [
     `🟢 <b>${escapeHtml(t.symbol)}</b> on ${CHAIN_LABEL[t.chain]}`,
     escapeHtml(t.name || ""),
@@ -184,9 +207,10 @@ function formatRugAlert(before, after, reason) {
 export async function runRadar() {
   const supabase = db();
   const now = new Date().toISOString();
-  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, rugAlerts: 0, x: [], blocked: [], rechecked: [] };
+  const report = { ok: true, exchanges: {}, sources: {}, candidates: 0, checked: 0, alerts: 0, rugAlerts: 0, x: [], blocked: [], rechecked: [], secondLook: [] };
   const fresh = new Map();                                                   // enrich() results for this run (NOT vetted)
   const vetted = new Map();                                                  // NEW: coins the full Vet called green THIS run
+  const matured = [];                                                        // NEW: yellows that turned green on a second look
 
   // ---- 1. Exchanges: compare today's coin list with the saved one ----
   for (const [name, ex] of Object.entries(EXCHANGES)) {
@@ -299,6 +323,41 @@ export async function runRadar() {
     }
   }
 
+  // ---- 3c. NEW: Second look. Re-vet maturing 🟡 coins (never 🔴), oldest check first ----
+  const oldest = new Date(Date.now() - SECOND_LOOK_MAX_HOURS * 36e5).toISOString();  // launched at most 5 days ago
+  const youngest = new Date(Date.now() - SECOND_LOOK_MIN_HOURS * 36e5).toISOString(); // and at least 6h ago
+  const lookedBefore = new Date(Date.now() - SECOND_LOOK_GAP_HOURS * 36e5).toISOString(); // last check over 6h ago
+  const { data: maturing } = await supabase
+    .from("radar_tokens")
+    .select("*")
+    .eq("kind", "dex")
+    .eq("safety", "yellow")                                                  // 🔴 coins are never given a second chance
+    .eq("alerted", false)                                                    // never posted before
+    .gte("first_seen", oldest)
+    .lte("first_seen", youngest)
+    .or(`vetted_at.is.null,vetted_at.lt."${lookedBefore}"`)                  // not looked at in the last 6h
+    .order("vetted_at", { ascending: true, nullsFirst: true })               // longest-waiting first
+    .limit(SECOND_LOOK_PER_RUN);
+  for (const row of maturing || []) {
+    const gate = await vetGate(supabase, await enrich(supabase, row, fresh)); // SAME full Vet, SAME bar for green
+    report.secondLook.push(`${row.symbol}: ${gate.ok ? "green" : gate.reason}`); // e.g. "WASTED: yellow"
+    if (!gate.ok) continue;                                                  // still not green: try again in 6h+
+    const t = { ...gate.t, secondLookHours: hoursSince(row.first_seen) };   // the caption says how old it is
+    vetted.set(row.id, t);                                                   // X (step 5) can trust it this run
+    matured.push(t);
+  }
+  for (const t of matured.slice(0, SECOND_LOOK_POSTS)) {                     // post at most 1 per run to Telegram
+    try {
+      const sent = await sendTelegram(formatAlert(t), cardUrl(t));           // second-look caption + picture card
+      if (sent.skipped) break;                                               // keys missing: don't mark as sent
+      await supabase.from("radar_tokens").update({ alerted: true }).eq("id", t.id);
+      report.alerts++;
+    } catch (err) {
+      report.telegram = `second look error: ${err.message}`;                 // shown in the JSON, run continues
+      break;
+    }
+  }
+
   // ---- 4. Telegram alerts: only coins that pass the FULL Vet, plus exchange listings ----
   const since = new Date(Date.now() - ALERT_WINDOW_HOURS * 36e5).toISOString();
   const { data: toAlert } = await supabase
@@ -344,7 +403,7 @@ export async function runRadar() {
   if (waitMs > 0) {
     report.x.push({ skipped: true, reason: `gap: next X post in ${Math.ceil(waitMs / 6e4)} min` }); // too soon, wait
   } else {
-    const { data: toPost, error: xErr } = await supabase
+    const { data: freshPicks, error: xErr } = await supabase
       .from("radar_tokens")
       .select("*")
       .is("x_posted_at", null)                                               // not on X yet
@@ -353,7 +412,10 @@ export async function runRadar() {
       .order("first_seen", { ascending: false })                             // newest first, freshest coin wins
       .limit(X_PER_RUN);                                                     // 1 per run keeps costs tiny
     if (xErr) report.x.push({ error: xErr.message });                        // e.g. column missing: run the SQL
-    for (const row of toPost || []) {
+    const toPost = (freshPicks || []).length                                 // NEW: fresh coins first...
+      ? freshPicks
+      : matured.filter((t) => !t.x_posted_at).slice(0, X_PER_RUN);           // ...otherwise a second-look green
+    for (const row of toPost) {
       const cached = vetted.get(row.id);                                     // FIXED: only coins the Vet called green this run
       const gate = cached                                                    // (the old check trusted un-vetted enrich() data)
         ? { ok: true, t: cached }                                            // already passed this run: don't vet twice
