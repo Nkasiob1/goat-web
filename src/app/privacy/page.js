@@ -23,7 +23,7 @@ const sections = [
         // NEW: WhatsApp and Telegram bots
         "WhatsApp and Telegram bots: we use your phone number only to reply to you and never store it. Instead we store a scrambled ID made from it, your chosen language, and which coins were checked (not your message text).",
         // NEW: GOAT AI
-        "GOAT AI chats: the messages you send to GOAT AI and its replies, kept for 24 hours so it can follow the conversation, then deleted automatically. We also store your GOAT ID, the name you ask GOAT AI to call you, and how many chats you have used.",
+        "GOAT AI chats: the messages you send to GOAT AI and its replies, kept for 24 hours so it can follow the conversation, then deleted automatically. Screenshots you send to GOAT AI are only used to answer that message and are never stored. We also store your GOAT ID, the name you ask GOAT AI to call you, and how many chats you have used.",
         // NEW: payments
         "Payments: when you buy GOAT AI, Paystack processes the payment. We store the payment reference, plan, amount, status and date. We do not store your card details or your email address; Paystack holds those under its own privacy policy.",
         "Basic technical data our hosting providers record, such as IP address, browser type and error logs.",

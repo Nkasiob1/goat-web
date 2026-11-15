@@ -85,6 +85,28 @@ async function wa(body) {
   return res.ok;
 }
 
+// NEW: download a picture someone sent (for GOAT AI). Meta gives a media id -> we ask for a short-lived URL,
+// then fetch the bytes with our token. Returns { data: base64, mediaType } or null. Nothing is saved.
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]; // what the AI can read
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;                   // 4 MB is plenty for a screenshot (WhatsApp compresses them)
+async function downloadImage(mediaId) {
+  try {
+    const auth = { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}` };
+    const meta = await fetch(`${GRAPH}/${mediaId}`, { headers: auth, signal: AbortSignal.timeout(8000) });
+    if (!meta.ok) return null;
+    const info = await meta.json();                         // { url, mime_type, file_size, ... }
+    const type = String(info.mime_type || "").split(";")[0];
+    if (!IMAGE_TYPES.includes(type) || (info.file_size || 0) > MAX_IMAGE_BYTES) return null;
+    const file = await fetch(info.url, { headers: auth, signal: AbortSignal.timeout(10000) }); // the URL needs our token too
+    if (!file.ok) return null;
+    const bytes = Buffer.from(await file.arrayBuffer());
+    if (bytes.length > MAX_IMAGE_BYTES) return null;
+    return { data: bytes.toString("base64"), mediaType: type };
+  } catch {
+    return null;                                           // any problem: answer without the picture
+  }
+}
+
 // Show blue ticks + "typing..." while the Vet runs
 const markReadAndTyping = (messageId) =>
   wa({ status: "read", message_id: messageId, typing_indicator: { type: "text" } });
@@ -247,7 +269,7 @@ function findAddress(text) {
 // ------------------------------------------------------------
 
 // Run GOAT AI for one message. Returns true if it replied, false if the normal bot should answer instead.
-async function runAi(supabase, from, messageId, chatId, lang, words, row) {
+async function runAi(supabase, from, messageId, chatId, lang, words, row, image = null) { // CHANGED: + optional screenshot
   await markReadAndTyping(messageId);
   const t = w(lang);
   // NEW: if the answer takes more than 10 seconds (web search), say so, so they know we're on it
@@ -260,7 +282,7 @@ async function runAi(supabase, from, messageId, chatId, lang, words, row) {
 
   let ans;
   try {
-    ans = await askGoat({ history, lang, nickname: row.nickname, allowWeb: webAllowed(row), channel: "whatsapp", budgetMs: 45000 });
+    ans = await askGoat({ history, lang, nickname: row.nickname, allowWeb: webAllowed(row), channel: "whatsapp", budgetMs: 45000, image }); // CHANGED: + image
   } catch (err) {
     console.error("GOAT AI error:", err.message);          // visible in Vercel logs
     ans = null;
@@ -281,7 +303,8 @@ async function runAi(supabase, from, messageId, chatId, lang, words, row) {
   }
   if (ans.nickname) await saveNickname(row, ans.nickname);
 
-  await saveTurn(row.code, "whatsapp", words, [ans.text, ans.memo].filter(Boolean).join("\n")); // memo = what the tools did
+  const said = image ? `[sent a screenshot] ${words}`.trim() : words; // NEW: memory notes the screenshot, never stores it
+  await saveTurn(row.code, "whatsapp", said, [ans.text, ans.memo].filter(Boolean).join("\n")); // memo = what the tools did
   await bumpUsage(row, ans.searches || 0);
   return true;
 }
@@ -326,6 +349,29 @@ async function handleMessage(m) {
   }
 
   const words = m.text?.body || m.image?.caption || m.video?.caption || m.document?.caption || ""; // text, or a caption under media
+
+  // NEW: a screenshot (with or without a caption) goes straight to GOAT AI, which can read pictures
+  if (m.type === "image" && m.image?.id) {
+    const access = aiGate(row);
+    if (!access.ok) {                                      // no AI right now: say why instead of staying silent
+      const t = w(lang);
+      const msg = access.reason === "cap" ? t.aiCap
+        : access.reason === "trial_over" ? t.aiUpsell.replace("{n}", FREE_AI_CHATS).replace("{link}", payLink(row.code))
+        : t.aiBusy;                                        // "off" = AI switched off
+      await reply(from, m.id, msg);
+      return;
+    }
+    const image = await downloadImage(m.image.id);
+    if (!image) {                                          // couldn't fetch or read it
+      if (words) return runAi(supabase, from, m.id, chatId, lang, words, row); // still answer the caption
+      await reply(from, m.id, w(lang).aiBusy);
+      return;
+    }
+    const answered = await runAi(supabase, from, m.id, chatId, lang, words, row, image);
+    if (!answered) await reply(from, m.id, w(lang).aiBusy);  // never leave a screenshot unanswered
+    return;
+  }
+
   if (!words) return;                                      // stickers, reactions, voice notes: stay quiet
 
   if (LANG_WORDS.test(words.trim())) {                     // NEW: "language", "langue", "harshe"... -> the menu

@@ -10,6 +10,8 @@ import { getAccess, gate, webAllowed, bumpUsage, loadHistory, saveTurn, saveNick
 export const maxDuration = 60;                              // expert answers + tools can take a while
 
 const LANGS = ["en", "fr", "es", "pt", "ar", "hi", "fa", "ha", "yo", "ig"];
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]; // NEW: pictures the AI can read
+const MAX_IMAGE_B64 = 3_000_000;                            // NEW: ~2.2 MB picture (well under Vercel's 4.5 MB request limit)
 
 // Who is asking? (null if not logged in)
 async function currentUser(request) {
@@ -41,7 +43,17 @@ export async function POST(request) {
   const body = await request.json().catch(() => ({}));
   const message = String(body.message || "").trim().slice(0, 1000);   // cap the length
   const lang = LANGS.includes(body.lang) ? body.lang : "en";
-  if (!message) return NextResponse.json({ error: "empty" }, { status: 400 });
+  // NEW: an optional screenshot { data: base64, mediaType }. The browser shrinks it first; we re-check here.
+  let image = null;
+  if (body.image) {
+    const mediaType = String(body.image.mediaType || "");
+    const data = String(body.image.data || "");
+    if (!IMAGE_TYPES.includes(mediaType) || !data || data.length > MAX_IMAGE_B64 || !/^[A-Za-z0-9+/=]+$/.test(data)) {
+      return NextResponse.json({ error: "image" }, { status: 400 });   // wrong type, too big, or not real base64
+    }
+    image = { data, mediaType };
+  }
+  if (!message && !image) return NextResponse.json({ error: "empty" }, { status: 400 });
 
   const row = await getAccess({ userId: user.id });
   const access = gate(row);
@@ -54,7 +66,7 @@ export async function POST(request) {
 
   let ans;
   try {
-    ans = await askGoat({ history, lang, nickname: row.nickname, allowWeb: webAllowed(row), channel: "web" });
+    ans = await askGoat({ history, lang, nickname: row.nickname, allowWeb: webAllowed(row), channel: "web", image }); // CHANGED: + image
   } catch (err) {
     console.error("GOAT AI web error:", err.message);
     return NextResponse.json({ error: "ai" }, { status: 502 });
@@ -62,7 +74,8 @@ export async function POST(request) {
   if (!ans.text && !ans.coins && !ans.report) return NextResponse.json({ error: "ai" }, { status: 502 });
 
   if (ans.nickname) await saveNickname(row, ans.nickname);
-  await saveTurn(row.code, "web", message, [ans.text, ans.memo].filter(Boolean).join("\n"));
+  const said = image ? `[sent a screenshot] ${message}`.trim() : message; // NEW: memory notes the screenshot, never stores it
+  await saveTurn(row.code, "web", said, [ans.text, ans.memo].filter(Boolean).join("\n"));
   await bumpUsage(row, ans.searches || 0);
 
   const after = { ...row, free_used: isPaid(row) ? row.free_used : (row.free_used || 0) + 1 };

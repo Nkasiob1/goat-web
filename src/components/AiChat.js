@@ -26,6 +26,25 @@ async function authHeader() {
 
 const VERDICT = { red: "🔴", yellow: "🟡", green: "🟢" };
 
+// NEW: shrink a picture in the browser before sending (max 1568px on the long side, JPEG).
+// Keeps uploads small and fast; 1568px is as much detail as the AI uses anyway.
+// Returns { data: base64, mediaType, preview: dataURL } or null if it isn't a readable image.
+async function shrinkImage(file) {
+  if (!file || !file.type.startsWith("image/")) return null;
+  try {
+    const bitmap = await createImageBitmap(file);                       // decode the picture
+    const scale = Math.min(1, 1568 / Math.max(bitmap.width, bitmap.height)); // never make it bigger
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const preview = canvas.toDataURL("image/jpeg", 0.85);               // "data:image/jpeg;base64,...."
+    return { data: preview.split(",")[1], mediaType: "image/jpeg", preview };
+  } catch {
+    return null;                                                        // e.g. a HEIC file the browser can't open
+  }
+}
+
 export default function AiChat() {
   const user = useUser();
   const lang = useLang();
@@ -34,7 +53,9 @@ export default function AiChat() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [info, setInfo] = useState(null);                  // { code, paid, paidUntil, freeLeft, locked? }
+  const [shot, setShot] = useState(null);                  // NEW: the screenshot waiting to be sent { data, mediaType, preview }
   const listRef = useRef(null);
+  const fileRef = useRef(null);                            // NEW: the hidden file picker
   const onPayPage = usePathname()?.startsWith("/pay");    // the floating button would cover the Pay button there
 
   // When opened by a logged-in visitor: load their GOAT ID and free chats left
@@ -51,18 +72,30 @@ export default function AiChat() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, busy]);
 
+  // NEW: a picture was chosen -> shrink it and show a small preview above the message box
+  async function pickImage(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";                                   // so the same file can be picked again later
+    if (!file) return;
+    const img = await shrinkImage(file);
+    if (img) setShot(img);
+    else setMsgs((m) => [...m, { role: "bot", text: a("badImage", lang) }]); // couldn't read it
+  }
+
   async function send(e) {
     e.preventDefault();
     const text = input.trim();
-    if (!text || busy) return;
+    const image = shot;                                    // NEW: the screenshot going with this message (if any)
+    if ((!text && !image) || busy) return;
     setInput("");
-    setMsgs((m) => [...m, { role: "user", text }]);
+    setShot(null);
+    setMsgs((m) => [...m, { role: "user", text, preview: image?.preview }]); // the preview stays in this window only
     setBusy(true);
     try {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(await authHeader()) },
-        body: JSON.stringify({ message: text, lang }),
+        body: JSON.stringify({ message: text, lang, image: image ? { data: image.data, mediaType: image.mediaType } : undefined }),
       });
       const data = await res.json();
       if (data.locked) setInfo(data);                      // trial over or daily limit: show the upgrade box
@@ -120,6 +153,10 @@ export default function AiChat() {
             {msgs.map((m, i) => (
               <div key={i} className={m.role === "user" ? "flex justify-end" : ""}>
                 <div className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 ${m.role === "user" ? "bg-forest text-water" : "bg-mist text-ink"}`}>
+                  {m.preview && (                                               // NEW: the screenshot they sent
+                    // eslint-disable-next-line @next/next/no-img-element -- a local preview, not a hosted image
+                    <img src={m.preview} alt={a("shot", lang)} className="mb-1 max-h-48 rounded-xl" />
+                  )}
                   {m.role === "user" ? m.text : <Linkify text={m.text} />}
                   {m.coins?.length > 0 && (                                     // coin matches: each opens its full check
                     <ul className="mt-2 space-y-1">
@@ -160,7 +197,25 @@ export default function AiChat() {
                 {locked !== "cap" && <Link href={payHref} className="block rounded-full bg-forest px-4 py-2.5 text-center font-medium text-water">{a("subscribe", lang)}</Link>}
               </div>
             ) : (
-              <form onSubmit={send} className="flex gap-2">
+              <form onSubmit={send} className="flex flex-wrap gap-2">
+                {shot && (                                                      // NEW: the screenshot waiting to be sent
+                  <div className="flex w-full items-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- a local preview, not a hosted image */}
+                    <img src={shot.preview} alt={a("shot", lang)} className="h-14 rounded-lg border border-line" />
+                    <button type="button" onClick={() => setShot(null)} aria-label={a("close", lang)} className="grid h-11 w-11 place-items-center rounded-full text-stone hover:bg-mist">✕</button>
+                  </div>
+                )}
+                <input ref={fileRef} type="file" accept="image/*" onChange={pickImage} className="hidden" />
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={busy}
+                  aria-label={a("attach", lang)}
+                  title={a("attach", lang)}
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-line text-lg text-stone hover:bg-mist disabled:opacity-50"
+                >
+                  📎
+                </button>
                 <label htmlFor="goat-ai-input" className="sr-only">{a("placeholder", lang)}</label>
                 <input
                   id="goat-ai-input"
@@ -170,7 +225,7 @@ export default function AiChat() {
                   placeholder={a("placeholder", lang)}
                   className="min-w-0 flex-1 rounded-full border border-line bg-mist px-4 py-2.5 text-sm text-ink outline-none focus:border-forest"
                 />
-                <button type="submit" disabled={busy || !input.trim()} className="rounded-full bg-forest px-4 py-2.5 text-sm font-medium text-water disabled:opacity-50">{a("send", lang)}</button>
+                <button type="submit" disabled={busy || (!input.trim() && !shot)}className="rounded-full bg-forest px-4 py-2.5 text-sm font-medium text-water disabled:opacity-50">{a("send", lang)}</button>
               </form>
             )}
             <p className="mt-2 text-center text-[11px] text-stone">{a("disclaimer", lang)}</p>

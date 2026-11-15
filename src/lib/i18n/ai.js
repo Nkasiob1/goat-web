@@ -20,6 +20,7 @@ export const AI = {
     doneOk: "Payment received ✓ GOAT AI is active until {date}.", donePending: "Confirming your payment…",
     doneFail: "We couldn't confirm this payment yet. If you were charged, email support@goatwatch.app with your GOAT ID.",
     more: "Ask \"more\" for the rest.",          // NEW: shown when a long answer was cut short
+    attach: "Add a screenshot", shot: "Screenshot", badImage: "That picture couldn't be read. Try another screenshot.", // NEW: screenshots in the chat
     agreePre: "By paying, you agree to our", agreeTerms: "Terms of Use (including refunds)", agreeAnd: "and", agreePrivacy: "Privacy Policy", // NEW: pay-page consent line
     back: "Back to GOAT", badInput: "Check your GOAT ID and email.",
   },
@@ -41,6 +42,7 @@ export const AI = {
     doneOk: "Paiement reçu ✓ GOAT AI est actif jusqu'au {date}.", donePending: "Confirmation du paiement…",
     doneFail: "Nous n'avons pas encore pu confirmer ce paiement. Si vous avez été débité, écrivez à support@goatwatch.app avec votre ID GOAT.",
     more: "Demandez « plus » pour la suite.",          // NEW: shown when a long answer was cut short
+    attach: "Ajouter une capture d'écran", shot: "Capture d'écran", badImage: "Impossible de lire cette image. Essayez une autre capture.", // NEW: screenshots in the chat
     agreePre: "En payant, vous acceptez nos", agreeTerms: "Conditions d'utilisation (y compris les remboursements)", agreeAnd: "et notre", agreePrivacy: "Politique de confidentialité", // NEW: pay-page consent line
     back: "Retour à GOAT", badInput: "Vérifiez votre ID GOAT et votre e-mail.",
   },
@@ -62,6 +64,7 @@ export const AI = {
     doneOk: "Pago recibido ✓ GOAT AI está activo hasta el {date}.", donePending: "Confirmando tu pago…",
     doneFail: "Aún no pudimos confirmar este pago. Si te cobraron, escribe a support@goatwatch.app con tu ID de GOAT.",
     more: "Pide «más» para el resto.",          // NEW: shown when a long answer was cut short
+    attach: "Añadir una captura de pantalla", shot: "Captura de pantalla", badImage: "No se pudo leer esa imagen. Prueba con otra captura.", // NEW: screenshots in the chat
     agreePre: "Al pagar, aceptas nuestros", agreeTerms: "Términos de uso (incluidos los reembolsos)", agreeAnd: "y nuestra", agreePrivacy: "Política de privacidad", // NEW: pay-page consent line
     back: "Volver a GOAT", badInput: "Revisa tu ID de GOAT y tu correo.",
   },
@@ -83,6 +86,7 @@ export const AI = {
     doneOk: "Pagamento recebido ✓ O GOAT AI está ativo até {date}.", donePending: "Confirmando seu pagamento…",
     doneFail: "Ainda não conseguimos confirmar este pagamento. Se você foi cobrado, envie um e-mail para support@goatwatch.app com seu ID GOAT.",
     more: "Peça \"mais\" para o restante.",          // NEW: shown when a long answer was cut short
+    attach: "Adicionar uma captura de tela", shot: "Captura de tela", badImage: "Não foi possível ler essa imagem. Tente outra captura.", // NEW: screenshots in the chat
     agreePre: "Ao pagar, você concorda com nossos", agreeTerms: "Termos de Uso (incluindo reembolsos)", agreeAnd: "e nossa", agreePrivacy: "Política de Privacidade", // NEW: pay-page consent line
     back: "Voltar ao GOAT", badInput: "Verifique seu ID GOAT e o e-mail.",
   },
@@ -104,6 +108,7 @@ export const AI = {
     doneOk: "تم استلام الدفع ✓ GOAT AI مفعّل حتى {date}.", donePending: "جارٍ تأكيد الدفع…",
     doneFail: "لم نتمكن من تأكيد هذا الدفع بعد. إذا خُصم المبلغ، راسل support@goatwatch.app مع معرّف GOAT.",
     more: "اطلب «المزيد» لبقية الإجابة.",          // NEW: shown when a long answer was cut short
+    attach: "أضف لقطة شاشة", shot: "لقطة شاشة", badImage: "تعذّرت قراءة هذه الصورة. جرّب لقطة شاشة أخرى.", // NEW: screenshots in the chat
     agreePre: "بالدفع، فإنك توافق على", agreeTerms: "شروط الاستخدام (بما فيها الاسترداد)", agreeAnd: "و", agreePrivacy: "سياسة الخصوصية", // NEW: pay-page consent line
     back: "العودة إلى GOAT", badInput: "تحقّق من معرّف GOAT والبريد الإلكتروني.",
   },
@@ -125,6 +130,7 @@ export const AI = {
     doneOk: "भुगतान मिल गया ✓ GOAT AI {date} तक सक्रिय है।", donePending: "आपका भुगतान कन्फ़र्म हो रहा है…",
     doneFail: "हम अभी यह भुगतान कन्फ़र्म नहीं कर सके। अगर पैसे कटे हैं, तो अपनी GOAT ID के साथ support@goatwatch.app पर ईमेल करें।",
     more: "बाकी के लिए \"more\" पूछें।",          // NEW: shown when a long answer was cut short
+    attach: "स्क्रीनशॉट जोड़ें", shot: "स्क्रीनशॉट", badImage: "यह तस्वीर पढ़ी नहीं जा सकी। कोई दूसरा स्क्रीनशॉट आज़माएँ।", // NEW: screenshots in the chat
     agreePre: "भुगतान करके आप हमारी", agreeTerms: "उपयोग की शर्तों (रिफ़ंड सहित)", agreeAnd: "और", agreePrivacy: "गोपनीयता नीति से सहमत होते हैं", // NEW: pay-page consent line
     back: "GOAT पर वापस जाएं", badInput: "अपनी GOAT ID और ईमेल जांचें।",
   },
@@ -146,6 +152,7 @@ export const AI = {
     doneOk: "پرداخت دریافت شد ✓ GOAT AI تا {date} فعال است.", donePending: "در حال تأیید پرداخت…",
     doneFail: "هنوز نتوانستیم این پرداخت را تأیید کنیم. اگر مبلغ کسر شده، با شناسه GOAT به support@goatwatch.app ایمیل بزنید.",
     more: "برای ادامه «بیشتر» را بپرسید.",          // NEW: shown when a long answer was cut short
+    attach: "افزودن اسکرین‌شات", shot: "اسکرین‌شات", badImage: "این تصویر خوانده نشد. اسکرین‌شات دیگری امتحان کنید.", // NEW: screenshots in the chat
     agreePre: "با پرداخت، با", agreeTerms: "شرایط استفاده (شامل بازپرداخت)", agreeAnd: "و", agreePrivacy: "سیاست حریم خصوصی ما موافقت می‌کنید", // NEW: pay-page consent line
     back: "بازگشت به GOAT", badInput: "شناسه GOAT و ایمیل را بررسی کنید.",
   },
@@ -167,6 +174,7 @@ export const AI = {
     doneOk: "An karɓi kuɗi ✓ GOAT AI yana aiki har zuwa {date}.", donePending: "Ana tabbatar da biyanka…",
     doneFail: "Ba mu iya tabbatar da wannan biyan ba tukuna. Idan an cire kuɗi, aika imel zuwa support@goatwatch.app tare da GOAT ID ɗinka.",
     more: "Tambayi \"more\" don sauran.",          // NEW: shown when a long answer was cut short
+    attach: "Ƙara hoton allo", shot: "Hoton allo", badImage: "Ba a iya karanta wannan hoton ba. Gwada wani hoton allo.", // NEW: screenshots in the chat
     agreePre: "Ta biya, ka amince da", agreeTerms: "Sharuɗɗan Amfani (har da mayar da kuɗi)", agreeAnd: "da", agreePrivacy: "Manufar Sirri", // NEW: pay-page consent line
     back: "Koma GOAT", badInput: "Duba GOAT ID da imel ɗinka.",
   },
@@ -188,6 +196,7 @@ export const AI = {
     doneOk: "A ti gba ìsanwó ✓ GOAT AI ń ṣiṣẹ́ títí di {date}.", donePending: "À ń jẹ́rìí ìsanwó rẹ…",
     doneFail: "A kò tíì lè jẹ́rìí ìsanwó yìí. Bí wọ́n bá ti yọ owó, kọ ímeèlì sí support@goatwatch.app pẹ̀lú GOAT ID rẹ.",
     more: "Béèrè \"more\" fún ìyókù.",          // NEW: shown when a long answer was cut short
+    attach: "Fi àwòrán ojú-iboju kún un", shot: "Àwòrán ojú-iboju", badImage: "A kò lè ka àwòrán yìí. Gbìyànjú àwòrán míràn.", // NEW: screenshots in the chat
     agreePre: "Nípa sísanwó, o gbà sí", agreeTerms: "Àwọn Òfin Lílò (pẹ̀lú ìdápadà owó)", agreeAnd: "àti", agreePrivacy: "Ìlànà Àṣírí wa", // NEW: pay-page consent line
     back: "Padà sí GOAT", badInput: "Ṣàyẹ̀wò GOAT ID àti ímeèlì rẹ.",
   },
@@ -209,6 +218,7 @@ export const AI = {
     doneOk: "Anatala ụgwọ ✓ GOAT AI na-arụ ọrụ ruo {date}.", donePending: "Anyị na-akwado ịkwụ ụgwọ gị…",
     doneFail: "Anyị enwebeghị ike ịkwado ịkwụ ụgwọ a. Ọ bụrụ na ewepụrụ ego, zitere support@goatwatch.app email na GOAT ID gị.",
     more: "Jụọ \"more\" maka nke fọdụrụ.",          // NEW: shown when a long answer was cut short
+    attach: "Tinye foto ihuenyo", shot: "Foto ihuenyo", badImage: "Enweghị ike ịgụ foto a. Nwaa foto ihuenyo ọzọ.", // NEW: screenshots in the chat
     agreePre: "Site n'ịkwụ ụgwọ, ị kwenyere na", agreeTerms: "Usoro Ojiji (gụnyere nkwụghachi)", agreeAnd: "na", agreePrivacy: "Iwu Nzuzo anyị", // NEW: pay-page consent line
     back: "Laghachi na GOAT", badInput: "Lelee GOAT ID na email gị.",
   },
