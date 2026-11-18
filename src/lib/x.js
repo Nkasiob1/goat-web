@@ -213,8 +213,8 @@ async function uploadImage(imageUrl, keys) {
   return json.data?.id || json.media_id_string; // the media id
 }
 
-// sendTweet: post text (+ optional picture). Always returns an object, never throws.
-export async function sendTweet(text, imageUrl) {
+// sendTweet: post text (+ optional picture, + optional reply-to). Always returns an object, never throws.
+export async function sendTweet(text, imageUrl, replyToId = null) {          // CHANGED: + replyToId (rug watch replies)
   const keys = xKeys(); // get the 4 secrets
   if (!keys) return { skipped: true, reason: "X keys not set" }; // quiet skip
 
@@ -229,6 +229,7 @@ export async function sendTweet(text, imageUrl) {
 
   const body = { text }; // the post text
   if (mediaId) body.media = { media_ids: [mediaId] }; // attach the picture if we have one
+  if (replyToId) body.reply = { in_reply_to_tweet_id: String(replyToId) }; // NEW: post UNDER an earlier post
 
   const url = `${API}/tweets`; // v2 create-post endpoint
   try {
@@ -285,6 +286,50 @@ export async function postRadarToX(supabase, token, imageUrl) {
       .from("radar_tokens")
       .update({ x_posted_at: new Date().toISOString() }) // stamp it so it isn't posted again
       .eq("id", token.id);
+    if (result.id) {                                        // NEW: remember WHICH post, so a rug warning can reply under it
+      await supabase.from("radar_tokens").update({ x_post_id: result.id }).eq("id", token.id); // separate on purpose:
+    }                                                       // if the column is missing, the stamp above still saves
   }
   return result; // shown in the radar's JSON response
+}
+
+// ---------- NEW: rug watch on X ----------
+
+// formatRugTweet: a coin GOAT posted on X has turned 🟡/🔴 on a fresh check.
+// Same facts as the Telegram rug alert, no link (links cost ~13x more), never "scam" or "rug pull" as a verdict.
+export function formatRugTweet(before, after, reason) {
+  const t = { ...before, ...after };                        // the newest numbers win
+  let tag = cashtag(t.symbol);                              // e.g. $PEPE
+  if (!tag.startsWith("$") && t.name) tag = String(t.name).slice(0, 30); // non-Latin symbols: use the name
+  const chain = CHAINS[String(t.chain || "").toLowerCase()] || title(t.chain);
+  const verdict = String(reason).startsWith("red") ? "🔴 High risk" : "🟡 Caution"; // what the re-check says now
+  const notTrading = String(reason).includes("not trading");           // the pool is gone
+  const was = money(before.liquidity_usd);                             // liquidity when GOAT posted it
+  const now = money(after?.liquidity_usd) || "$0";                     // liquidity now
+  const why = (after?.safety_notes || [])[0];                          // Vet's top reason, e.g. "Price crash: Down 92%..."
+  return fit([
+    { text: `🚨 Rug watch: ${tag}${chain ? ` on ${chain}` : ""}` },
+    { text: `` },
+    { text: `GOAT posted this coin earlier with no major red flags. A fresh check now says: ${verdict}.` },
+    { text: notTrading ? `No longer trading on any tracked DEX.` : was ? `💧 Liq ${was} → ${now}` : null },
+    { text: why && !notTrading ? `Why: ${String(why).split(". ")[0]}` : null, optional: true }, // first sentence only
+    { text: `` },
+    { text: `If you hold it, check before you trade. Full check: link in bio` },
+    { text: `Not financial advice.` },
+  ]);
+}
+
+// postRugWatchToX: warn X followers about a coin GOAT posted there. Replies under the original post
+// when we know its id; otherwise (older posts) it goes out as a normal post. Never throws.
+export async function postRugWatchToX(before, after, reason) {
+  if (!xKeys()) return { skipped: true, reason: "X keys not set" };
+  if (!before.x_posted_at) return { skipped: true, reason: "never posted on X" }; // followers never saw it: say nothing
+  const text = formatRugTweet(before, after, reason);
+  if (!text) return { skipped: true, reason: "too long" };
+  let result = await sendTweet(text, null, before.x_post_id || null);  // reply under the original if we can
+  if (!result.ok && before.x_post_id && [400, 403, 404].includes(result.status)) {
+    result = await sendTweet(text, null, null);             // original deleted or can't be replied to: post normally
+  }
+  if (!result.ok && !result.skipped) console.error("X rug watch failed:", before.symbol, result.status ?? "", result.error);
+  return { ...result, reply: Boolean(before.x_post_id) };
 }

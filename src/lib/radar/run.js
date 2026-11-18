@@ -6,7 +6,7 @@ import { vetToken } from "../vet";                                          // t
 import { sendTelegram, escapeHtml } from "../telegram";                     // channel alerts
 import { sleep } from "./http";                                             // polite pauses
 // REMOVED: partner (referral) links. Exchange affiliate links are paused (Nigeria SEC promotion rules).
-import { postRadarToX } from "../x";                                        // posts to @GOATSRADAR
+import { postRadarToX, postRugWatchToX } from "../x";                       // posts to @GOATSRADAR (+ NEW: rug watch)
 import { SITE_URL } from "../site";                                         // the one place our address lives
 
 const SITE = SITE_URL;                            // our public address
@@ -319,6 +319,10 @@ export async function runRadar() {
         if (!sent?.skipped) report.rugAlerts++;
       } catch (err) {
         report.telegram = `rug alert error: ${err.message}`;                 // shown in the JSON, run continues
+      }
+      if (row.x_posted_at) {                                                 // NEW: it was on X too -> warn X followers
+        const xr = await postRugWatchToX(row, gate.t, gate.reason);          // replies under the original post when possible
+        report.x.push({ rugWatch: row.symbol, ok: Boolean(xr.ok), reply: xr.reply, ...(xr.ok ? {} : { why: xr.reason || xr.error }) });
       }
     }
   }
