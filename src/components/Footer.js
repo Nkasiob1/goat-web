@@ -27,7 +27,7 @@ export default function Footer() {
       key: "company",
       heading: <S k="footer.company" />,
       links: [
-        { href: "/#bot", label: <S k="footer.bot" /> },
+        { href: "/about", label: <S k="footer.about" /> },                 // CHANGED: About page (was the bot section)
         { href: "/community", label: <T k="nav.community" /> },
         { href: "/advertise", label: <S k="footer.advertise" /> },
       ],

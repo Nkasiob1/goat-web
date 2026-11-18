@@ -53,6 +53,7 @@ export default function AiChat() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [info, setInfo] = useState(null);                  // { code, paid, paidUntil, freeLeft, locked? }
+  const [linkInfo, setLinkInfo] = useState(null);          // NEW: { text: "LINK 482913", whatsapp } while linking WhatsApp
   const [shot, setShot] = useState(null);                  // NEW: the screenshot waiting to be sent { data, mediaType, preview }
   const listRef = useRef(null);
   const fileRef = useRef(null);                            // NEW: the hidden file picker
@@ -82,6 +83,18 @@ export default function AiChat() {
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, busy]);
+
+  // NEW: "Link WhatsApp" -> ask the server for a one-time code, then they send it to the WhatsApp bot
+  async function startLink() {
+    try {
+      const res = await fetch("/api/ai/link", { method: "POST", headers: await authHeader() });
+      const data = await res.json();
+      if (res.ok && data.text) setLinkInfo(data);
+      else setMsgs((m) => [...m, { role: "bot", text: a("error", lang) }]);
+    } catch {
+      setMsgs((m) => [...m, { role: "bot", text: a("error", lang) }]);
+    }
+  }
 
   // NEW: a picture was chosen -> shrink it and show a small preview above the message box
   async function pickImage(e) {
@@ -157,6 +170,29 @@ export default function AiChat() {
             </div>
             <button type="button" onClick={() => setOpen(false)} aria-label={a("close", lang)} className="grid h-11 w-11 place-items-center rounded-full text-stone hover:bg-mist">✕</button>
           </div>
+
+          {/* NEW: link this account with WhatsApp, so one pass works in both places */}
+          {info?.code && !info.linked && (
+            <div className="border-b border-line px-4 py-2 text-sm">
+              {!linkInfo ? (
+                <button type="button" onClick={startLink} className="min-h-11 font-medium text-forest underline">
+                  📱 {a("linkWa", lang)}
+                </button>
+              ) : (
+                <div className="space-y-2 py-1">
+                  <p className="text-stone">{a("linkHelp", lang)}</p>
+                  <p className="font-mono text-lg font-semibold tracking-wider text-ink">{linkInfo.text}</p>
+                  <a href={linkInfo.whatsapp} target="_blank" rel="noopener noreferrer"
+                     className="inline-flex min-h-11 items-center rounded-full bg-forest px-5 font-semibold text-water hover:bg-moss">
+                    {a("linkOpen", lang)}
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+          {info?.linked && (
+            <p className="border-b border-line px-4 py-1.5 text-xs text-forest">{a("linked", lang)}</p>
+          )}
 
           {/* messages */}
           <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4 text-sm">

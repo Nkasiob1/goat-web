@@ -4,6 +4,7 @@ export const SITE = {
   en: {
     "footer.product": "Product", "footer.company": "Company", "footer.legal": "Legal",
     "footer.bot": "The Bot", "footer.advertise": "Advertise",
+    "footer.about": "About GOAT",   // NEW: footer link to /about
     "footer.terms": "Terms", "footer.privacy": "Privacy", "footer.risk": "Risk Disclosure",
     "footer.tagline": "Greatest Of All Trades.",
     "footer.warning": "Risk warning: Trading crypto, forex, stocks and indices involves significant risk of loss and is not suitable for everyone. Past performance does not guarantee future results. GOAT provides information and tools, not financial advice. Only trade with money you can afford to lose.",
@@ -16,6 +17,7 @@ export const SITE = {
   fr: {
     "footer.product": "Produit", "footer.company": "Entreprise", "footer.legal": "Mentions légales",
     "footer.bot": "Le Bot", "footer.advertise": "Publicité",
+    "footer.about": "À propos de GOAT",   // NEW: footer link to /about
     "footer.terms": "Conditions", "footer.privacy": "Confidentialité", "footer.risk": "Avertissement sur les risques",
     "footer.tagline": "Greatest Of All Trades.",
     "footer.warning": "Avertissement : le trading de cryptomonnaies, de forex, d'actions et d'indices comporte un risque de perte important et ne convient pas à tout le monde. Les performances passées ne garantissent pas les résultats futurs. GOAT fournit des informations et des outils, pas des conseils financiers. Ne tradez qu'avec de l'argent que vous pouvez vous permettre de perdre.",
@@ -28,6 +30,7 @@ export const SITE = {
   es: {
     "footer.product": "Producto", "footer.company": "Empresa", "footer.legal": "Legal",
     "footer.bot": "El Bot", "footer.advertise": "Publicidad",
+    "footer.about": "Acerca de GOAT",   // NEW: footer link to /about
     "footer.terms": "Términos", "footer.privacy": "Privacidad", "footer.risk": "Aviso de riesgos",
     "footer.tagline": "Greatest Of All Trades.",
     "footer.warning": "Advertencia de riesgo: operar con criptomonedas, forex, acciones e índices implica un riesgo significativo de pérdida y no es adecuado para todos. El rendimiento pasado no garantiza resultados futuros. GOAT ofrece información y herramientas, no asesoramiento financiero. Opera solo con dinero que puedas permitirte perder.",
@@ -40,6 +43,7 @@ export const SITE = {
   pt: {
     "footer.product": "Produto", "footer.company": "Empresa", "footer.legal": "Jurídico",
     "footer.bot": "O Bot", "footer.advertise": "Anuncie",
+    "footer.about": "Sobre a GOAT",   // NEW: footer link to /about
     "footer.terms": "Termos", "footer.privacy": "Privacidade", "footer.risk": "Aviso de riscos",
     "footer.tagline": "Greatest Of All Trades.",
     "footer.warning": "Aviso de risco: negociar cripto, forex, ações e índices envolve risco significativo de perda e não é adequado para todos. Desempenho passado não garante resultados futuros. A GOAT oferece informações e ferramentas, não conselhos financeiros. Negocie apenas com dinheiro que você pode perder.",
@@ -52,6 +56,7 @@ export const SITE = {
   ha: {
     "footer.product": "Kayayyaki", "footer.company": "Kamfani", "footer.legal": "Doka",
     "footer.bot": "Bot ɗin", "footer.advertise": "Talla",
+    "footer.about": "Game da GOAT",   // NEW: footer link to /about
     "footer.terms": "Sharuɗɗa", "footer.privacy": "Sirri", "footer.risk": "Bayanin Haɗari",
     "footer.tagline": "Greatest Of All Trades.",
     "footer.warning": "Gargaɗin haɗari: Cinikin crypto, forex, hannun jari da indices yana da babban haɗarin asara kuma bai dace da kowa ba. Nasarar baya ba ta tabbatar da sakamakon gaba ba. GOAT tana ba da bayanai da kayan aiki, ba shawarar kuɗi ba. Ka yi ciniki da kuɗin da za ka iya rasawa kawai.",
@@ -64,6 +69,7 @@ export const SITE = {
   yo: {
     "footer.product": "Ọjà", "footer.company": "Ilé-iṣẹ́", "footer.legal": "Òfin",
     "footer.bot": "Bot náà", "footer.advertise": "Ìpolówó",
+    "footer.about": "Nípa GOAT",   // NEW: footer link to /about
     "footer.terms": "Àwọn òfin", "footer.privacy": "Àṣírí", "footer.risk": "Ìkéde Ewu",
     "footer.tagline": "Greatest Of All Trades.",
     "footer.warning": "Ìkìlọ̀ ewu: Ṣíṣòwò crypto, forex, ìpín àti indices ní ewu àdánù ńlá, kò sì bá gbogbo ènìyàn mu. Àṣeyọrí àtẹ̀yìnwá kò ṣèlérí èsì ọjọ́ iwájú. GOAT ń pèsè àlàyé àti irinṣẹ́, kì í ṣe ìmọ̀ràn owó. Fi owó tí o lè pàdánù nìkan ṣòwò.",
@@ -76,6 +82,7 @@ export const SITE = {
   ig: {
     "footer.product": "Ngwaahịa", "footer.company": "Ụlọ ọrụ", "footer.legal": "Iwu",
     "footer.bot": "Bot ahụ", "footer.advertise": "Mgbasa ozi",
+    "footer.about": "Maka GOAT",   // NEW: footer link to /about
     "footer.terms": "Usoro", "footer.privacy": "Nzuzo", "footer.risk": "Nkọwa Ihe Ize Ndụ",
     "footer.tagline": "Greatest Of All Trades.",
     "footer.warning": "Ịdọ aka ná ntị: Ịzụ ahịa crypto, forex, òkè na indices nwere nnukwu ihe ize ndụ nke ọnwụ ego, ọ dịghịkwa mma maka onye ọ bụla. Ihe gara nke ọma n'oge gara aga anaghị ekwe nkwa ihe ga-eme n'ọdịnihu. GOAT na-enye ozi na ngwaọrụ, ọ bụghị ndụmọdụ ego. Jiri naanị ego ị nwere ike ịtụfu zụọ ahịa.",
@@ -90,6 +97,7 @@ export const SITE = {
     "footer.company": "الشركة",
     "footer.legal": "قانوني",
     "footer.bot": "البوت",
+    "footer.about": "عن GOAT",   // NEW: footer link to /about
     "footer.advertise": "أعلن معنا",
     "footer.terms": "الشروط",
     "footer.privacy": "الخصوصية",
@@ -111,6 +119,7 @@ export const SITE = {
     "footer.company": "कंपनी",
     "footer.legal": "कानूनी",
     "footer.bot": "बॉट",
+    "footer.about": "GOAT के बारे में",   // NEW: footer link to /about
     "footer.advertise": "विज्ञापन दें",
     "footer.terms": "शर्तें",
     "footer.privacy": "गोपनीयता",
@@ -132,6 +141,7 @@ export const SITE = {
     "footer.company": "شرکت",
     "footer.legal": "حقوقی",
     "footer.bot": "ربات",
+    "footer.about": "درباره GOAT",   // NEW: footer link to /about
     "footer.advertise": "تبلیغات",
     "footer.terms": "شرایط",
     "footer.privacy": "حریم خصوصی",

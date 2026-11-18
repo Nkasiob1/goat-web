@@ -7,6 +7,10 @@ import { isGoatCode } from "../../../../lib/aiAccess";
 export async function GET(request) {
   const code = (request.nextUrl.searchParams.get("code") || "").toUpperCase();
   if (!isGoatCode(code)) return NextResponse.json({ paidUntil: null }, { status: 400 });
-  const { data } = await supabaseAdmin().from("ai_access").select("paid_until").eq("code", code).maybeSingle();
+  const db = supabaseAdmin();
+  let { data } = await db.from("ai_access").select("paid_until, merged_into").eq("code", code).maybeSingle();
+  if (data?.merged_into) {                                 // NEW: a WhatsApp ID that was linked into a website account
+    ({ data } = await db.from("ai_access").select("paid_until, merged_into").eq("code", data.merged_into).maybeSingle());
+  }
   return NextResponse.json({ paidUntil: data?.paid_until || null });
 }

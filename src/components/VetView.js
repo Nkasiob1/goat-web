@@ -7,7 +7,7 @@ import { goLink, PARTNERS_ENABLED } from "../lib/partners"; // Bybit partner lin
 import { useLang, useT } from "../lib/i18n/useLang";      // translations
 import { LOCALES } from "../lib/i18n/dictionaries";       // date format per language
 import { translateNote } from "../lib/i18n/notes";        // phrasebook for the check details
-import WaitlistBox from "./WaitlistBox";                  // NEW: Premium waitlist under each report
+import AiPlanBox from "./AiPlanBox";                      // CHANGED: GOAT AI pricing under each report (was the waitlist)
 
 // $1.2M style money
 const money = (n) =>
@@ -290,8 +290,8 @@ export default function VetView() {
             </p>
           )}
 
-          {/* NEW: Premium waitlist, shown right after someone has seen what a report gives them */}
-          <WaitlistBox source="vet" />
+          {/* CHANGED: GOAT AI pricing, shown right after someone has seen what a report gives them */}
+          <AiPlanBox />
 
           {/* honesty footer */}
           <p className="text-xs text-stone">

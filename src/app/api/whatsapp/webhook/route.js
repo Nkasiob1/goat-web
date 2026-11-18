@@ -13,7 +13,7 @@ import { SITE_URL } from "../../../../lib/site";                                
 import { translateNote } from "../../../../lib/i18n/notes";                           // NEW: same phrasebook as the website
 import { WA_LANGS, LANG_NAMES, LANG_WORDS, SUB_WORDS, guessLang, w } from "../../../../lib/i18n/wa"; // the bot's words, 10 languages
 import { askGoat } from "../../../../lib/goatAgent";                                  // NEW: GOAT AI (paid chat)
-import { getAccess, gate as aiGate, webAllowed, bumpUsage, loadHistory, saveTurn, saveNickname, today, FREE_AI_CHATS } from "../../../../lib/aiAccess"; // NEW: shared with the website
+import { getAccess, gate as aiGate, webAllowed, bumpUsage, loadHistory, saveTurn, saveNickname, today, FREE_AI_CHATS, redeemLinkCode } from "../../../../lib/aiAccess"; // shared with the website (+ NEW: linking)
 
 export const maxDuration = 60;                             // CHANGED: GOAT AI with web search needs up to ~50s (was 30: answers got killed)
 
@@ -330,6 +330,14 @@ async function handleMessage(m) {
   // NEW: their GOAT ID row. A brand-new person first gets a one-time notice: terms, privacy, 18+, not advice.
   const row = await getAccess({ chatId });
   if (row.isNew) await reply(from, m.id, w(lang).legalNotice);
+
+  // NEW: "LINK 123456" from the website's "Link WhatsApp" button -> join this chat to their goatwatch.app account
+  const linkMatch = /^\s*link\s*(\d{6})\s*$/i.exec(m.text?.body || "");
+  if (linkMatch) {
+    const joined = await redeemLinkCode(linkMatch[1], chatId).catch(() => null); // null = wrong/expired code (or DB problem)
+    await reply(from, m.id, joined ? w(lang).linkOk.replace("{code}", joined) : w(lang).linkBad);
+    return;
+  }
 
   // NEW: they tapped a language in the menu -> save it, confirm, and show help in that language
   const picked = m.type === "interactive" ? m.interactive?.list_reply?.id || "" : "";

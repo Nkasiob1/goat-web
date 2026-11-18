@@ -3,7 +3,7 @@ import LivePrices from "./LivePrices";                   // the live price card
 import HeroCta from "./HeroCta";                         // the coin box + welcome back / sign-up link
 import LiveTicker from "./LiveTicker";                   // NEW: scrolling strip of real recent verdicts
 import S from "./S";                                     // translated words
-import WaitlistBox from "./WaitlistBox";                 // Premium waitlist
+import AiPlanBox from "./AiPlanBox";                     // CHANGED: real GOAT AI pricing (was the Premium waitlist)
 
 // The glowing GOAT coin, reused at two sizes (small on phones, large on laptops)
 function Coin({ size }) {
@@ -47,7 +47,7 @@ export default function Hero() {
 
           <HeroCta />                                    {/* the coin box: the first thing anyone can DO */}
 
-          <WaitlistBox source="home" />                  {/* measures interest in Premium */}
+          <AiPlanBox />                                  {/* CHANGED: GOAT AI is live, so show the price, not a waitlist */}
         </div>
 
         <div className="hidden justify-center md:flex">  {/* laptops: the big glowing coin anchors the hero */}

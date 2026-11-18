@@ -27,6 +27,8 @@ export const SUB_WORDS = /^(subscribe|subscription|premium|goat ai|my id|goat id
 export const WA = {
   en: {
     legalNotice: "👋 Welcome to *GOAT Watch*.\nBy using GOAT you agree to our Terms (goatwatch.app/terms) and Privacy Policy (goatwatch.app/privacy). GOAT is for people aged 18 and over, and nothing it says is financial advice.",          // NEW: one-time notice for new people
+    linkOk: "✅ Linked! WhatsApp and your goatwatch.app account now share one GOAT ID ({code}). Your GOAT AI pass works in both places.", // NEW: website <-> WhatsApp linking
+    linkBad: "❌ That link code is wrong or has expired. On goatwatch.app, open GOAT AI and tap *Link WhatsApp* to get a new one.",
     helpTitle: "🐐 *GOAT Vet*: free scam check for crypto coins",
     helpSend: "Send me any coin's contract address and I'll check it for you:",
     helpForward: "You can also forward a coin from any group. I'll reply with the verdict.",
@@ -64,6 +66,8 @@ export const WA = {
   },
   fr: {
     legalNotice: "👋 Bienvenue sur *GOAT Watch*.\nEn utilisant GOAT, vous acceptez nos Conditions (goatwatch.app/terms) et notre Politique de confidentialité (goatwatch.app/privacy). GOAT est réservé aux personnes de 18 ans et plus, et rien de ce qu'il dit n'est un conseil financier.",          // NEW: one-time notice for new people
+    linkOk: "✅ C'est lié ! WhatsApp et votre compte goatwatch.app partagent maintenant un seul ID GOAT ({code}). Votre accès GOAT AI fonctionne aux deux endroits.", // NEW: website <-> WhatsApp linking
+    linkBad: "❌ Ce code est incorrect ou a expiré. Sur goatwatch.app, ouvrez GOAT AI et touchez *Lier WhatsApp* pour en obtenir un nouveau.",
     helpTitle: "🐐 *GOAT Vet* : vérification gratuite des cryptos contre les arnaques",
     helpSend: "Envoyez-moi l'adresse du contrat de n'importe quel coin et je la vérifie pour vous :",
     helpForward: "Vous pouvez aussi transférer un coin depuis un groupe. Je réponds avec le verdict.",
@@ -101,6 +105,8 @@ export const WA = {
   },
   es: {
     legalNotice: "👋 Bienvenido a *GOAT Watch*.\nAl usar GOAT aceptas nuestros Términos (goatwatch.app/terms) y nuestra Política de privacidad (goatwatch.app/privacy). GOAT es para mayores de 18 años y nada de lo que dice es asesoramiento financiero.",          // NEW: one-time notice for new people
+    linkOk: "✅ ¡Vinculado! WhatsApp y tu cuenta de goatwatch.app ahora comparten un solo ID GOAT ({code}). Tu pase de GOAT AI funciona en ambos lugares.", // NEW: website <-> WhatsApp linking
+    linkBad: "❌ Ese código es incorrecto o ya venció. En goatwatch.app, abre GOAT AI y toca *Vincular WhatsApp* para obtener uno nuevo.",
     helpTitle: "🐐 *GOAT Vet*: revisión gratuita de criptomonedas contra estafas",
     helpSend: "Envíame la dirección del contrato de cualquier moneda y la reviso por ti:",
     helpForward: "También puedes reenviar una moneda desde cualquier grupo. Te respondo con el veredicto.",
@@ -138,6 +144,8 @@ export const WA = {
   },
   pt: {
     legalNotice: "👋 Bem-vindo ao *GOAT Watch*.\nAo usar o GOAT, você concorda com nossos Termos (goatwatch.app/terms) e nossa Política de Privacidade (goatwatch.app/privacy). O GOAT é para maiores de 18 anos, e nada do que ele diz é conselho financeiro.",          // NEW: one-time notice for new people
+    linkOk: "✅ Vinculado! O WhatsApp e sua conta goatwatch.app agora usam um só ID GOAT ({code}). Seu passe do GOAT AI funciona nos dois lugares.", // NEW: website <-> WhatsApp linking
+    linkBad: "❌ Esse código está errado ou expirou. No goatwatch.app, abra o GOAT AI e toque em *Vincular WhatsApp* para obter outro.",
     helpTitle: "🐐 *GOAT Vet*: verificação gratuita de criptomoedas contra golpes",
     helpSend: "Envie o endereço do contrato de qualquer moeda e eu verifico para você:",
     helpForward: "Você também pode encaminhar uma moeda de qualquer grupo. Eu respondo com o veredito.",
@@ -175,6 +183,8 @@ export const WA = {
   },
   ar: {                                                    // NEW: Arabic (WhatsApp shows it right-to-left by itself)
     legalNotice: "👋 مرحبًا بك في *GOAT Watch*.\nباستخدامك GOAT فإنك توافق على شروط الاستخدام (goatwatch.app/terms) وسياسة الخصوصية (goatwatch.app/privacy). GOAT مخصص لمن بلغوا 18 عامًا فأكثر، ولا شيء مما يقوله نصيحة مالية.",          // NEW: one-time notice for new people
+    linkOk: "✅ تم الربط! أصبح واتساب وحسابك على goatwatch.app يستخدمان معرّف GOAT واحداً ({code}). اشتراكك في GOAT AI يعمل في المكانين.", // NEW: website <-> WhatsApp linking
+    linkBad: "❌ رمز الربط غير صحيح أو انتهت صلاحيته. على goatwatch.app افتح GOAT AI واضغط *ربط واتساب* للحصول على رمز جديد.",
     helpTitle: "🐐 *GOAT Vet*: فحص مجاني للعملات الرقمية ضد الاحتيال",
     helpSend: "أرسل لي عنوان عقد أي عملة وسأفحصها لك:",
     helpForward: "يمكنك أيضًا إعادة توجيه عملة من أي مجموعة. سأرد عليك بالنتيجة.",
@@ -212,6 +222,8 @@ export const WA = {
   },
   hi: {                                                    // NEW: Hindi
     legalNotice: "👋 *GOAT Watch* में आपका स्वागत है।\nGOAT इस्तेमाल करके आप हमारी शर्तों (goatwatch.app/terms) और गोपनीयता नीति (goatwatch.app/privacy) से सहमत होते हैं। GOAT 18 साल और उससे ज़्यादा उम्र के लोगों के लिए है, और इसकी कोई भी बात वित्तीय सलाह नहीं है।",          // NEW: one-time notice for new people
+    linkOk: "✅ लिंक हो गया! अब WhatsApp और आपका goatwatch.app अकाउंट एक ही GOAT ID ({code}) इस्तेमाल करते हैं। आपका GOAT AI पास दोनों जगह चलेगा।", // NEW: website <-> WhatsApp linking
+    linkBad: "❌ यह लिंक कोड गलत है या इसकी समय-सीमा खत्म हो गई है। goatwatch.app पर GOAT AI खोलें और नया कोड पाने के लिए *WhatsApp लिंक करें* दबाएँ।",
     helpTitle: "🐐 *GOAT Vet*: क्रिप्टो कॉइन के लिए मुफ़्त स्कैम जांच",
     helpSend: "किसी भी कॉइन का कॉन्ट्रैक्ट एड्रेस भेजें, मैं आपके लिए जांच करूंगा:",
     helpForward: "आप किसी भी ग्रुप से कॉइन फॉरवर्ड भी कर सकते हैं। मैं नतीजा भेजूंगा।",
@@ -249,6 +261,8 @@ export const WA = {
   },
   fa: {                                                    // NEW: Persian (right-to-left, handled by WhatsApp)
     legalNotice: "👋 به *GOAT Watch* خوش آمدید.\nبا استفاده از GOAT با شرایط استفاده (goatwatch.app/terms) و سیاست حریم خصوصی (goatwatch.app/privacy) ما موافقت می‌کنید. GOAT برای افراد ۱۸ سال و بالاتر است و هیچ‌چیز آن توصیه مالی نیست.",          // NEW: one-time notice for new people
+    linkOk: "✅ متصل شد! حالا واتس‌اپ و حساب goatwatch.app شما یک شناسه GOAT مشترک دارند ({code}). اشتراک GOAT AI شما در هر دو جا کار می‌کند.", // NEW: website <-> WhatsApp linking
+    linkBad: "❌ این کد اتصال اشتباه است یا منقضی شده. در goatwatch.app، GOAT AI را باز کنید و برای کد جدید *اتصال واتس‌اپ* را بزنید.",
     helpTitle: "🐐 *GOAT Vet*: بررسی رایگان کوین‌ها برای جلوگیری از کلاهبرداری",
     helpSend: "آدرس قرارداد هر کوینی را برایم بفرستید تا آن را بررسی کنم:",
     helpForward: "می‌توانید کوین را از هر گروهی فوروارد کنید. با نتیجه پاسخ می‌دهم.",
@@ -286,6 +300,8 @@ export const WA = {
   },
   ha: {
     legalNotice: "👋 Barka da zuwa *GOAT Watch*.\nTa amfani da GOAT ka amince da Sharuɗɗanmu (goatwatch.app/terms) da Manufar Sirri (goatwatch.app/privacy). GOAT na mutane masu shekaru 18 zuwa sama ne, kuma babu abin da yake faɗa da ke shawarar kuɗi.",          // NEW: one-time notice for new people
+    linkOk: "✅ An haɗa! Yanzu WhatsApp da asusunka na goatwatch.app suna amfani da GOAT ID ɗaya ({code}). Biyan GOAT AI ɗinka yana aiki a wurare biyun.", // NEW: website <-> WhatsApp linking
+    linkBad: "❌ Wannan lambar haɗi ba daidai ba ce ko ta ƙare. A goatwatch.app, buɗe GOAT AI ka danna *Haɗa WhatsApp* don samun sabuwa.",
     helpTitle: "🐐 *GOAT Vet*: binciken coin kyauta don guje wa zamba",
     helpSend: "Aiko min adireshin kwantiragin kowane coin, zan duba maka:",
     helpForward: "Kana iya tura coin daga kowane rukuni. Zan ba ka amsa da sakamakon.",
@@ -323,6 +339,8 @@ export const WA = {
   },
   yo: {
     legalNotice: "👋 Ẹ káàbọ̀ sí *GOAT Watch*.\nNípa lílo GOAT, o gbà sí Àwọn Òfin wa (goatwatch.app/terms) àti Ìlànà Àṣírí wa (goatwatch.app/privacy). GOAT wà fún àwọn tó ti pé ọmọ ọdún 18 sókè, kò sì sí ohun tó sọ tó jẹ́ ìmọ̀ràn owó.",          // NEW: one-time notice for new people
+    linkOk: "✅ A ti so wọ́n pọ̀! WhatsApp àti àkọọ́lẹ̀ goatwatch.app rẹ ti ń lo GOAT ID kan náà ({code}). Ìwé-àṣẹ GOAT AI rẹ ń ṣiṣẹ́ ní ibi méjèèjì.", // NEW: website <-> WhatsApp linking
+    linkBad: "❌ Kóòdù ìsopọ̀ yìí kò tọ̀nà tàbí ó ti parí. Lórí goatwatch.app, ṣí GOAT AI kí o tẹ *So WhatsApp pọ̀* láti gba tuntun.",
     helpTitle: "🐐 *GOAT Vet*: àyẹ̀wò coin ọ̀fẹ́ láti yẹra fún jìbìtì",
     helpSend: "Fi àdírẹ́sì contract coin èyíkéyìí ránṣẹ́ sí mi, màá ṣàyẹ̀wò rẹ̀ fún ọ:",
     helpForward: "O tún lè fi coin ránṣẹ́ láti inú ẹgbẹ́ èyíkéyìí. Màá dá ọ lóhùn pẹ̀lú àbájáde.",
@@ -360,6 +378,8 @@ export const WA = {
   },
   ig: {
     legalNotice: "👋 Nnọọ na *GOAT Watch*.\nSite n'iji GOAT, ị kwenyere na Usoro anyị (goatwatch.app/terms) na Iwu Nzuzo anyị (goatwatch.app/privacy). GOAT bụ maka ndị gbara afọ 18 gaa n'ihu, ọ dịghịkwa ihe ọ na-ekwu bụ ndụmọdụ ego.",          // NEW: one-time notice for new people
+    linkOk: "✅ Ejikọtala! Ugbu a WhatsApp na akaụntụ goatwatch.app gị na-eji otu GOAT ID ({code}). Ikike GOAT AI gị na-arụ ọrụ n'ebe abụọ ahụ.", // NEW: website <-> WhatsApp linking
+    linkBad: "❌ Koodu njikọ a ezighi ezi ma ọ bụ na oge ya agafeela. Na goatwatch.app, mepee GOAT AI ma pịa *Jikọọ WhatsApp* iji nweta nke ọhụrụ.",
     helpTitle: "🐐 *GOAT Vet*: nyocha coin n'efu iji zere aghụghọ",
     helpSend: "Zitere m adreesị contract nke coin ọ bụla, m ga-enyocha ya maka gị:",
     helpForward: "Ị nwekwara ike ibuga coin site n'otu ọ bụla. M ga-aza gị na nsonaazụ.",

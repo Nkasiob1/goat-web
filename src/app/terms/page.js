@@ -88,7 +88,7 @@ const sections = [                                                 // each secti
         "GOAT AI is sold as prepaid passes (for example 7 days or 30 days), at the prices shown on goatwatch.app/pay. Prices are in Nigerian naira.",
         "Payments are processed securely by Paystack. A pass starts as soon as the payment is confirmed, and buying again adds time on top of any time you have left.",
         "Passes do not renew automatically. Nothing is charged again unless you choose to buy another pass.",
-        "One pass works for one GOAT ID, on both WhatsApp and the website.",
+        "One pass works for one GOAT ID. To use the same pass on WhatsApp and on goatwatch.app, link them: on the website open GOAT AI and tap Link WhatsApp. Passes bought separately before linking are added together.", // CHANGED: linking
       ],
       `Refunds: if you were charged but your pass was not switched on, or you were charged twice for the same purchase, email ${CONTACT_EMAIL} with your GOAT ID and payment reference and we will activate the pass or refund you. Because a pass starts straight away, we don't refund unused days, unless GOAT AI was unavailable for a long period through our fault or the law requires a refund.`,
     ],
@@ -160,7 +160,7 @@ export default function TermsPage() {
     <LegalPage
       eyebrow="Legal"
       title="Terms of Use"
-      updated="14 November 2026"
+      updated="19 November 2026"
       intro="These terms explain the rules for using GOAT. By creating an account, using the site or the bots, or buying GOAT AI, you agree to them."
       sections={sections}
     />

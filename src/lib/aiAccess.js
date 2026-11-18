@@ -1,7 +1,7 @@
 // src/lib/aiAccess.js
 // GOAT AI access, shared by WhatsApp and the website: one GOAT ID, one free trial, one subscription.
 // Server only (uses the secret key). Phone numbers and emails are never stored here.
-import { createHash } from "node:crypto";
+import { createHash, randomInt } from "node:crypto";   // CHANGED: + randomInt for one-time link codes
 import { supabaseAdmin } from "./supabaseAdmin";           // secret-key client (skips RLS, server only)
 
 export const FREE_AI_CHATS = 10;                           // free AI replies per person, ever (the trial)
@@ -95,10 +95,69 @@ export async function saveTurn(code, channel, userText, botText) {
 // Add days to a subscription (renewals stack on top of time already paid)
 export async function addPaidDays(code, days) {
   const db = supabaseAdmin();
-  const { data: row } = await db.from("ai_access").select("paid_until").eq("code", code).maybeSingle();
+  const { data: row } = await db.from("ai_access").select("paid_until, merged_into").eq("code", code).maybeSingle();
   if (!row) return false;
+  if (row.merged_into) return addPaidDays(row.merged_into, days); // NEW: a linked (retired) GOAT ID pays into the account it joined
   const start = row.paid_until && new Date(row.paid_until) > new Date() ? new Date(row.paid_until) : new Date();
   const until = new Date(start.getTime() + days * 86400000).toISOString();
   await db.from("ai_access").update({ paid_until: until }).eq("code", code);
   return until;
+}
+
+// ---------- NEW: link a website account and a WhatsApp chat into ONE GOAT ID ----------
+// The website shows a one-time 6-digit code; the person sends "LINK 123456" to the WhatsApp bot.
+// No phone number is ever stored: only the scrambled chat id gets attached to their account.
+const LINK_MINUTES = 10;                                   // a code works for 10 minutes, once
+
+// Website side: make a fresh code for this logged-in user (any older code of theirs stops working)
+export async function createLinkCode(userId) {
+  const db = supabaseAdmin();
+  const now = new Date().toISOString();
+  await db.from("ai_link").delete().or(`user_id.eq.${userId},expires_at.lt."${now}"`); // their old code + anyone's expired ones
+  const expiresAt = new Date(Date.now() + LINK_MINUTES * 60000).toISOString();
+  for (let tries = 0; tries < 3; tries++) {
+    const code = String(randomInt(100000, 1000000));       // 6 random digits, e.g. "482913"
+    const { error } = await db.from("ai_link").insert({ code, user_id: userId, expires_at: expiresAt });
+    if (!error) return { code, expiresAt };
+    if (error.code !== "23505") throw new Error(error.message); // 23505 = that code is taken right now: try another
+  }
+  throw new Error("could not make a link code");
+}
+
+// Time left on a pass, in milliseconds (0 if none)
+const timeLeft = (row) => (row?.paid_until ? Math.max(0, new Date(row.paid_until) - Date.now()) : 0);
+
+// WhatsApp side: "LINK 123456" arrived from this chat. Returns the merged GOAT ID, or null if the code is bad.
+export async function redeemLinkCode(code, chatId) {
+  const db = supabaseAdmin();
+  const { data: link } = await db.from("ai_link").select("user_id")
+    .eq("code", code).gt("expires_at", new Date().toISOString()).maybeSingle();
+  if (!link) return null;                                  // wrong or expired
+  await db.from("ai_link").delete().eq("code", code);      // one use only
+
+  const web = await getAccess({ userId: link.user_id });   // the website account's row (W...)
+  if (web.chat_id === chatId) return web.code;             // already linked to this chat
+  const { data: chat } = await db.from("ai_access").select("*").eq("chat_id", chatId).maybeSingle(); // this chat's row
+
+  const merged = { chat_id: chatId };
+  if (chat && !chat.user_id) {                             // a WhatsApp-only row (G...): fold it into the account
+    const left = timeLeft(web) + timeLeft(chat);           // passes bought on both sides ADD UP
+    merged.paid_until = left ? new Date(Date.now() + left).toISOString() : web.paid_until;
+    merged.free_used = Math.max(web.free_used || 0, chat.free_used || 0); // the trial is per person, not per app
+    merged.nickname = web.nickname || chat.nickname || null;
+    const sameDay = web.day === today() && chat.day === today();
+    merged.day = today();
+    merged.day_count = sameDay ? (web.day_count || 0) + (chat.day_count || 0) : web.day === today() ? web.day_count || 0 : chat.day === today() ? chat.day_count || 0 : 0;
+    merged.day_searches = sameDay ? (web.day_searches || 0) + (chat.day_searches || 0) : web.day === today() ? web.day_searches || 0 : chat.day === today() ? chat.day_searches || 0 : 0;
+    const { error } = await db.from("ai_access")           // retire the old WhatsApp-only row (kept, not deleted:
+      .update({ chat_id: null, paid_until: null, merged_into: web.code }) // payment records may point at it, and an old
+      .eq("code", chat.code);                              // pay link with that GOAT ID must still credit the right person)
+    if (error) throw new Error(error.message);             // e.g. merged_into column missing: stop before anything half-changes
+  } else if (chat) {                                       // this chat was linked to ANOTHER account: move it here
+    const { error } = await db.from("ai_access").update({ chat_id: null }).eq("code", chat.code); // that account keeps its pass
+    if (error) throw new Error(error.message);
+  }
+  const { error } = await db.from("ai_access").update(merged).eq("code", web.code);
+  if (error) throw new Error(error.message);
+  return web.code;
 }

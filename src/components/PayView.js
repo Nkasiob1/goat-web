@@ -7,11 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useLang } from "@/lib/i18n/useLang";
 import { a } from "@/lib/i18n/ai";
 
-const PLANS = [                                             // must match PLANS in lib/aiAccess.js (the server decides the real price)
-  { id: "week", naira: 500 },
-  { id: "month", naira: 1500, best: true },
-];
-const naira = (n) => "₦" + n.toLocaleString("en-NG");
+import { PLANS, naira } from "@/lib/plans";              // CHANGED: shared with the pricing box (server still decides the price)
 
 function PayForm() {
   const lang = useLang();

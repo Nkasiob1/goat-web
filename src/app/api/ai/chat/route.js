@@ -27,6 +27,7 @@ const status = (row) => ({
   paid: isPaid(row),
   paidUntil: row.paid_until || null,
   freeLeft: Math.max(0, FREE_AI_CHATS - (row.free_used || 0)),
+  linked: Boolean(row.chat_id),                            // NEW: is a WhatsApp chat linked to this account?
 });
 
 export async function GET(request) {
