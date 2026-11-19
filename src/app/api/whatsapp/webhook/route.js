@@ -177,6 +177,8 @@ const pct = (n) =>
 
 const ICON = { fail: "✕", warn: "!", pass: "✓", unknown: "?" };
 
+const WA_LINK = "wa.me/2349156263496";                 // NEW: the GOAT Watch number, shown on the forward card
+
 // Full report on the website (ref=wa-bot lets us count visits that came from WhatsApp)
 const reportUrl = (address) => `${SITE_URL}/vet?q=${encodeURIComponent(address)}&ref=wa-bot`;
 
@@ -217,9 +219,29 @@ function formatReport(r, lang) {
   }
   if (passes.length) lines.push(`✓ ${t.clean}: ${passes.map((c) => tn(c.label)).join(", ")}`); // passes as one short line
   lines.push("", `📋 ${t.fullReport}: ${reportUrl(tk.address)}`);
+  lines.push("", t.fwdHint);                               // NEW: points to the forward-to-group card below
   lines.push("", t.disclaimer);
   return lines.join("\n");
 }
+
+// NEW: a short card made to be FORWARDED into WhatsApp groups (the bot can't join groups, but people can bring
+// the answer back). Sent as a plain message (not a reply), so it looks clean when forwarded.
+function formatForwardCard(r, lang) {
+  const t = w(lang);
+  const tn = (s) => plain(translateNote(s, lang));
+  const tk = r.token;
+  const top = r.checks.find((c) => c.status === "fail") || r.checks.find((c) => c.status === "warn"); // the biggest problem
+  return [
+    `${t[r.verdict]}: ${t.cardCheck}, *${plain(tk.symbol || "?")}* ${t.on} ${plain(tk.chainLabel)}`,
+    top ? `${ICON[top.status]} ${tn(top.label)}: ${tn(top.detail)}` : t.cardClean,
+    `📋 ${reportUrl(tk.address).replace("ref=wa-bot", "ref=wa-fwd")}`, // ref=wa-fwd: counts visits from forwarded cards
+    "",
+    `🐐 ${t.cardFooter}: ${WA_LINK}`,
+    `_${t.cardNfa.replace(/_/g, "")}_`,
+  ].join("\n");
+}
+const sendForwardCard = (to, report, lang) =>
+  wa({ recipient_type: "individual", to, type: "text", text: { body: formatForwardCard(report, lang).slice(0, 1000), preview_url: false } });
 
 // NEW: greetings (incl. the ad's pre-filled "नमस्ते" / "مرحبا") get the welcome message, not a coin search
 const GREETINGS = /^(hi|hii+|hello|hey|yo|start|\/start|help|good (morning|afternoon|evening)|bonjour|salut|hola|olá|ola|oi|salam|salaam|marhaba|مرحبا|السلام عليكم|سلام|namaste|नमस्ते|sannu|ina kwana|bawo|ẹ n lẹ|e kaaro|ndewo|kedu|how far)[\s!.?]*$/i;
@@ -300,6 +322,7 @@ async function runAi(supabase, from, messageId, chatId, lang, words, row, image 
   if (ans.coins?.length) await sendCoinChoices(from, messageId, ans.coins, lang);   // then the tap-to-pick list
   if (ans.report) {
     await reply(from, messageId, formatReport(ans.report, lang));                   // or the full coin report
+    await sendForwardCard(from, ans.report, lang);                                   // NEW: the card to forward to groups
     await supabase.from("vet_bot_log").insert({ chat_id: chatId, chat_type: "whatsapp", chat_title: null, address: ans.report.token.address, verdict: ans.report.verdict, auto: false });
   }
   if (ans.nickname) await saveNickname(row, ans.nickname);
@@ -456,6 +479,7 @@ async function runVet(supabase, from, messageId, chatId, lang, address) {
     const report = await vetToken(address);                // the same engine as goatwatch.app/vet and Telegram
     verdict = report.verdict;
     await reply(from, messageId, formatReport(report, lang)); // in their language
+    await sendForwardCard(from, report, lang);             // NEW: a short card to forward to their groups
   } catch (err) {
     await reply(from, messageId, `${w(lang).cantCheck} ${plain(translateNote(err.message, lang))}`);
   }

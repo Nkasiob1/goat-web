@@ -51,6 +51,8 @@ export const WA = {
     clean: "Clean",
     fullReport: "Full report",
     disclaimer: "_Automated check. Not financial advice. DYOR._",
+    fwdHint: "👇 Forward the next message to warn your group.", // NEW: forward-to-group card
+    cardCheck: "GOAT check", cardClean: "No major red flags at check time. Checks can change fast.", cardFooter: "Check any coin free on WhatsApp", cardNfa: "Not financial advice. DYOR.",
     helpName: "Or just type the coin's name, e.g. *pepe*",                // NEW: coin-name search
     pickBody: "Which coin do you mean? ✓ = official contract. Copycats often use the same name.",
     pickButton: "Choose coin",
@@ -90,6 +92,8 @@ export const WA = {
     clean: "OK",
     fullReport: "Rapport complet",
     disclaimer: "_Vérification automatique. Pas un conseil financier. Faites vos recherches._",
+    fwdHint: "👇 Transférez le message suivant pour prévenir votre groupe.", // NEW: forward-to-group card
+    cardCheck: "Vérification GOAT", cardClean: "Aucun signal d'alerte majeur au moment de la vérification. Cela peut vite changer.", cardFooter: "Vérifiez n'importe quel coin gratuitement sur WhatsApp", cardNfa: "Pas un conseil financier. Faites vos recherches.",
     helpName: "Ou tapez simplement son nom, ex. *pepe*",                // NEW: coin-name search
     pickBody: "De quelle crypto parlez-vous ? ✓ = contrat officiel. Les copies utilisent souvent le même nom.",
     pickButton: "Choisir",
@@ -129,6 +133,8 @@ export const WA = {
     clean: "Sin problemas",
     fullReport: "Informe completo",
     disclaimer: "_Revisión automática. No es asesoramiento financiero. Investiga por tu cuenta._",
+    fwdHint: "👇 Reenvía el siguiente mensaje para avisar a tu grupo.", // NEW: forward-to-group card
+    cardCheck: "Revisión GOAT", cardClean: "Sin alertas graves al momento de revisar. Puede cambiar rápido.", cardFooter: "Revisa cualquier cripto gratis en WhatsApp", cardNfa: "No es asesoría financiera. Investiga por tu cuenta.",
     helpName: "O escribe su nombre, p. ej. *pepe*",                // NEW: coin-name search
     pickBody: "¿Qué moneda quieres decir? ✓ = contrato oficial. Las copias suelen usar el mismo nombre.",
     pickButton: "Elegir moneda",
@@ -168,6 +174,8 @@ export const WA = {
     clean: "Sem problemas",
     fullReport: "Relatório completo",
     disclaimer: "_Verificação automática. Não é conselho financeiro. Faça sua pesquisa._",
+    fwdHint: "👇 Encaminhe a próxima mensagem para alertar seu grupo.", // NEW: forward-to-group card
+    cardCheck: "Verificação GOAT", cardClean: "Nenhum alerta grave no momento da verificação. Isso pode mudar rápido.", cardFooter: "Verifique qualquer cripto grátis no WhatsApp", cardNfa: "Não é recomendação financeira. Pesquise por conta própria.",
     helpName: "Ou digite o nome, ex.: *pepe*",                // NEW: coin-name search
     pickBody: "Qual moeda você quer dizer? ✓ = contrato oficial. Cópias costumam usar o mesmo nome.",
     pickButton: "Escolher moeda",
@@ -207,6 +215,8 @@ export const WA = {
     clean: "سليم",
     fullReport: "التقرير الكامل",
     disclaimer: "_فحص آلي. ليس نصيحة مالية. ابحث بنفسك._",
+    fwdHint: "👇 أعد توجيه الرسالة التالية لتنبيه مجموعتك.", // NEW: forward-to-group card
+    cardCheck: "فحص GOAT", cardClean: "لا تحذيرات كبيرة وقت الفحص. قد يتغير ذلك بسرعة.", cardFooter: "افحص أي عملة مجاناً على واتساب", cardNfa: "ليست نصيحة مالية. ابحث بنفسك.",
     helpName: "أو اكتب اسم العملة فقط، مثل *pepe*",                // NEW: coin-name search
     pickBody: "أي عملة تقصد؟ ✓ = العقد الرسمي. العملات المقلّدة تستخدم غالبًا الاسم نفسه.",
     pickButton: "اختر العملة",
@@ -246,6 +256,8 @@ export const WA = {
     clean: "ठीक",
     fullReport: "पूरी रिपोर्ट",
     disclaimer: "_स्वचालित जांच। वित्तीय सलाह नहीं। खुद रिसर्च करें।_",
+    fwdHint: "👇 अपने ग्रुप को सावधान करने के लिए अगला मैसेज फ़ॉरवर्ड करें।", // NEW: forward-to-group card
+    cardCheck: "GOAT जाँच", cardClean: "जाँच के समय कोई बड़ा खतरा नहीं मिला। यह जल्दी बदल सकता है।", cardFooter: "WhatsApp पर कोई भी कॉइन मुफ़्त जाँचें", cardNfa: "वित्तीय सलाह नहीं। खुद रिसर्च करें।",
     helpName: "या बस कॉइन का नाम लिखें, जैसे *pepe*",                // NEW: coin-name search
     pickBody: "आपका मतलब कौन सा कॉइन है? ✓ = आधिकारिक कॉन्ट्रैक्ट। नकली कॉइन अक्सर वही नाम रखते हैं।",
     pickButton: "कॉइन चुनें",
@@ -285,6 +297,8 @@ export const WA = {
     clean: "سالم",
     fullReport: "گزارش کامل",
     disclaimer: "_بررسی خودکار. توصیه مالی نیست. خودتان تحقیق کنید._",
+    fwdHint: "👇 پیام بعدی را برای هشدار به گروهتان فوروارد کنید.", // NEW: forward-to-group card
+    cardCheck: "بررسی GOAT", cardClean: "در زمان بررسی هشدار جدی‌ای پیدا نشد. ممکن است سریع تغییر کند.", cardFooter: "هر رمزارزی را رایگان در واتس‌اپ بررسی کنید", cardNfa: "مشاوره مالی نیست. خودتان تحقیق کنید.",
     helpName: "یا فقط نام کوین را بنویسید، مثلاً *pepe*",                // NEW: coin-name search
     pickBody: "منظورتان کدام کوین است؟ ✓ = قرارداد رسمی. کوین‌های تقلبی اغلب همان نام را دارند.",
     pickButton: "انتخاب کوین",
@@ -324,6 +338,8 @@ export const WA = {
     clean: "Babu matsala",
     fullReport: "Cikakken rahoto",
     disclaimer: "_Bincike na atomatik. Ba shawarar kuɗi ba ne. Ka yi naka binciken._",
+    fwdHint: "👇 Tura saƙo na gaba don gargaɗi ga ƙungiyarka.", // NEW: forward-to-group card
+    cardCheck: "Binciken GOAT", cardClean: "Babu babban gargaɗi a lokacin bincike. Yana iya canzawa da sauri.", cardFooter: "Duba kowane coin kyauta a WhatsApp", cardNfa: "Ba shawarar kuɗi ba. Yi bincikenka.",
     helpName: "Ko ka rubuta sunan coin kawai, misali *pepe*",                // NEW: coin-name search
     pickBody: "Wanne coin kake nufi? ✓ = kwantiragi na asali. Masu kwaikwayo sukan yi amfani da suna ɗaya.",
     pickButton: "Zaɓi coin",
@@ -363,6 +379,8 @@ export const WA = {
     clean: "Kò sí ìṣòro",
     fullReport: "Ìròyìn kíkún",
     disclaimer: "_Àyẹ̀wò aládàáṣe. Kì í ṣe ìmọ̀ràn owó. Ṣe ìwádìí tìrẹ._",
+    fwdHint: "👇 Fi ọ̀rọ̀ tó kàn ránṣẹ́ sí ẹgbẹ́ rẹ láti kìlọ̀ fún wọn.", // NEW: forward-to-group card
+    cardCheck: "Àyẹ̀wò GOAT", cardClean: "Kò sí ìkìlọ̀ ńlá nígbà àyẹ̀wò. Ó lè yí padà kíákíá.", cardFooter: "Ṣàyẹ̀wò coin èyíkéyìí lọ́fẹ̀ẹ́ lórí WhatsApp", cardNfa: "Kì í ṣe ìmọ̀ràn owó. Ṣe ìwádìí tìrẹ.",
     helpName: "Tàbí kàn kọ orúkọ coin náà, bí *pepe*",                // NEW: coin-name search
     pickBody: "Coin wo ni o ní lọ́kàn? ✓ = contract ojúlówó. Àwọn ayédèrú sábà máa ń lo orúkọ kan náà.",
     pickButton: "Yan coin",
@@ -402,6 +420,8 @@ export const WA = {
     clean: "Enweghị nsogbu",
     fullReport: "Akụkọ zuru ezu",
     disclaimer: "_Nyocha akpaaka. Ọ bụghị ndụmọdụ ego. Mee nyocha nke gị._",
+    fwdHint: "👇 Ziga ozi na-esote n'ìgwè gị ka ị dọọ ha aka na ntị.", // NEW: forward-to-group card
+    cardCheck: "Nlele GOAT", cardClean: "Enweghị nnukwu ịdọ aka na ntị mgbe e lere ya. Ọ nwere ike ịgbanwe ngwa ngwa.", cardFooter: "Lelee coin ọ bụla n'efu na WhatsApp", cardNfa: "Ọ bụghị ndụmọdụ ego. Mee nchọpụta nke gị.",
     helpName: "Ma ọ bụ dee aha coin ahụ, dịka *pepe*",                // NEW: coin-name search
     pickBody: "Kedu coin ị na-ekwu maka ya? ✓ = contract nke ezi. Oyiri na-ejikarị otu aha.",
     pickButton: "Họrọ coin",
