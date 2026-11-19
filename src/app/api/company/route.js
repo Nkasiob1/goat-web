@@ -11,7 +11,8 @@ export async function GET(request) {
     return NextResponse.json({ error: "Type a platform name or website." }, { status: 400 });
   }
   try {
-    const report = await checkCompany(q);                  // all the checks
+    const country = request.nextUrl.searchParams.get("country") || request.headers.get("x-vercel-ip-country") || null; // NEW
+    const report = await checkCompany(q, country);         // all the checks (+ that country's regulators)
     return NextResponse.json({ report });
   } catch (err) {
     return NextResponse.json({ error: "Check failed. Please try again." }, { status: 502 }); // never leak internal errors

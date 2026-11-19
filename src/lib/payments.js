@@ -4,6 +4,7 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { verifyTransaction } from "./paystack";
 import { addPaidDays, PLANS } from "./aiAccess";
+import { addGuardDays, GUARD_PLAN } from "./guard";   // NEW: GOAT Guard Pro for Telegram groups
 
 // Returns { ok, code, paidUntil } or { ok: false, reason }
 export async function fulfil(reference) {
@@ -26,6 +27,10 @@ export async function fulfil(reference) {
     .select();
   if (!claimed?.length) return { ok: true, code: pay.code, already: true }; // someone else already activated it
 
+  if (pay.plan === GUARD_PLAN.id) {                         // NEW: a Telegram group's Guard Pro
+    const paidUntil = await addGuardDays(pay.code, GUARD_PLAN.days);
+    return { ok: true, code: pay.code, paidUntil };
+  }
   const days = PLANS[pay.plan]?.days || 0;
   const paidUntil = await addPaidDays(pay.code, days);
   return { ok: true, code: pay.code, paidUntil };

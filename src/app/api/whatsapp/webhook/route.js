@@ -13,6 +13,7 @@ import { SITE_URL } from "../../../../lib/site";                                
 import { translateNote } from "../../../../lib/i18n/notes";                           // NEW: same phrasebook as the website
 import { WA_LANGS, LANG_NAMES, LANG_WORDS, SUB_WORDS, guessLang, w } from "../../../../lib/i18n/wa"; // the bot's words, 10 languages
 import { askGoat } from "../../../../lib/goatAgent";                                  // NEW: GOAT AI (paid chat)
+import { countryFromPhone } from "../../../../lib/regulators"; // NEW: their country from the calling code (never stored)
 import { getAccess, gate as aiGate, webAllowed, bumpUsage, loadHistory, saveTurn, saveNickname, today, FREE_AI_CHATS, redeemLinkCode } from "../../../../lib/aiAccess"; // shared with the website (+ NEW: linking)
 
 export const maxDuration = 60;                             // CHANGED: GOAT AI with web search needs up to ~50s (was 30: answers got killed)
@@ -282,7 +283,7 @@ async function runAi(supabase, from, messageId, chatId, lang, words, row, image 
 
   let ans;
   try {
-    ans = await askGoat({ history, lang, nickname: row.nickname, allowWeb: webAllowed(row), channel: "whatsapp", budgetMs: 45000, image }); // CHANGED: + image
+    ans = await askGoat({ history, lang, nickname: row.nickname, allowWeb: webAllowed(row), channel: "whatsapp", budgetMs: 45000, image, country: countryFromPhone(from) }); // CHANGED: + image, + country
   } catch (err) {
     console.error("GOAT AI error:", err.message);          // visible in Vercel logs
     ans = null;

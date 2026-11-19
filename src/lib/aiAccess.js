@@ -22,7 +22,8 @@ export const codeForChat = (chatId) => "G" + Math.abs(chatId).toString(36).toUpp
 export const codeForUser = (userId) =>
   "W" + BigInt("0x" + createHash("sha256").update(String(userId)).digest("hex").slice(0, 12)).toString(36).toUpperCase().slice(-7); // website users
 
-export const isGoatCode = (s) => /^[GW][0-9A-Z]{4,7}$/.test(String(s || ""));
+export const isGoatCode = (s) => /^([GW][0-9A-Z]{4,7}|T[0-9A-Z]{4,9})$/.test(String(s || "")); // CHANGED: + T = Telegram group (GOAT Guard Pro)
+export const isGroupCode = (s) => String(s || "").startsWith("T"); // NEW
 
 // Find (or create) the access row for a WhatsApp chat or a logged-in website user
 export async function getAccess({ chatId, userId }) {

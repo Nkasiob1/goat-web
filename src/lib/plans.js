@@ -6,4 +6,7 @@ export const PLANS = [
   { id: "month", naira: 1500, best: true },       // 30 days (best value)
 ];
 
+// NEW: GOAT Guard Pro for a Telegram group (display only; the server price is GUARD_PLAN in lib/guard.js)
+export const GUARD_PLANS = [{ id: "guard_month", naira: 5000, best: true }];
+
 export const naira = (n) => "₦" + n.toLocaleString("en-NG"); // 1500 -> "₦1,500"

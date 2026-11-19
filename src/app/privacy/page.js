@@ -21,7 +21,8 @@ const sections = [
         "Content you create: posts, replies, images, likes and follows.",
         "Safety records: reports you make or receive, and moderation decisions.",
         // NEW: WhatsApp and Telegram bots
-        "WhatsApp and Telegram bots: we use your phone number only to reply to you and never store it. Instead we store a scrambled ID made from it, your chosen language, and which coins were checked (not your message text).",
+        "GOAT Guard Pro (Telegram groups): to hold back links from brand-new members, we keep a scrambled code for each person who joins a Pro group for 24 hours, then delete it. We record what Guard removed and why, never the message text.",
+        "WhatsApp and Telegram bots: we use your phone number only to reply to you (and, for that one message, to tell which country's regulators to suggest) and never store it. Instead we store a scrambled ID made from it, your chosen language, and which coins were checked (not your message text).",
         // NEW: GOAT AI
         "GOAT AI chats: the messages you send to GOAT AI and its replies, kept for 24 hours so it can follow the conversation, then deleted automatically. Screenshots you send to GOAT AI are only used to answer that message and are never stored. We also store your GOAT ID, the name you ask GOAT AI to call you, and how many chats you have used. If you link WhatsApp to your goatwatch.app account, we attach the scrambled chat ID (never your phone number) to your account so one pass works in both places.", // CHANGED: linking
         // NEW: payments

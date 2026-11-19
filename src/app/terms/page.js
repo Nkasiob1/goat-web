@@ -82,12 +82,13 @@ const sections = [                                                 // each secti
   },
   {
     id: "payments",                                                  // NEW
-    title: "GOAT AI subscriptions and refunds",
+    title: "GOAT AI, GOAT Guard Pro, and refunds",  // CHANGED: + Guard Pro
     body: [
       [
         "GOAT AI is sold as prepaid passes (for example 7 days or 30 days), at the prices shown on goatwatch.app/pay. Prices are in Nigerian naira.",
         "Payments are processed securely by Paystack. A pass starts as soon as the payment is confirmed, and buying again adds time on top of any time you have left.",
         "Passes do not renew automatically. Nothing is charged again unless you choose to buy another pass.",
+        "GOAT Guard Pro is a 30-day pass for one Telegram group. The group admin who pays is responsible for using it in line with Telegram's rules. Guard removes messages automatically using GOAT's checks; admins can switch each feature off at any time.", // NEW
         "One pass works for one GOAT ID. To use the same pass on WhatsApp and on goatwatch.app, link them: on the website open GOAT AI and tap Link WhatsApp. Passes bought separately before linking are added together.", // CHANGED: linking
       ],
       `Refunds: if you were charged but your pass was not switched on, or you were charged twice for the same purchase, email ${CONTACT_EMAIL} with your GOAT ID and payment reference and we will activate the pass or refund you. Because a pass starts straight away, we don't refund unused days, unless GOAT AI was unavailable for a long period through our fault or the law requires a refund.`,

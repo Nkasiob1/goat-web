@@ -2,12 +2,14 @@
 // Telegram calls this (webhook) for messages to @GoatVetbot, in a private chat or a group.
 // 1) /vet runs the same full Vet as goatwatch.app/vet and replies with a short report + buttons.
 // 2) GOAT Guard counts group activity per day (joins, leaves, messages, contracts). Numbers only, never message text.
-// 3) NEW: Auto-check. Any message containing a contract address gets checked automatically (no /vet needed).
+// 3) Auto-check. Any message containing a contract address gets checked automatically (no /vet needed).
+// 4) NEW: GOAT Guard Pro (paid, per group): removes 🔴 High risk coins, guards links, /report, no promo button.
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { vetToken, cleanQuery, isEvmAddress, isSolAddress } from "../../../../lib/vet"; // the one Vet engine
 import { escapeHtml } from "../../../../lib/telegram";                                // makes text safe for Telegram HTML
 import { SITE_URL } from "../../../../lib/site";                                      // https://goatwatch.app
+import { getGuard, isPro, noteJoins, isNewMember, linkDomains, hasLink, secWarnedDomain, weekReport, logAction, NEW_MEMBER_HOURS } from "../../../../lib/guard"; // NEW: Guard Pro
 
 export const maxDuration = 30;                             // the Vet calls several free APIs: give it time
 
@@ -17,11 +19,12 @@ const AUTO_RECHECK_HOURS = 6;                              // NEW: auto-check sk
 const ADD_TO_GROUP = "https://t.me/GoatVetbot?startgroup=true"; // opens Telegram's "choose a group" screen for the bot
 
 // Buttons under a message. Each inner array is one row of buttons.
-function buttons(reportUrl) {
+// CHANGED: Pro groups don't get the "Add GOAT Vet" promo button (cleaner for paying admins).
+function buttons(reportUrl, pro = false) {
   const rows = [];
   if (reportUrl) rows.push([{ text: "📋 Full report on goatwatch.app", url: reportUrl }]); // only under a coin report
-  rows.push([{ text: "➕ Add GOAT Vet to your group", url: ADD_TO_GROUP }]);                // under every reply
-  return { inline_keyboard: rows };
+  if (!pro) rows.push([{ text: "➕ Add GOAT Vet to your group", url: ADD_TO_GROUP }]);    // free groups and private chats
+  return rows.length ? { inline_keyboard: rows } : undefined;
 }
 
 // Server-side database client (secret key, never in the browser)
@@ -40,6 +43,32 @@ async function tg(method, body) {
   });
   return res.ok;
 }
+
+// NEW: same as tg() but returns Telegram's JSON answer (to read a result, e.g. someone's admin status)
+async function tgJson(method, body) {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_VET_BOT_TOKEN}/${method}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(10000),
+    });
+    return await res.json();
+  } catch {
+    return { ok: false };
+  }
+}
+
+// NEW: is the sender an admin of this group? (Anonymous admins post "as the group" and count too.)
+async function isAdmin(msg) {
+  if (msg.sender_chat?.id === msg.chat.id) return true;
+  const r = await tgJson("getChatMember", { chat_id: msg.chat.id, user_id: msg.from?.id });
+  return ["creator", "administrator"].includes(r?.result?.status);
+}
+
+// NEW: post in the group WITHOUT replying (used after we deleted the message we'd reply to)
+const say = (chatId, html, markup) =>
+  tg("sendMessage", { chat_id: chatId, text: html, parse_mode: "HTML", link_preview_options: { is_disabled: true }, ...(markup ? { reply_markup: markup } : {}) });
+
+// NEW: delete a message (needs the bot to be an admin with "Delete messages"). Returns true if it worked.
+const removeMsg = (msg) => tg("deleteMessage", { chat_id: msg.chat.id, message_id: msg.message_id });
 
 // Reply in the same chat, as a reply to the user's message, with no big link preview.
 // Optional `markup` adds the buttons under the message.
@@ -72,6 +101,8 @@ const HELP = [
   "Works on Ethereum, BSC, Solana, Base, Arbitrum, Polygon, Avalanche and Optimism.",
   "",
   "Tap the button below to add GOAT Vet to your own group. It's free.",
+  "",
+  "🛡️ <b>GOAT Guard Pro</b> for group admins: removes 🔴 High risk coins, blocks links from new members, removes links to SEC-warned platforms, and /report. Type <code>/pro</code> in your group.", // NEW
 ].join("\n");
 
 // verdict -> headline (careful wording: green is "no major red flags", never "safe")
@@ -140,8 +171,21 @@ async function countGroupActivity(msg) {
 }
 
 // NEW: one function runs every check, typed (/vet) or automatic. `auto` changes how polite/quiet it is.
-async function runVet(msg, address, auto) {
+async function runVet(msg, address, auto, guard = null) {   // CHANGED: + this group's Guard row
   const supabase = db();
+  const pro = isPro(guard);
+
+  // NEW (Pro): a coin this group already saw as 🔴 in the last 6 hours, posted again -> remove it straight away
+  if (pro && auto && guard.delete_red) {
+    const since = new Date(Date.now() - AUTO_RECHECK_HOURS * 3600 * 1000).toISOString();
+    const { data: seenRed } = await supabase.from("vet_bot_log").select("at")
+      .eq("chat_id", msg.chat.id).eq("address", address).eq("verdict", "red").gte("at", since).limit(1);
+    if (seenRed?.length && !(await isAdmin(msg)) && (await removeMsg(msg))) {
+      await logAction(msg.chat.id, "repost_red");
+      await say(msg.chat.id, "🛡️ <b>GOAT Guard</b> removed a repost of a coin already flagged 🔴 <b>High risk</b> in this group.");
+      return;
+    }
+  }
 
   // Cooldown: one check per chat every 15 seconds
   const { data: last } = await supabase
@@ -176,9 +220,15 @@ async function runVet(msg, address, auto) {
     const report = await vetToken(address);                // the same engine as goatwatch.app/vet
     verdict = report.verdict;
     const header = auto ? "🔎 <b>GOAT auto-check</b>\n" : ""; // tells the group why the bot spoke up
-    await reply(msg, header + formatReport(report), buttons(reportUrl(report.token.address)));
+    // NEW (Pro): a 🔴 coin posted by a non-admin is removed, and the report explains why
+    if (pro && auto && guard.delete_red && verdict === "red" && !(await isAdmin(msg)) && (await removeMsg(msg))) {
+      await logAction(msg.chat.id, "red_coin");
+      await say(msg.chat.id, "🛡️ <b>GOAT Guard removed a message</b> with a 🔴 High risk coin.\n\n" + formatReport(report), buttons(reportUrl(report.token.address), true));
+    } else {
+      await reply(msg, header + formatReport(report), buttons(reportUrl(report.token.address), pro));
+    }
   } catch (err) {
-    if (!auto) await reply(msg, `Couldn't check that coin: ${escapeHtml(err.message)}`, buttons()); // auto: stay quiet on errors
+    if (!auto) await reply(msg, `Couldn't check that coin: ${escapeHtml(err.message)}`, buttons(null, pro)); // auto: stay quiet on errors
   }
 
   // Log it (cooldown, repeat check, growth data). Group names only, never a person's name.
@@ -191,6 +241,54 @@ async function runVet(msg, address, auto) {
     verdict,
     auto,                                                  // NEW: true = automatic, false = typed /vet
   });
+}
+
+// NEW: /pro, /report and /guard. Only in groups, and only group admins can use them.
+async function guardCommand(msg, cmd, arg, guard) {
+  if (!guard) return reply(msg, "🛡️ GOAT Guard Pro works inside groups. Add me to your group, make me an admin, then type /pro there.", buttons());
+  if (!(await isAdmin(msg))) return reply(msg, "Only group admins can use this command.");
+  const pro = isPro(guard);
+  const until = pro ? new Date(guard.paid_until).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
+  const payUrl = `${SITE_URL}/pay?id=${guard.code}`;
+
+  if (cmd === "pro") {
+    const lines = pro
+      ? [`🛡️ <b>GOAT Guard Pro is active</b> until ${until}.`, "", `Group ID: <code>${guard.code}</code>`,
+         `Remove 🔴 coins: <b>${guard.delete_red ? "on" : "off"}</b> · Link guard: <b>${guard.link_guard ? "on" : "off"}</b>`,
+         "Change with <code>/guard coins off</code> or <code>/guard links off</code>. See your week with /report."]
+      : ["🛡️ <b>GOAT Guard Pro</b> protects this group:", "",
+         "• Removes messages with 🔴 High risk coins (and reposts of them)",
+         `• Removes links from new members for their first ${NEW_MEMBER_HOURS} hours`,
+         "• Removes links to platforms on SEC Nigeria's warning list",
+         "• /report: your group's week in numbers",
+         "• No GOAT promo button in your group", "",
+         `₦5,000 for 30 days. No auto-renew. Group ID: <code>${guard.code}</code>`,
+         "Make me an admin with <b>Delete messages</b> so I can remove scam posts."];
+    return reply(msg, lines.join("\n"), { inline_keyboard: [[{ text: pro ? "➕ Add 30 more days" : "🛡️ Get Guard Pro", url: payUrl }]] });
+  }
+
+  if (!pro) return reply(msg, "This is a GOAT Guard Pro feature. Type /pro to see what it does.");
+
+  if (cmd === "report") {
+    const r = await weekReport(msg.chat.id);
+    return reply(msg, [
+      "📊 <b>GOAT Guard: last 7 days</b>", "",
+      `👥 Joined ${r.joins} · Left ${r.leaves}`,
+      `💬 Messages ${r.messages} · Contracts posted ${r.contracts}`,
+      `🔎 Coins checked ${r.checked}: 🟢 ${r.green} · 🟡 ${r.yellow} · 🔴 ${r.red}`,
+      `🛡️ Messages removed by Guard: ${r.removed}`, "",
+      `Pro active until ${until}.`,
+    ].join("\n"));
+  }
+
+  // /guard coins on|off, /guard links on|off
+  const [what, onoff] = arg.split(/\s+/);
+  const col = what === "coins" ? "delete_red" : what === "links" ? "link_guard" : null;
+  if (!col || !["on", "off"].includes(onoff)) {
+    return reply(msg, "Use <code>/guard coins on</code>, <code>/guard coins off</code>, <code>/guard links on</code> or <code>/guard links off</code>.");
+  }
+  await db().from("guard_groups").update({ [col]: onoff === "on" }).eq("code", guard.code);
+  return reply(msg, `✅ ${what === "coins" ? "Removing 🔴 coins" : "Link guard"} is now <b>${onoff}</b>.`);
 }
 
 export async function POST(request) {
@@ -215,24 +313,58 @@ export async function POST(request) {
     console.error("GOAT Guard count error:", err.message); // visible in Vercel logs
   }
 
+  // NEW: this group's Guard row (null in private chats). Remember new members in Pro groups for the link guard.
+  let guard = null;
+  try {
+    guard = await getGuard(msg.chat);
+    if (isPro(guard) && msg.new_chat_members?.length) await noteJoins(msg.chat.id, msg.new_chat_members);
+  } catch (err) {
+    console.error("GOAT Guard Pro error:", err.message);
+  }
+
   const words = msg.text || msg.caption || "";             // CHANGED: captions too (contracts are often posted under a picture)
   if (!words || msg.from?.is_bot || msg.via_bot) return NextResponse.json({ ok: true }); // nothing to read, or a bot wrote it (avoid bot loops)
 
+  // NEW (Pro): link guard. Links to SEC-warned platforms are removed for everyone except admins;
+  // links from people who joined in the last 24 hours are removed too (the classic scam-bot pattern).
+  if (isPro(guard) && guard.link_guard && hasLink(words) && !words.trim().startsWith("/")) {
+    try {
+      if (!(await isAdmin(msg))) {
+        const warned = await secWarnedDomain(linkDomains(words));
+        const fresh = !warned && msg.from?.id ? await isNewMember(msg.chat.id, msg.from.id) : false;
+        if ((warned || fresh) && (await removeMsg(msg))) {
+          await logAction(msg.chat.id, warned ? "sec_warned_link" : "new_member_link");
+          await say(msg.chat.id, warned
+            ? `🛡️ <b>GOAT Guard</b> removed a link to <b>${escapeHtml(warned.name)}</b>, which is on SEC Nigeria's warning list.`
+            : `🛡️ <b>GOAT Guard</b> removed a link: new members can post links after ${NEW_MEMBER_HOURS} hours.`);
+          return NextResponse.json({ ok: true });
+        }
+      }
+    } catch (err) {
+      console.error("GOAT Guard link error:", err.message);
+    }
+  }
+
   try {
     // 3. Is this a command for us? "/vet", "/vet@GoatVetbot", "/start", "/help"
-    const m = words.trim().match(/^\/(vet|start|help)(?:@(\w+))?(?:\s+([\s\S]*))?$/i);
+    const m = words.trim().match(/^\/(vet|start|help|pro|report|guard)(?:@(\w+))?(?:\s+([\s\S]*))?$/i); // CHANGED: + Guard Pro commands
 
     if (!m) {                                              // NEW: not a command -> auto-check if it contains a contract
       const address = findAddress(words);
-      if (address) await runVet(msg, address, true);
+      if (address) await runVet(msg, address, true, guard);
       return NextResponse.json({ ok: true });              // ordinary chat with no contract: stay quiet
     }
 
     const [, command, mention, arg] = m;
     if (mention && mention.toLowerCase() !== BOT_USERNAME) return NextResponse.json({ ok: true }); // meant for another bot
 
-    if (command.toLowerCase() !== "vet") {                 // /start or /help
-      await reply(msg, HELP, buttons());
+    const cmd = command.toLowerCase();
+    if (["pro", "report", "guard"].includes(cmd)) {        // NEW: Guard Pro commands (groups, admins only)
+      await guardCommand(msg, cmd, (arg || "").trim().toLowerCase(), guard);
+      return NextResponse.json({ ok: true });
+    }
+    if (cmd !== "vet") {                                   // /start or /help
+      await reply(msg, HELP, buttons(null, isPro(guard)));
       return NextResponse.json({ ok: true });
     }
 
@@ -243,7 +375,7 @@ export async function POST(request) {
       await reply(msg, "Send a contract address after /vet, for example:\n<code>/vet 0x6982508145454ce325ddbe47a25d4ec3d2311933</code>");
       return NextResponse.json({ ok: true });
     }
-    await runVet(msg, address, false);                     // CHANGED: the shared check, typed mode
+    await runVet(msg, address, false, guard);              // CHANGED: the shared check, typed mode
   } catch (err) {
     console.error("Vet bot error:", err.message);          // visible in Vercel logs
   }

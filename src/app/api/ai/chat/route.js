@@ -67,7 +67,7 @@ export async function POST(request) {
 
   let ans;
   try {
-    ans = await askGoat({ history, lang, nickname: row.nickname, allowWeb: webAllowed(row), channel: "web", image }); // CHANGED: + image
+    ans = await askGoat({ history, lang, nickname: row.nickname, allowWeb: webAllowed(row), channel: "web", image, country: request.headers.get("x-vercel-ip-country") || null }); // CHANGED: + image, + country (Vercel's network guess)
   } catch (err) {
     console.error("GOAT AI web error:", err.message);
     return NextResponse.json({ error: "ai" }, { status: 502 });

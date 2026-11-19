@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useLang } from "@/lib/i18n/useLang";
 import { a } from "@/lib/i18n/ai";
 
-import { PLANS, naira } from "@/lib/plans";              // CHANGED: shared with the pricing box (server still decides the price)
+import { PLANS, GUARD_PLANS, naira } from "@/lib/plans";              // CHANGED: shared with the pricing box (server still decides the price)
 
 function PayForm() {
   const lang = useLang();
@@ -17,6 +17,9 @@ function PayForm() {
   const [plan, setPlan] = useState("month");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const isGroup = code.startsWith("T");                    // NEW: a Telegram group's GOAT ID -> GOAT Guard Pro
+  const plans = isGroup ? GUARD_PLANS : PLANS;
+  const shownPlan = plans.some((p) => p.id === plan) ? plan : plans[plans.length - 1].id; // the plan that fits this ID
 
   // Logged in on the website and no ID in the link? Fill in their own GOAT ID and email.
   useEffect(() => {
@@ -41,7 +44,7 @@ function PayForm() {
       const res = await fetch("/api/pay/init", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, plan, email }),
+        body: JSON.stringify({ code, plan: shownPlan, email }), // CHANGED: a plan that fits the ID
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || a("badInput", lang));
@@ -52,23 +55,23 @@ function PayForm() {
     }
   }
 
-  const price = naira(PLANS.find((p) => p.id === plan).naira);
+  const price = naira(plans.find((p) => p.id === shownPlan).naira);
 
   return (
     <main className="mx-auto w-full max-w-lg px-4 py-10">
       <p className="text-4xl" aria-hidden="true">🐐</p>
-      <h1 className="mt-3 text-3xl font-bold tracking-tight text-ink">{a("payTitle", lang)}</h1>
-      <p className="mt-2 text-stone">{a("paySub", lang)}</p>
+      <h1 className="mt-3 text-3xl font-bold tracking-tight text-ink">{a(isGroup ? "guardTitle" : "payTitle", lang)}</h1>
+      <p className="mt-2 text-stone">{a(isGroup ? "guardSub" : "paySub", lang)}</p>
       <ul className="mt-5 space-y-1.5 text-sm text-ink">
-        {a("perks", lang).split(" · ").map((p) => <li key={p}>✓ {p}</li>)}
+        {a(isGroup ? "guardPerks" : "perks", lang).split(" · ").map((p) => <li key={p}>✓ {p}</li>)}
       </ul>
 
       <form onSubmit={pay} className="mt-8 space-y-5">
         <fieldset className="grid grid-cols-2 gap-3">
           <legend className="sr-only">Plan</legend>
-          {PLANS.map((p) => (
-            <label key={p.id} className={`cursor-pointer rounded-2xl border p-4 ${plan === p.id ? "border-forest bg-sage" : "border-line"}`}>
-              <input type="radio" name="plan" value={p.id} checked={plan === p.id} onChange={() => setPlan(p.id)} className="sr-only" />
+          {plans.map((p) => (
+            <label key={p.id} className={`cursor-pointer rounded-2xl border p-4 ${shownPlan === p.id ? "border-forest bg-sage" : "border-line"}`}>
+              <input type="radio" name="plan" value={p.id} checked={shownPlan === p.id} onChange={() => setPlan(p.id)} className="sr-only" />
               <span className="block text-sm text-stone">{a(p.id, lang)}</span>
               <span className="block text-2xl font-bold text-ink">{naira(p.naira)}</span>
             </label>
@@ -77,7 +80,7 @@ function PayForm() {
 
         <div>
           <label htmlFor="goat-id" className="block text-sm font-medium text-ink">{a("goatId", lang)}</label>
-          <input id="goat-id" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().trim())} required maxLength={8} placeholder="G4K9Z2Q"
+          <input id="goat-id" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().trim())} required maxLength={10} placeholder="G4K9Z2Q"
             className="mt-1 w-full rounded-xl border border-line bg-mist px-4 py-3 font-mono text-ink outline-none focus:border-forest" />
           <p className="mt-1 text-xs text-stone">{a("goatIdHelp", lang)}</p>
         </div>
