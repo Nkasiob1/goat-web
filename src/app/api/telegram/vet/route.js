@@ -9,7 +9,7 @@ import { createClient } from "@supabase/supabase-js";
 import { vetToken, cleanQuery, isEvmAddress, isSolAddress } from "../../../../lib/vet"; // the one Vet engine
 import { escapeHtml } from "../../../../lib/telegram";                                // makes text safe for Telegram HTML
 import { SITE_URL } from "../../../../lib/site";                                      // https://goatwatch.app
-import { getGuard, isPro, noteJoins, isNewMember, linkDomains, hasLink, secWarnedDomain, weekReport, logAction, NEW_MEMBER_HOURS } from "../../../../lib/guard"; // NEW: Guard Pro
+import { getGuard, isPro, noteJoins, isNewMember, linkDomains, hasLink, secWarnedDomain, youngSite, YOUNG_SITE_DAYS, weekReport, logAction, NEW_MEMBER_HOURS } from "../../../../lib/guard"; // NEW: Guard Pro
 
 export const maxDuration = 30;                             // the Vet calls several free APIs: give it time
 
@@ -102,7 +102,7 @@ const HELP = [
   "",
   "Tap the button below to add GOAT Vet to your own group. It's free.",
   "",
-  "🛡️ <b>GOAT Guard Pro</b> for group admins: removes 🔴 High risk coins, blocks links from new members, removes links to SEC-warned platforms, and /report. Type <code>/pro</code> in your group.", // NEW
+  "🛡️ <b>GOAT Guard Pro</b> for group admins: removes 🔴 High risk coins, blocks links from new members and to brand-new or officially warned websites, and /report. Type <code>/pro</code> in your group.", // NEW
 ].join("\n");
 
 // verdict -> headline (careful wording: green is "no major red flags", never "safe")
@@ -259,10 +259,11 @@ async function guardCommand(msg, cmd, arg, guard) {
       : ["🛡️ <b>GOAT Guard Pro</b> protects this group:", "",
          "• Removes messages with 🔴 High risk coins (and reposts of them)",
          `• Removes links from new members for their first ${NEW_MEMBER_HOURS} hours`,
-         "• Removes links to platforms on SEC Nigeria's warning list",
+         `• Removes links to brand-new websites (under ${YOUNG_SITE_DAYS} days old), the most common scam-link pattern in every country`,
+         "• Removes links to platforms on official regulator warning lists in GOAT's records",
          "• /report: your group's week in numbers",
          "• No GOAT promo button in your group", "",
-         `₦5,000 for 30 days. No auto-renew. Group ID: <code>${guard.code}</code>`,
+         `₦5,000 for 30 days (any Visa or Mastercard, from any country). No auto-renew. Group ID: <code>${guard.code}</code>`,
          "Make me an admin with <b>Delete messages</b> so I can remove scam posts."];
     return reply(msg, lines.join("\n"), { inline_keyboard: [[{ text: pro ? "➕ Add 30 more days" : "🛡️ Get Guard Pro", url: payUrl }]] });
   }
@@ -325,18 +326,22 @@ export async function POST(request) {
   const words = msg.text || msg.caption || "";             // CHANGED: captions too (contracts are often posted under a picture)
   if (!words || msg.from?.is_bot || msg.via_bot) return NextResponse.json({ ok: true }); // nothing to read, or a bot wrote it (avoid bot loops)
 
-  // NEW (Pro): link guard. Links to SEC-warned platforms are removed for everyone except admins;
-  // links from people who joined in the last 24 hours are removed too (the classic scam-bot pattern).
+  // NEW (Pro): link guard, for groups in any country. Removed for everyone except admins: links to officially warned
+  // platforms, and links to brand-new websites. Also any link from someone who joined in the last 24 hours.
   if (isPro(guard) && guard.link_guard && hasLink(words) && !words.trim().startsWith("/")) {
     try {
       if (!(await isAdmin(msg))) {
-        const warned = await secWarnedDomain(linkDomains(words));
+        const domains = linkDomains(words);
+        const warned = await secWarnedDomain(domains);
         const fresh = !warned && msg.from?.id ? await isNewMember(msg.chat.id, msg.from.id) : false;
-        if ((warned || fresh) && (await removeMsg(msg))) {
-          await logAction(msg.chat.id, warned ? "sec_warned_link" : "new_member_link");
+        const young = !warned && !fresh ? await youngSite(domains) : null;   // checked last: it's a web lookup
+        if ((warned || fresh || young) && (await removeMsg(msg))) {
+          await logAction(msg.chat.id, warned ? "warned_link" : fresh ? "new_member_link" : "young_site_link");
           await say(msg.chat.id, warned
-            ? `🛡️ <b>GOAT Guard</b> removed a link to <b>${escapeHtml(warned.name)}</b>, which is on SEC Nigeria's warning list.`
-            : `🛡️ <b>GOAT Guard</b> removed a link: new members can post links after ${NEW_MEMBER_HOURS} hours.`);
+            ? `🛡️ <b>GOAT Guard</b> removed a link to <b>${escapeHtml(warned.name)}</b>, which is on an official regulator warning list (SEC Nigeria).`
+            : fresh
+              ? `🛡️ <b>GOAT Guard</b> removed a link: new members can post links after ${NEW_MEMBER_HOURS} hours.`
+              : `🛡️ <b>GOAT Guard</b> removed a link to <b>${escapeHtml(young.domain)}</b>, a website only ${young.days} day${young.days === 1 ? "" : "s"} old. Brand-new sites are a common scam pattern.`);
           return NextResponse.json({ ok: true });
         }
       }

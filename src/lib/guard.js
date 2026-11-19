@@ -4,6 +4,7 @@
 // Pro adds: auto-delete of 🔴 High risk coins, a link guard (new members + SEC-warned sites), /report, no promo button.
 import { createHash } from "node:crypto";
 import { supabaseAdmin } from "./supabaseAdmin";
+import { domainAgeDays } from "./company";               // NEW: how old a website is (public registry)
 
 export const GUARD_PLAN = { id: "guard_month", days: 30, kobo: Number(process.env.GOAT_PRICE_GUARD_KOBO || 500000) }; // ₦5,000 / 30 days
 export const NEW_MEMBER_HOURS = 24;                         // new members can't post links for their first 24 hours
@@ -63,7 +64,23 @@ export function linkDomains(text) {
 }
 export const hasLink = (text) => /(https?:\/\/|t\.me\/|wa\.me\/|www\.)/i.test(String(text || "")) || linkDomains(text).length > 0;
 
-// Is any of these domains a platform on SEC Nigeria's warning list (our platforms table)?
+// NEW: brand-new websites are the most common scam-link pattern in every country (fake exchanges, "investment"
+// sites, wallet drainers). Big well-known sites are skipped, and at most 3 links per message are looked up.
+export const YOUNG_SITE_DAYS = 30;
+const WELL_KNOWN = new Set(["t.me", "telegram.org", "x.com", "twitter.com", "youtube.com", "youtu.be", "google.com", "github.com",
+  "medium.com", "wikipedia.org", "coingecko.com", "coinmarketcap.com", "dexscreener.com", "geckoterminal.com", "etherscan.io",
+  "bscscan.com", "solscan.io", "basescan.org", "binance.com", "coinbase.com", "kraken.com", "okx.com", "bybit.com",
+  "tradingview.com", "reddit.com", "instagram.com", "facebook.com", "tiktok.com", "whatsapp.com", "wa.me", "goatwatch.app"]);
+const isWellKnown = (d) => [...WELL_KNOWN].some((k) => d === k || d.endsWith("." + k));
+export async function youngSite(domains) {
+  for (const d of domains.filter((x) => !isWellKnown(x)).slice(0, 3)) {
+    const days = await domainAgeDays(d);                    // null = unknown (we never act on unknown)
+    if (days !== null && days < YOUNG_SITE_DAYS) return { domain: d, days };
+  }
+  return null;
+}
+
+// Is any of these domains a platform on an official regulator warning list in GOAT's records (platforms table)?
 export async function secWarnedDomain(domains) {
   if (!domains.length) return null;
   const { data } = await supabaseAdmin().from("platforms").select("name, domains")

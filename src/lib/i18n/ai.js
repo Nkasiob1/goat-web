@@ -4,8 +4,8 @@
 export const AI = {
   en: {
     // NEW: GOAT Guard Pro (Telegram groups) on the pay page. Other languages fall back to these English words.
-    guardTitle: "GOAT Guard Pro", guardSub: "Protection for your Telegram group, 30 days. No auto-renew.",
-    guardPerks: "Removes messages with 🔴 High risk coins · Blocks links from new members for 24 hours · Removes links to SEC-warned platforms · /report: your group's week in numbers · No GOAT promo button in your group",
+    guardTitle: "GOAT Guard Pro", guardSub: "Protection for your Telegram group, anywhere in the world. 30 days, no auto-renew. Any Visa or Mastercard.",
+    guardPerks: "Removes messages with 🔴 High risk coins · Blocks links from new members for 24 hours · Removes links to brand-new websites and to platforms on official warning lists · /report: your group's week in numbers · No GOAT promo button in your group",
     guard_month: "30 days",
     open: "Ask GOAT AI", title: "GOAT AI", subtitle: "Crypto & scam expert",
     welcome: "Hi! I'm GOAT. Ask me about any coin, platform or crypto topic, or how to use this site.",
